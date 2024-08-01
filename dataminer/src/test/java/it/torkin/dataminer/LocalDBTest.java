@@ -14,10 +14,12 @@ import com.google.gson.stream.JsonReader;
 
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.jira.issue.Issue;
+import it.torkin.dataminer.entities.jira.issue.IssueLink;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import jakarta.transaction.Transactional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -36,11 +38,9 @@ public class LocalDBTest extends AbstractTransactionalJUnit4SpringContextTests{
 
     @Autowired private IssueDao issueDao;
 
-    //@Autowired private DeveloperDao developerDao;
-
     private Logger logger = Logger.getLogger(LocalDBTest.class.getName()); 
     
-    private final String ISSUE_EXAMPLES_DIR = "./src/test/resources/issue_examples/";
+    private static final String ISSUE_EXAMPLES_DIR = "./src/test/resources/issue_examples/";
     
     @Test
     @Transactional
@@ -60,8 +60,10 @@ public class LocalDBTest extends AbstractTransactionalJUnit4SpringContextTests{
             issueDao.saveAndFlush(expected);
             actual = issueDao.findByJiraId(expected.getJiraId());
             assertEquals(expected.getJiraId(), actual.getJiraId());
+            for (IssueLink il : actual.getFields().getIssuelinks()){
+                assertTrue(il.isInward() || il.isOutward());
+            }
         }
         
     }
-
 }

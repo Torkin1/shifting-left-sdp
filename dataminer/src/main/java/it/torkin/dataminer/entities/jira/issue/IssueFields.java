@@ -50,9 +50,24 @@ public class IssueFields{
     @OneToMany(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)
     @SerializedName("attachment")
     private List<IssueAttachment> attachments;
-    @OneToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
-    private List<Issue> subtasks;
-    @OneToMany(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY) 
+    
+    /**
+     * NOTE: We cannot trust issues pointed by subtasks and issuelinks
+     * since they may not be present in the apacheJIT dataset.
+     * We store the short versions since they are provided by default
+     * by the Jira API. 
+     * 
+     * If the extended version of the issue is needed,
+     * it must be fetched independently from the jira api if not present
+     * in the local database, and quality checked to align with the
+     * data in the apacheJIT dataset before storing it in the local db.
+     */
+
+    @OneToMany(
+        cascade = { CascadeType.PERSIST, CascadeType.MERGE},
+        fetch = FetchType.LAZY)
+    private List<UntrustedIssue> subtasks;
+    @OneToMany(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)
     private List<IssueLink> issuelinks;
 
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
