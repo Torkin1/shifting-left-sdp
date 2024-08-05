@@ -9,6 +9,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Transient;
 import lombok.Data;
 
+/**
+ * TODO: iterate over all pages of worklog to fetch all worklog items
+ */
 @Data
 @Embeddable
 public class IssueWorkLog{

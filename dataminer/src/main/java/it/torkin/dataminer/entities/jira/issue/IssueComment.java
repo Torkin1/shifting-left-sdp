@@ -18,7 +18,7 @@ public class IssueComment{
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE})
     private Developer author;
     /**
-     * TODO: JIRA API example defines an object for this field,
+     * TODO: JIRA API example defines a json object for this field,
      * but apache issues use a string as a value to it.
      * Check what issues could cause a mismatch, and see what is inside
      * the body field.
@@ -33,12 +33,12 @@ public class IssueComment{
     private String self;
     
     /**
-     * NOTE: Maybe the upTimestamp fields refer to the last upTimestamp?
+     * NOTE: Maybe the update fields refer to the last update?
      */
 
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE})
-    private Developer upTimestampAuthor;
-    private Timestamp upTimestampd;
+    private Developer updateAuthor;
+    private Timestamp updated;
 
     @Embedded
     private IssueCommentVisibility visibility;
