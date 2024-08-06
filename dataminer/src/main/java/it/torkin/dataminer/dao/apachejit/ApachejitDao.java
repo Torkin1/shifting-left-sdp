@@ -5,7 +5,6 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: test this class
 /**
  * Interfaces with ApacheJIT dataset as it was a read-only db.
  * Go see ApacheJIT documentation for more info about the dataset structure.
