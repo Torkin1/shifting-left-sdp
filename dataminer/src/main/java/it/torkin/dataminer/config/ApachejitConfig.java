@@ -5,10 +5,10 @@ import org.springframework.context.annotation.Configuration;
 
 import lombok.Data;
 
-//  TODO: add values in properties file
-
 @Configuration
-@ConfigurationProperties("dataminer.apachejit")
+@ConfigurationProperties(
+    prefix = "dataminer.apachejit",
+    ignoreUnknownFields = false)
 @Data
 public class ApachejitConfig{
 
@@ -21,6 +21,7 @@ public class ApachejitConfig{
      *  and new records will be stored)
      */
     private boolean refresh;
-    /** If true, skips the parsing of csv file, effectively denying the dataset load*/
+    /** If true, skips the parsing of csv file,
+     *  effectively denying the dataset load*/
     private boolean skipLoad;
 }

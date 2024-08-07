@@ -1,0 +1,32 @@
+{"properties": [
+  {
+    "name": "dataminer.apachejit.commits-path",
+    "type": "java.lang.String",
+    "description": "Path to csv containing commits'"
+  },
+  {
+    "name": "dataminer.apachejit.issues-path",
+    "type": "java.lang.String",
+    "description": "Path to folder containing csv of project issue'"
+  },
+  {
+    "name": "dataminer.apachejit.refresh",
+    "type": "java.lang.String",
+    "description": "True if dataset should be loaded even if it is already present in db (Even if set to false, csv file will be still parsed and new records will be stored)'"
+  },
+  {
+    "name": "dataminer.apachejit.skip-load",
+    "type": "java.lang.String",
+    "description": "If true, skips the parsing of csv file, effectively denying the dataset load'"
+  },
+  {
+    "name": "dataminer.jira.hostname",
+    "type": "java.lang.String",
+    "description": "Name of the Jira API remote host'"
+  },
+  {
+    "name": "dataminer.jira.api-version",
+    "type": "java.lang.String",
+    "description": "Api version"
+  }
+]}

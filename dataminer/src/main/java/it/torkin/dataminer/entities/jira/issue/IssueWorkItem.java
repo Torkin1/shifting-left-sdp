@@ -21,11 +21,11 @@ public class IssueWorkItem {
     @ManyToOne(cascade = { CascadeType.PERSIST}, fetch = FetchType.LAZY)
     private Developer author;
     @ManyToOne(cascade = { CascadeType.PERSIST}, fetch = FetchType.LAZY)
-    private Developer upTimestampAuthor;
+    private Developer updateAuthor;
     @Column(columnDefinition = "text")
     private String comment;
     private Timestamp created;
-    private Timestamp upTimestampd;
+    private Timestamp updated;
     private Timestamp started;
     private String timespent;
     private int timeSpentSeconds;

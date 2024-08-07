@@ -27,7 +27,7 @@ public class IssueFields{
     private String description;
     private int upTimestampd;
     private String summary; // issue title
-    private Timestamp resolutionTimestamp;
+    private Timestamp resolutiondate;
 
     @AttributeOverrides({
         @AttributeOverride(name="self", column=@Column(name="issue_watchers_self")),
