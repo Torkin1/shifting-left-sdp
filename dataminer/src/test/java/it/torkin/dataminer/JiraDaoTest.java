@@ -25,11 +25,10 @@ import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import jakarta.transaction.Transactional;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest()
 @ActiveProfiles("test")
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@AutoConfigureMockMvc
 public class JiraDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
 
     

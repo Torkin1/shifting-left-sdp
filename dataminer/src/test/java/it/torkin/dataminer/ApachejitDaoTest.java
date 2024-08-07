@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNotEquals;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Profile;
 import org.springframework.test.annotation.DirtiesContext;
@@ -18,11 +17,10 @@ import it.torkin.dataminer.dao.apachejit.UnableToGetCommitsException;
 import it.torkin.dataminer.dao.apachejit.UnableToGetIssuesException;
 import jakarta.transaction.Transactional;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest()
 @Profile("test")
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@AutoConfigureMockMvc
 public class ApachejitDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
 
     private ApachejitDao apachejitDao = new ApachejitDao();
