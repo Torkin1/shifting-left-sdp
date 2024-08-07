@@ -23,7 +23,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         
         init();
         printConfigs();
-        log.info("Application started");  
+        greet();
 
     }
 
@@ -38,4 +38,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         
     }
     
+    private void greet(){
+        log.info("Application started");  
+    }
 }
