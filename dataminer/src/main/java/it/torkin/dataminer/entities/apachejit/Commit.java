@@ -28,7 +28,6 @@ public class Commit {
     public Commit(CommitRecord record){
         this.hash = record.getCommit_id();
         this.isBuggy = record.isBuggy();
-        this.timestamp = new Timestamp(record.getAuthor_date());
     }
 
 

@@ -14,8 +14,6 @@ public class ApachejitConfig{
 
     /** Path to csv containing commits */
     private String commitsPath;
-    /** Path to folder containing csv of project issues */
-    private String issuesPath;
     /** True if dataset should be loaded even if it is already present in db
      * (Even if set to false, csv file will be still parsed 
      *  and new records will be stored)

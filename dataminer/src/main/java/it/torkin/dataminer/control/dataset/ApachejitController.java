@@ -1,7 +1,6 @@
 package it.torkin.dataminer.control.dataset;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,11 +8,11 @@ import org.springframework.stereotype.Service;
 import it.torkin.dataminer.config.ApachejitConfig;
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.dao.apachejit.ApachejitDao;
-import it.torkin.dataminer.dao.apachejit.Resultset;
 import it.torkin.dataminer.dao.apachejit.CommitRecord;
-import it.torkin.dataminer.dao.apachejit.IssueRecord;
+import it.torkin.dataminer.dao.apachejit.Resultset;
 import it.torkin.dataminer.dao.apachejit.UnableToGetCommitsException;
-import it.torkin.dataminer.dao.apachejit.UnableToGetIssuesException;
+import it.torkin.dataminer.dao.git.GitDao;
+import it.torkin.dataminer.dao.git.IssueNotFoundException;
 import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.dao.local.CommitDao;
@@ -42,68 +41,8 @@ public class ApachejitController implements IDatasetController{
     @Autowired private DatasetDao datasetDao;
     @Autowired private DeveloperDao developerDao;
     
-
     private Dataset dataset;
     
-    private void loadIssues(ApachejitDao apachejitDao, JiraDao jiraDao) throws UnableToLoadIssuesException {
-        /**
-         * - get the path of the issues folder from the configuration
-         * - list all csvs in the folder
-         * - for each csv
-         *  - load each issue record from csv
-         *  - for each record
-         *   - transform record into an Issue object
-         *   - fetch issue details from Jira API
-         *   - store IssueDetails reference in Issue
-         *   - load Commit matching the hash commit in Issue
-         *   - store Commit reference in Issue
-         *   - save Issue in the database
-        */
-        
-        List<Resultset<IssueRecord>> issues;        
-        Issue issue;
-        IssueRecord record;
-        int skipped;
-
-        try {
-            issues = apachejitDao.getAllIssues(apachejitConfig.getIssuesPath());
-
-            for (int i = 0; i < issues.size(); i++) {
-                try (Resultset<IssueRecord> projectIssues = issues.get(i)) {
-                    while (projectIssues.hasNext()) {
-                        
-                        record = projectIssues.next();
-                        dataset.setNrIssueRecords(dataset.getNrIssueRecords() + 1);
-                        // skip commit if it is already in db, but only if
-                         // we do not have to refresh the db
-                        if (!issueDao.existsByKey(record.getIssue_key())
-                            || apachejitConfig.isRefresh()) {
-                            try {
-                                issue = new Issue();
-                                issue.setKey(record.getIssue_key());
-                                linkIssueDetails(issue, jiraDao);
-                                linkCommit(issue, record.getCommit_id());
-                                mergeObjectsEntity(issue);
-                                issueDao.save(issue);
-                            } catch (UnableToLinkIssueDetailsException | CommitNotFoundException e) {
-                                log.warn(String.format("Skipping issue %s: %s", record.getIssue_key(), e.getMessage()));
-                                dataset.getSkippedIssuesKeys().add(record.getIssue_key());
-                            }
-                        } 
-                    }    
-                    
-                } 
-            }
-            skipped = dataset.getSkippedIssuesKeys().size();
-            if (skipped > 0) {
-                log.warn(String.format("Skipped %d issues", skipped));
-            }
-        } catch (UnableToGetIssuesException | IOException e) {
-        
-            throw new UnableToLoadIssuesException(e);
-        }
-    }
-
     private Developer resolveDeveloper(Developer developer){
         Developer resolved = developerDao.findByKey(developer.getKey());
         if(resolved == null){
@@ -147,53 +86,91 @@ public class ApachejitController implements IDatasetController{
         try {
             IssueDetails details = jiraDao.queryIssueDetails(issue.getKey());
             issue.setDetails(details);
+            mergeObjectsEntity(issue);
             
         } catch (UnableToGetIssueException e) {
             throw new UnableToLinkIssueDetailsException(e);
         }
     }
 
-    private void linkCommit(Issue issue, String commitHash) throws CommitNotFoundException {
-
-        Commit commit = commitDao.findByHash(commitHash);
-        if (commit == null){
-            throw new CommitNotFoundException(issue, commitHash);
-        }
-        issue.getCommits().add(commit);
-    }
-
-    private void loadCommits(ApachejitDao apachejitDao) throws UnableToLoadCommitsException {
-        /**
-         * - get the path of the commits file from the configuration
-         * - for each commit
-         *  - load commit record from csv
-         *  - transform it into a Commit object
-         *  - save it in the database
-         */
-
+    private void loadCommits() throws UnableToLoadCommitsException {
+// for each commit record in apachejit:
+//         - create commit entity by commit record id if not exists
+//         - mine project name among other features
+//         - resolve project repo
+//         - if repo not available locally:
+//           - download repo in resources
+//         - get issue key from repo
+//         - get commit timestamp from repo
+//         - create issue entity if not exists
+//         - link issue details
+//         - link commit
+//         - store issue
         CommitRecord record;
         Commit commit;
+        ApachejitDao apachejitDao;
+        JiraDao jiraDao;
+        Issue issue;
+
+        apachejitDao = new ApachejitDao();
+        jiraDao = new JiraDao(
+            jiraConfig.getHostname(),
+            jiraConfig.getApiVersion());
 
         try (Resultset<CommitRecord> commits = apachejitDao.getAllCommits(apachejitConfig.getCommitsPath())) {
 
             while (commits.hasNext()) {
-
                 record = commits.next();
-                // skip commit if it is already in db, but only if
-                // we do not have to refresh the db
-                if(!commitDao.existsByHash(record.getCommit_id())
-                 || apachejitConfig.isRefresh()){
-                    commit = new Commit(record);
-                    commitDao.save(commit);
-                    dataset.setNrCommits(dataset.getNrCommits() + 1);
-                 }
+                issue = null;
+                try {
+                    commit = loadCommit(record);
+                    issue = new Issue();
+                    linkIssueCommit(issue, commit);
+                    linkIssueDetails(issue, jiraDao);
+                    issueDao.save(issue);
+                } catch (IssueNotFoundException
+                 | UnableToLinkIssueDetailsException | CommitAlreadyLoadedException e) {
+                    log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.getMessage()));
+                    if(e.getClass() != CommitAlreadyLoadedException.class)
+                        dataset.getSkipped().put(record.getCommit_id(), (issue!=null)? issue.getKey() : null);
+                }
             }
+            
 
         } catch (UnableToGetCommitsException | IOException e) {
             throw new UnableToLoadCommitsException(e);
         }
         
     }
+
+    private void linkIssueCommit(Issue issue, Commit commit) throws IssueNotFoundException{
+        GitDao gitDao = new GitDao();
+        String issuekey;
+
+        issuekey = gitDao.getLinkedIssueByCommit(commit.getHash());
+        issue.getCommits().add(commit);
+        issue.setKey(issuekey);
+
+        dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
+
+    }
+
+    private Commit loadCommit(CommitRecord record) throws CommitAlreadyLoadedException {
+        
+        Commit commit;
+
+        if(commitDao.existsByHash(record.getCommit_id())
+        && !apachejitConfig.isRefresh()){
+            throw new CommitAlreadyLoadedException(record.getCommit_id(), apachejitConfig.isRefresh());
+        }
+
+        commit = new Commit(record);
+        dataset.setNrCommits(dataset.getNrCommits() + 1);
+
+        return commit;
+        
+    }
+
 
     /*
      * Loads apachejit dataset from the filesystem into the local db,
@@ -204,28 +181,17 @@ public class ApachejitController implements IDatasetController{
     @Override
     public void loadDataset() throws UnableToLoadDatasetException {
                 
-        ApachejitDao apachejitDao;
-        JiraDao jiraDao;
 
         if(apachejitConfig.isSkipLoad()) return;
 
         try {
                 
-            if(dataset == null){
-                dataset = new Dataset();
-                dataset.setName("apachejit");
-            }
-
-            apachejitDao = new ApachejitDao();
-            jiraDao = new JiraDao(
-                jiraConfig.getHostname(),
-                jiraConfig.getApiVersion());
-            
-            loadCommits(apachejitDao);
-            loadIssues(apachejitDao, jiraDao);
+            dataset = new Dataset();
+            dataset.setName("apachejit");
+            loadCommits();
             datasetDao.save(dataset);
 
-        } catch (UnableToLoadCommitsException | UnableToLoadIssuesException e) {
+        } catch (UnableToLoadCommitsException e) {
             dataset = null;
             throw new UnableToLoadDatasetException(e);
         }
