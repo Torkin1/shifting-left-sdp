@@ -158,7 +158,7 @@ public class ApachejitController implements IDatasetController{
         Commit commit;
 
         if(commitDao.existsByHash(record.getCommit_id())
-        && !apachejitConfig.isRefresh()){
+        && !apachejitConfig.getRefresh()){
             throw new CommitAlreadyLoadedException(record.getCommit_id(), apachejitConfig.isRefresh());
         }
 
@@ -180,7 +180,7 @@ public class ApachejitController implements IDatasetController{
     public void loadDataset() throws UnableToLoadDatasetException {
                 
 
-        if(apachejitConfig.isSkipLoad()) return;
+        if(apachejitConfig.getSkipLoad()) return;
 
         try {
                 

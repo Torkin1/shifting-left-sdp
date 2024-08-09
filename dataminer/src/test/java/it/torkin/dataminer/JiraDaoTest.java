@@ -8,7 +8,7 @@ import java.io.FileReader;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -19,6 +19,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 
+import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
@@ -33,6 +34,7 @@ public class JiraDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
 
     
     private static final String ISSUE_EXAMPLES_DIR = "./src/test/resources/issue_examples/";
+    @Autowired private JiraConfig jiraConfig;
     
     @Test
     @Transactional
@@ -45,7 +47,7 @@ public class JiraDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
 
         Gson gson = new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();
 
-        JiraDao jiraDao = new JiraDao("issues.apache.org", 2); 
+        JiraDao jiraDao = new JiraDao(jiraConfig); 
         
         for (File issue_sample : issue_samples){
             expected = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
