@@ -11,7 +11,6 @@ import it.torkin.dataminer.dao.apachejit.ApachejitDao;
 import it.torkin.dataminer.dao.apachejit.CommitRecord;
 import it.torkin.dataminer.dao.apachejit.Resultset;
 import it.torkin.dataminer.dao.apachejit.UnableToGetCommitsException;
-import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.git.IssueNotFoundException;
 import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
@@ -36,6 +35,7 @@ public class ApachejitController implements IDatasetController{
 
     @Autowired private ApachejitConfig apachejitConfig;
     @Autowired private JiraConfig jiraConfig;
+
     @Autowired private CommitDao commitDao;
     @Autowired private IssueDao issueDao;
     @Autowired private DatasetDao datasetDao;
@@ -142,14 +142,16 @@ public class ApachejitController implements IDatasetController{
     }
 
     private void linkIssueCommit(Issue issue, Commit commit) throws IssueNotFoundException{
-        GitDao gitDao = new GitDao();
-        String issuekey;
+        
+        // TODO: use hashmap of git daos keyed by project name
+        // GitDao gitDao = new GitDao(gitConfig);
+        // String issuekey;
 
-        issuekey = gitDao.getLinkedIssueByCommit(commit.getHash());
-        issue.getCommits().add(commit);
-        issue.setKey(issuekey);
+        // issuekey = gitDao.getLinkedIssueKeyByCommit(commit.getHash());
+        // issue.getCommits().add(commit);
+        // issue.setKey(issuekey);
 
-        dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
+        // dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
 
     }
 
@@ -159,7 +161,7 @@ public class ApachejitController implements IDatasetController{
 
         if(commitDao.existsByHash(record.getCommit_id())
         && !apachejitConfig.getRefresh()){
-            throw new CommitAlreadyLoadedException(record.getCommit_id(), apachejitConfig.isRefresh());
+            throw new CommitAlreadyLoadedException(record.getCommit_id(), apachejitConfig.getRefresh());
         }
 
         commit = new Commit(record);

@@ -28,5 +28,15 @@
     "name": "dataminer.jira.api-version",
     "type": "java.lang.String",
     "description": "Api version"
+  },
+  {
+    "name": "dataminer.git.hostname",
+    "type": "java.lang.String",
+    "description": "remote hostname where repos are downloaded if not available locally'"
+  },
+  {
+    "name": "dataminer.git.repos-dir",
+    "type": "java.lang.String",
+    "description": "Dir where repos will be stored'"
   }
 ]}

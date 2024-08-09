@@ -13,6 +13,7 @@ Inconsistencies found:
 - `apachejit_total` records refer to projects using a string in the format `apache/long-project-name`, while in the `data` folder projects are referred using the format `NAME`;
 - `apachejit_total` mentions a project named `apache-hadoop`, but project data is not present in the `data` folder;
 - In the folder `data` there is a project file named `MESOS` which is not present in `apachejit_total` file.
+- Issues in data folder refer to bugs and corresponding fixing commit. We do not have issue keys linked to bug inducing commits (they must be mined in commit comment)
 
 Citing the apachejit paper:
 > After collecting fixing commits as described above for all 15
