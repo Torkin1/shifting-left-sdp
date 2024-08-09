@@ -22,7 +22,7 @@ public class JiraDao {
         this.apiVersion = config.getApiVersion();
     }
         
-    public String forgeQuery(QueryTemplate queryTemplate, Object... args){
+    public String forgeQuery(QueryFormat queryTemplate, Object... args){
         List<Object> argsList = new ArrayList<>();
         argsList.add(hostname);
         argsList.add(apiVersion);
@@ -36,7 +36,7 @@ public class JiraDao {
         IssueDetails issue;
 
         try {
-            query = forgeQuery(QueryTemplate.GET_ISSUE_BY_KEY, key);
+            query = forgeQuery(QueryFormat.GET_ISSUE_BY_KEY, key);
             issue = new ClientResourceRequest<>(IssueDetails.class, query).getResource();
             /**
              * Retrieved issue could be different from the requested one
