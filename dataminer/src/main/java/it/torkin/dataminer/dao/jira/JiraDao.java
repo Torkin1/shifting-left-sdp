@@ -4,19 +4,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.rest.ClientResourceRequest;
 import it.torkin.dataminer.rest.UnableToGetResourceException;
-import lombok.AllArgsConstructor;
 
 /**
  * Client for Jira REST API
  */
-@AllArgsConstructor
 public class JiraDao {
 
     private String hostname;
     private int apiVersion;
+
+    public JiraDao(JiraConfig config){
+        this.hostname = config.getHostname();
+        this.apiVersion = config.getApiVersion();
+    }
         
     public String forgeQuery(QueryTemplate queryTemplate, Object... args){
         List<Object> argsList = new ArrayList<>();

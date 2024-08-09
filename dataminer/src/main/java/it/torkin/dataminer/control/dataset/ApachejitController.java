@@ -112,12 +112,10 @@ public class ApachejitController implements IDatasetController{
         JiraDao jiraDao;
         Issue issue;
 
-        apachejitDao = new ApachejitDao();
-        jiraDao = new JiraDao(
-            jiraConfig.getHostname(),
-            jiraConfig.getApiVersion());
+        apachejitDao = new ApachejitDao(apachejitConfig);
+        jiraDao = new JiraDao(jiraConfig);
 
-        try (Resultset<CommitRecord> commits = apachejitDao.getAllCommits(apachejitConfig.getCommitsPath())) {
+        try (Resultset<CommitRecord> commits = apachejitDao.getAllCommits()) {
 
             while (commits.hasNext()) {
                 record = commits.next();
