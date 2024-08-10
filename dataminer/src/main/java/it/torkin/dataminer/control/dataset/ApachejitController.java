@@ -59,6 +59,7 @@ public class ApachejitController implements IDatasetController{
      * @return
      */
     private Developer mergeDeveloper(Developer developer){
+        if (developer == null) return null;
         Developer merged = developerDao.findByKey(developer.getKey());
         if(merged == null){
             merged = developerDao.save(developer);
