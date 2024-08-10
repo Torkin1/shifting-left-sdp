@@ -1,5 +1,6 @@
 package it.torkin.dataminer;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import java.io.File;
@@ -30,6 +31,7 @@ public class GitDaoTest {
     @Autowired private GitConfig gitConfig;
 
     private final String projectName = "Torkin1/test";
+    private final String commitHash = "3b12fed371b70bc25c83bdf10ee0508c45e8b474";
     
     @Test
     public void testRepoInit() throws Exception{
@@ -37,8 +39,6 @@ public class GitDaoTest {
         try (GitDao gitDao = new GitDao(gitConfig, projectName)){
             assertFalse(isEmpty(new File(gitConfig.getReposDir() + File.pathSeparator + projectName).toPath()));
         }
-
-        
     }
 
     private boolean isEmpty(Path path) throws IOException {
@@ -49,5 +49,20 @@ public class GitDaoTest {
         }
 
         return false;
-    }    
+    }
+
+    
+    @Test
+    public void testGetLinkedIssueKeyByCommit() throws Exception{
+        
+        String expected = "PROJ-123";
+        String actual;
+        
+        try (GitDao gitDao = new GitDao(gitConfig, projectName)){
+
+            actual = gitDao.getLinkedIssueKeyByCommit(commitHash);
+            assertEquals(expected, actual);
+
+        }
+    }
 }

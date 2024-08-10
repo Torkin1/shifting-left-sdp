@@ -22,5 +22,10 @@ public class GitConfig {
     /** Dir where repos will be stored */
     @NotBlank
     private String reposDir;
+
+    /**Used to extract linked issue key in commit message
+     */
+    @NotBlank
+    private String linkedIssueKeyRegexp;
     
 }

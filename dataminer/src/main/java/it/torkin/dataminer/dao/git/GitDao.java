@@ -1,18 +1,25 @@
 package it.torkin.dataminer.dao.git;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TextProgressMonitor;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 import it.torkin.dataminer.config.GitConfig;
+import it.torkin.dataminer.toolbox.NoMatchFoundException;
+import it.torkin.dataminer.toolbox.Regex;
 
 public class GitDao implements AutoCloseable{
 
     private String remoteUrl;
     private File localDir;
+    private String issueKeyRegexp;
 
     private Repository repository;
         
@@ -20,7 +27,7 @@ public class GitDao implements AutoCloseable{
                 
         this.remoteUrl = forgeRemote(config.getHostname(), projectName);
         this.localDir = new File(forgeLocal(config.getReposDir(), projectName));
-
+        this.issueKeyRegexp = config.getLinkedIssueKeyRegexp();
         initRepo();
     }
 
@@ -67,16 +74,45 @@ public class GitDao implements AutoCloseable{
         
     }
 
-    /** TODO: stub 
-     * @throws IssueNotFoundException */
-    public String getLinkedIssueKeyByCommit(String hash) throws IssueNotFoundException {
+    /** Gets linked issue key from commit message
+     * @throws IssueNotFoundException 
+     * @throws UnableToGetLinkedIssueKeyException */
+    public String getLinkedIssueKeyByCommit(String hash) throws UnableToGetLinkedIssueKeyException {
         
-        String key = "PROJ-123";
+        String key;
+        String message;
+        RevCommit commit;
+        
+        try {
+            commit = getCommit(hash);
+            message = commit.getFullMessage();
+            key = extractIssueKey(message);
+            return key;
 
-        if (key == null) throw new IssueNotFoundException(hash);
+        } catch (UnableToGetCommitException | NoMatchFoundException e) {
+            throw new UnableToGetLinkedIssueKeyException(hash, localDir, e);
+        }
 
-        return key;
+        
+    }
 
+    private String extractIssueKey(String comment) throws NoMatchFoundException {
+        
+        return Regex.findFirst(issueKeyRegexp, comment);
+    }
+
+    private RevCommit getCommit(String hash) throws UnableToGetCommitException {
+
+        RevCommit commit = null;
+        try (RevWalk walk = new RevWalk(repository)) {
+            
+            commit = walk.parseCommit(repository.resolve(hash));
+            return commit;
+
+        } catch (RevisionSyntaxException | IOException e) {
+
+            throw new UnableToGetCommitException(hash, e);
+        }
     }
 
     @Override
