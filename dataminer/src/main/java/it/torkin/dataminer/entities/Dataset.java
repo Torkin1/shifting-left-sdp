@@ -1,7 +1,9 @@
 package it.torkin.dataminer.entities;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -34,6 +36,10 @@ public class Dataset {
     @Column(nullable = false)
     private int nrLinkedCommits;
 
+    /** Set of issues with multiple commits linked to it */
+    @ElementCollection
+    private Set<String> issuesWithMultipleCommits = new HashSet<>();
+
     /**
      * Pairs of commit_id, issue_key that could not be loaded from the dataset
      * (they could be outliers, malformed,
@@ -47,5 +53,18 @@ public class Dataset {
 
     public float getLinkage(){
         return (float)nrLinkedCommits/nrCommits;
+    }
+
+    public String summary(){
+
+        return String.format("Dataset %s:\n"
+            + "Nr of commits: %d\n"
+            + "Nr of linked commits: %d\n"
+            + "Linkage: %.2f\n"
+            + "Nr Issues with multiple commits: %d\n"
+            + "Nr Skipped commits: %s\n",
+            name, nrCommits, nrLinkedCommits, getLinkage(),
+             issuesWithMultipleCommits.size(), skipped.size());
+
     }
 }

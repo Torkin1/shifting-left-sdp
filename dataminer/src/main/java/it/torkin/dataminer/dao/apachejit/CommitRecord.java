@@ -8,6 +8,6 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CommitRecord {
     private String commit_id; // commit hash
-    private String project;   // project key
+    private String project;   // project name
     private boolean buggy;    // true if the commit induced a bug
 }

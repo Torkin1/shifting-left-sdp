@@ -20,6 +20,7 @@ public class GitDao implements AutoCloseable{
     private String remoteUrl;
     private File localDir;
     private String issueKeyRegexp;
+    private String projectName;
 
     private Repository repository;
         
@@ -28,6 +29,7 @@ public class GitDao implements AutoCloseable{
         this.remoteUrl = forgeRemote(config.getHostname(), projectName);
         this.localDir = new File(forgeLocal(config.getReposDir(), projectName));
         this.issueKeyRegexp = config.getLinkedIssueKeyRegexp();
+        this.projectName = projectName;
         initRepo();
     }
 
@@ -90,7 +92,7 @@ public class GitDao implements AutoCloseable{
             return key;
 
         } catch (UnableToGetCommitException | NoMatchFoundException e) {
-            throw new UnableToGetLinkedIssueKeyException(hash, localDir, e);
+            throw new UnableToGetLinkedIssueKeyException(hash, projectName, e);
         }
 
         

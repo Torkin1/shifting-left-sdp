@@ -1,5 +1,7 @@
 package it.torkin.dataminer;
 
+import static org.junit.Assert.assertNotEquals;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +12,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.UnableToLoadDatasetException;
+import it.torkin.dataminer.entities.Dataset;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,8 +29,12 @@ public class DatasetControllerTest {
     @Transactional
     public void testLoadDataset() throws UnableToLoadDatasetException{
       
+        Dataset dataset;
+        
         datasetController.loadDataset();
-        log.info(datasetController.getDataset().toString());
+        dataset = datasetController.getDataset();
+        log.info(dataset.summary());
+        assertNotEquals(dataset.getNrCommits(), dataset.getSkipped().size());
 
     }
 }

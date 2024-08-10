@@ -1,17 +1,22 @@
 package it.torkin.dataminer.control.dataset;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.config.ApachejitConfig;
+import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.dao.apachejit.ApachejitDao;
 import it.torkin.dataminer.dao.apachejit.CommitRecord;
 import it.torkin.dataminer.dao.apachejit.Resultset;
 import it.torkin.dataminer.dao.apachejit.UnableToGetCommitsException;
-import it.torkin.dataminer.dao.git.IssueNotFoundException;
+import it.torkin.dataminer.dao.git.GitDao;
+import it.torkin.dataminer.dao.git.UnableToGetLinkedIssueKeyException;
+import it.torkin.dataminer.dao.git.UnableToInitRepoException;
 import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.dao.local.CommitDao;
@@ -35,6 +40,7 @@ public class ApachejitController implements IDatasetController{
 
     @Autowired private ApachejitConfig apachejitConfig;
     @Autowired private JiraConfig jiraConfig;
+    @Autowired private GitConfig gitConfig;
 
     @Autowired private CommitDao commitDao;
     @Autowired private IssueDao issueDao;
@@ -42,19 +48,27 @@ public class ApachejitController implements IDatasetController{
     @Autowired private DeveloperDao developerDao;
     
     private Dataset dataset;
+    private Map<String, GitDao> gitdaoByProject = new HashMap<>();
     
-    private Developer resolveDeveloper(Developer developer){
-        Developer resolved = developerDao.findByKey(developer.getKey());
-        if(resolved == null){
-            resolved = developerDao.save(developer);
+    /**
+     * Checks if the developer object refers to an existing entity in the local db.
+     * If that's the case, the existing entity is returned, otherwise the developer
+     * object is saved in the db and returned.
+     * @param developer
+     * @return
+     */
+    private Developer mergeDeveloper(Developer developer){
+        Developer merged = developerDao.findByKey(developer.getKey());
+        if(merged == null){
+            merged = developerDao.save(developer);
         }
-        return resolved;
+        return merged;
 
     }
         
     
     /** https://stackoverflow.com/questions/78844495/org-springframework-dao-duplicatekeyexception-a-different-object-with-the-same */
-    private void mergeObjectsEntity(Issue issue){
+    private void mergeEntities(Issue issue){
 
         mergeDevelopers(issue);
 
@@ -64,21 +78,21 @@ public class ApachejitController implements IDatasetController{
 
         IssueFields fields = issue.getDetails().getFields();
         
-        fields.setAssignee(resolveDeveloper(fields.getAssignee()));
+        fields.setAssignee(mergeDeveloper(fields.getAssignee()));
         fields.setCreator(fields.getCreator());
         fields.setReporter(fields.getReporter());
 
         for (IssueComment comment : fields.getComment().getComments()) {
             
-            comment.setAuthor(resolveDeveloper(comment.getAuthor()));
-            comment.setUpdateAuthor(resolveDeveloper(comment.getUpdateAuthor())); 
+            comment.setAuthor(mergeDeveloper(comment.getAuthor()));
+            comment.setUpdateAuthor(mergeDeveloper(comment.getUpdateAuthor())); 
         }
         for (IssueWorkItem workItem : fields.getWorklog().getWorklogs()) {
-            workItem.setAuthor(resolveDeveloper(workItem.getAuthor()));
-            workItem.setUpdateAuthor(resolveDeveloper(workItem.getUpdateAuthor()));
+            workItem.setAuthor(mergeDeveloper(workItem.getAuthor()));
+            workItem.setUpdateAuthor(mergeDeveloper(workItem.getUpdateAuthor()));
         }
         for(IssueAttachment attachment : fields.getAttachments()){
-            attachment.setAuthor(resolveDeveloper(attachment.getAuthor()));
+            attachment.setAuthor(mergeDeveloper(attachment.getAuthor()));
         }
     }
 
@@ -86,7 +100,7 @@ public class ApachejitController implements IDatasetController{
         try {
             IssueDetails details = jiraDao.queryIssueDetails(issue.getKey());
             issue.setDetails(details);
-            mergeObjectsEntity(issue);
+            mergeEntities(issue);
             
         } catch (UnableToGetIssueException e) {
             throw new UnableToLinkIssueDetailsException(e);
@@ -121,14 +135,16 @@ public class ApachejitController implements IDatasetController{
                 record = commits.next();
                 issue = null;
                 try {
+                    
                     commit = loadCommit(record);
                     issue = new Issue();
                     linkIssueCommit(issue, commit);
                     linkIssueDetails(issue, jiraDao);
                     issueDao.save(issue);
-                } catch (IssueNotFoundException
-                 | UnableToLinkIssueDetailsException | CommitAlreadyLoadedException e) {
-                    log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.getMessage()));
+                
+                } catch (UnableToLinkIssueDetailsException
+                 | CommitAlreadyLoadedException | UnableToLinkIssueException e) {
+                    log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.toString()));
                     if(e.getClass() != CommitAlreadyLoadedException.class)
                         dataset.getSkipped().put(record.getCommit_id(), (issue!=null)? issue.getKey() : null);
                 }
@@ -141,20 +157,50 @@ public class ApachejitController implements IDatasetController{
         
     }
 
-    private void linkIssueCommit(Issue issue, Commit commit) throws IssueNotFoundException{
+    private GitDao getGitdaoByProject(String project) throws UnableToInitRepoException{
+        if(!gitdaoByProject.containsKey(project))
+            gitdaoByProject.put(project, new GitDao(gitConfig, project));
+        return gitdaoByProject.get(project);
+    }
+    
+    /**
+     * Loads in Issue object the key of the issue linked to the commit
+     * and registers the commit in the issue object
+     * @param issue
+     * @param commit
+     * @throws UnableToLinkIssueException
+     */
+    private void linkIssueCommit(Issue issue, Commit commit) throws UnableToLinkIssueException{
         
-        // TODO: use hashmap of git daos keyed by project name
-        // GitDao gitDao = new GitDao(gitConfig);
-        // String issuekey;
+        String project;
+        String issuekey;
+        GitDao gitDao;
 
-        // issuekey = gitDao.getLinkedIssueKeyByCommit(commit.getHash());
-        // issue.getCommits().add(commit);
-        // issue.setKey(issuekey);
+        try {
+            
+            // Gets key of issue linked to commit
+            project = commit.getRepoName();            
+            gitDao = getGitdaoByProject(project);
+            issuekey = gitDao.getLinkedIssueKeyByCommit(commit.getHash());
+            issue.setKey(issuekey);
 
-        // dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
+            // adds commit to issue
+            issue.getCommits().add(commit);
 
+            dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
+            if (issue.getCommits().size() > 1) 
+                dataset.getIssuesWithMultipleCommits().add(issuekey);
+            
+
+        } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException e) {
+            throw new UnableToLinkIssueException(e);
+        }
+        
     }
 
+    /**
+     * Loads a commit record from apachejit
+     */
     private Commit loadCommit(CommitRecord record) throws CommitAlreadyLoadedException {
         
         Commit commit;
@@ -171,7 +217,7 @@ public class ApachejitController implements IDatasetController{
         
     }
 
-
+    
     /*
      * Loads apachejit dataset from the filesystem into the local db,
      * fetching issue details from Jira API
@@ -186,16 +232,34 @@ public class ApachejitController implements IDatasetController{
 
         try {
                 
-            dataset = new Dataset();
-            dataset.setName("apachejit");
+            init();
             loadCommits();
             datasetDao.save(dataset);
 
         } catch (UnableToLoadCommitsException e) {
             dataset = null;
             throw new UnableToLoadDatasetException(e);
+        } finally {
+            exit();
         }
     }
+
+    private void init(){
+        dataset = new Dataset();
+        dataset.setName("apachejit");
+    }
+
+    private void exit() {
+        
+        gitdaoByProject.forEach((project, gitDao) -> {
+            try(gitDao) {
+            } catch (Exception e) {
+                log.warn(String.format("Unable to close git dao of project %s: %s", project, e.getMessage()));
+            }
+        });
+        gitdaoByProject.clear();
+    }
+
 
     @Override
     public Dataset getDataset() {

@@ -24,10 +24,12 @@ public class Commit {
     
     private boolean isBuggy;
     private Timestamp timestamp;
+    private String repoName;
 
     public Commit(CommitRecord record){
         this.hash = record.getCommit_id();
         this.isBuggy = record.isBuggy();
+        this.repoName = record.getProject();
     }
 
 
