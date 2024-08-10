@@ -15,6 +15,7 @@ import it.torkin.dataminer.dao.apachejit.CommitRecord;
 import it.torkin.dataminer.dao.apachejit.Resultset;
 import it.torkin.dataminer.dao.apachejit.UnableToGetCommitsException;
 import it.torkin.dataminer.dao.git.GitDao;
+import it.torkin.dataminer.dao.git.UnableToGetCommitDetailsException;
 import it.torkin.dataminer.dao.git.UnableToGetLinkedIssueKeyException;
 import it.torkin.dataminer.dao.git.UnableToInitRepoException;
 import it.torkin.dataminer.dao.jira.JiraDao;
@@ -124,6 +125,7 @@ public class ApachejitController implements IDatasetController{
         Commit commit;
         ApachejitDao apachejitDao;
         JiraDao jiraDao;
+        GitDao gitDao;
         Issue issue;
 
         apachejitDao = new ApachejitDao(apachejitConfig);
@@ -137,13 +139,17 @@ public class ApachejitController implements IDatasetController{
                 try {
                     
                     commit = loadCommit(record);
+                    gitDao = getGitdaoByProject(commit.getRepoName());
+                    gitDao.getCommitDetails(commit);
+
                     issue = new Issue();
                     linkIssueCommit(issue, commit);
                     linkIssueDetails(issue, jiraDao);
                     issueDao.save(issue);
                 
                 } catch (UnableToLinkIssueDetailsException
-                 | CommitAlreadyLoadedException | UnableToLinkIssueException e) {
+                 | CommitAlreadyLoadedException | UnableToLinkIssueException
+                 | UnableToGetCommitDetailsException | UnableToInitRepoException e) {
                     log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.toString()));
                     if(e.getClass() != CommitAlreadyLoadedException.class)
                         dataset.getSkipped().put(record.getCommit_id(), (issue!=null)? issue.getKey() : null);

@@ -2,6 +2,7 @@ package it.torkin.dataminer.dao.git;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Timestamp;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
@@ -12,6 +13,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 import it.torkin.dataminer.config.GitConfig;
+import it.torkin.dataminer.entities.apachejit.Commit;
 import it.torkin.dataminer.toolbox.NoMatchFoundException;
 import it.torkin.dataminer.toolbox.Regex;
 
@@ -97,6 +99,23 @@ public class GitDao implements AutoCloseable{
 
         
     }
+
+    public void getCommitDetails(Commit commit) throws UnableToGetCommitDetailsException {
+
+        long msCommitTime;
+        
+        try {
+            RevCommit commitDetails = getCommit(commit.getHash());
+            // Timestamp wants milliseconds, while git commit time is in seconds since the epoch.
+            // We must beware of overflow 
+            msCommitTime = commitDetails.getCommitTime();
+            msCommitTime *= 1000;
+            commit.setTimestamp(new Timestamp(msCommitTime));
+        } catch (UnableToGetCommitException e) {
+            throw new UnableToGetCommitDetailsException(commit.getHash(), e);
+        }
+    }
+
 
     private String extractIssueKey(String comment) throws NoMatchFoundException {
         
