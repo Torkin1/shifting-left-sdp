@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.dao.local.ComponentDao;
 import it.torkin.dataminer.dao.local.DeveloperDao;
+import it.torkin.dataminer.dao.local.IssueLinkTypeDao;
 import it.torkin.dataminer.dao.local.IssuePointerDao;
 import it.torkin.dataminer.dao.local.IssuePriorityDao;
 import it.torkin.dataminer.dao.local.IssueStatusDao;
@@ -18,6 +19,7 @@ import it.torkin.dataminer.entities.jira.issue.IssueComment;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.entities.jira.issue.IssueLink;
+import it.torkin.dataminer.entities.jira.issue.IssueLinkType;
 import it.torkin.dataminer.entities.jira.issue.IssuePointer;
 import it.torkin.dataminer.entities.jira.issue.IssuePriority;
 import it.torkin.dataminer.entities.jira.issue.IssueStatus;
@@ -37,6 +39,7 @@ public class EntityMerger implements IEntityMerger{
     @Autowired private ProjectDao projectDao;
     @Autowired private ComponentDao componentDao;
     @Autowired private IssuePointerDao issuePointerDao;
+    @Autowired private IssueLinkTypeDao issueLinkTypeDao;
 
     private class EntityFinder<T>{
 
@@ -73,6 +76,9 @@ public class EntityMerger implements IEntityMerger{
             }
             else if (object instanceof IssuePointer){
                 dao = (JpaRepository<T, String>) issuePointerDao;
+            }
+            else if (object instanceof IssueLinkType){
+                dao = (JpaRepository<T, String>) issueLinkTypeDao;
             }
             else{
                 throw new IllegalArgumentException(String.format("Unsupported entity type: %s", object.getClass().getName()));
@@ -123,6 +129,7 @@ public class EntityMerger implements IEntityMerger{
         });
         
         for (IssueLink link : fields.getIssuelinks()) {
+            link.setType(new EntityFinder<IssueLinkType>().find(link.getType(), link.getType().getJiraId()));
             link.setInwardIssue(findIssuePointer(link.getInwardIssue()));
             link.setOutwardIssue(findIssuePointer(link.getOutwardIssue()));
         }

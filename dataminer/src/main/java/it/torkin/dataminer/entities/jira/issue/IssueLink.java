@@ -24,12 +24,12 @@ public class IssueLink{
         cascade = { CascadeType.PERSIST, CascadeType.MERGE},
         fetch = FetchType.LAZY)
     private IssueLinkType type;
-    @OneToOne(
+    @ManyToOne(
         optional = true,
         cascade = { CascadeType.PERSIST, CascadeType.MERGE},
         fetch = FetchType.LAZY)
     private IssuePointer outwardIssue;
-    @OneToOne(
+    @ManyToOne(
         optional = true,
         cascade = { CascadeType.PERSIST, CascadeType.MERGE},
         fetch = FetchType.LAZY)
