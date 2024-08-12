@@ -83,6 +83,7 @@ public class GitDao implements AutoCloseable{
 
             @Override
             public void beginTask(String title, int totalWork) {
+                if(subtaskProgress != null) subtaskProgress.close();
                 subtaskProgress = new ProgressBar(title, totalWork);
             }
 
