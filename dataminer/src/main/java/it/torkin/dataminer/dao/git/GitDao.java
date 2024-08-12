@@ -6,8 +6,8 @@ import java.sql.Timestamp;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
+import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.TextProgressMonitor;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -16,6 +16,7 @@ import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.entities.apachejit.Commit;
 import it.torkin.dataminer.toolbox.NoMatchFoundException;
 import it.torkin.dataminer.toolbox.Regex;
+import me.tongfei.progressbar.ProgressBar;
 
 public class GitDao implements AutoCloseable{
 
@@ -70,7 +71,52 @@ public class GitDao implements AutoCloseable{
         try (Git git = Git.cloneRepository()
          .setURI(remoteUrl)
          .setDirectory(localDir)
-         .setProgressMonitor(new TextProgressMonitor())
+         .setProgressMonitor(new ProgressMonitor() {
+
+            private ProgressBar progress;
+            private ProgressBar subtaskProgress;
+            
+            @Override
+            public void start(int totalTasks) {
+                progress = new ProgressBar(String.format("cloning repository %s", projectName), totalTasks);
+            }
+
+            @Override
+            public void beginTask(String title, int totalWork) {
+                subtaskProgress = new ProgressBar(title, totalWork);
+            }
+
+            @Override
+            public void update(int completed) {
+                if (subtaskProgress != null)
+                {
+                    subtaskProgress.stepBy(completed);
+                    if (subtaskProgress.getMax() == subtaskProgress.getCurrent()){
+                        subtaskProgress.close();
+                    }
+                }
+            }
+
+            @Override
+            public void endTask() {
+                subtaskProgress.close();
+                progress.step();
+                if(progress.getMax() == progress.getCurrent()){
+                    progress.close();
+                }
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return false;
+            }
+
+            @Override
+            public void showDuration(boolean enabled) {
+                // not implemented
+            }
+            
+         })
          .call()) { }
         catch(Exception e){
             throw new UnableToCloneRepoException(e, remoteUrl, localDir);

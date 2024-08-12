@@ -27,4 +27,8 @@ public class ApachejitConfig{
      *  effectively denying the dataset load*/
     @NotNull
     private Boolean skipLoad;
+
+    /**Specify this if expected dataset size is known  */
+
+    private Integer expectedSize;
 }

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import it.torkin.dataminer.config.ApachejitConfig;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
+import it.torkin.dataminer.control.dataset.IDatasetController;
+import it.torkin.dataminer.control.dataset.UnableToLoadDatasetException;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -19,11 +21,20 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Autowired private ApachejitConfig apachejitConfig;
     @Autowired private GitConfig gitConfig;
 
+    @Autowired private IDatasetController datasetController;
+
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         
         init();
         greet();
+
+        try {
+            datasetController.loadDataset();
+        } catch (UnableToLoadDatasetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
     }
 

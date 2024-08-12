@@ -43,5 +43,10 @@
     "name": "dataminer.git.linked-issue-key-regexp",
     "type": "java.lang.String",
     "description": "Used to extract linked issue key in commit message"
+  },
+  {
+    "name": "dataminer.apachejit.expected-size",
+    "type": "java.lang.String",
+    "description": "Specify this if expected dataset size is known"
   }
 ]}

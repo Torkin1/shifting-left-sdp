@@ -28,6 +28,7 @@ import it.torkin.dataminer.entities.apachejit.Commit;
 import it.torkin.dataminer.entities.apachejit.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import lombok.extern.slf4j.Slf4j;
+import me.tongfei.progressbar.ProgressBar;
 
 @Service
 @Slf4j
@@ -81,33 +82,37 @@ public class ApachejitController implements IDatasetController{
         apachejitDao = new ApachejitDao(apachejitConfig);
         jiraDao = new JiraDao(jiraConfig);
 
-        try (Resultset<CommitRecord> commits = apachejitDao.getAllCommits()) {
+        try (Resultset<CommitRecord> commits = apachejitDao.getAllCommits();
+                ProgressBar progress = new ProgressBar("loading commits", apachejitConfig.getExpectedSize() == null? -1 : apachejitConfig.getExpectedSize())) {
 
             while (commits.hasNext()) {
                 record = commits.next();
                 issue = null;
                 try {
-                    
                     commit = loadCommit(record);
                     gitDao = getGitdaoByProject(commit.getRepoName());
                     gitDao.getCommitDetails(commit);
 
                     issue = new Issue();
+                    progress.setExtraMessage(String.format("mining linked issue for commit %s", commit.getHash()));
                     linkIssueCommit(issue, commit);
+                    progress.setExtraMessage(String.format("fetching issue details for issue %s", issue.getKey()));
                     linkIssueDetails(issue, jiraDao);
-                    issueDao.save(issue);
+                    if(!issueDao.existsByKey(issue.getKey()))
+                        issueDao.save(issue);
                 
                 } catch (UnableToLinkIssueDetailsException
                  | CommitAlreadyLoadedException | UnableToLinkIssueException
-                 | UnableToGetCommitDetailsException | UnableToInitRepoException e) {
+                 | UnableToGetCommitDetailsException e) {
                     log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.toString()));
                     if(e.getClass() != CommitAlreadyLoadedException.class)
                         dataset.getSkipped().put(record.getCommit_id(), (issue!=null)? issue.getKey() : null);
                 }
+                progress.step();
             }
             
 
-        } catch (UnableToGetCommitsException | IOException e) {
+        } catch (UnableToGetCommitsException | IOException | UnableToInitRepoException e) {
             throw new UnableToLoadCommitsException(e);
         }
         
