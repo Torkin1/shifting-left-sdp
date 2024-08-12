@@ -22,17 +22,11 @@ import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
-import it.torkin.dataminer.dao.local.DeveloperDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.Dataset;
 import it.torkin.dataminer.entities.apachejit.Commit;
 import it.torkin.dataminer.entities.apachejit.Issue;
-import it.torkin.dataminer.entities.jira.Developer;
-import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
-import it.torkin.dataminer.entities.jira.issue.IssueComment;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
-import it.torkin.dataminer.entities.jira.issue.IssueFields;
-import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -46,63 +40,18 @@ public class ApachejitController implements IDatasetController{
     @Autowired private CommitDao commitDao;
     @Autowired private IssueDao issueDao;
     @Autowired private DatasetDao datasetDao;
-    @Autowired private DeveloperDao developerDao;
+
+    @Autowired private EntityMerger entityMerger;
     
     private Dataset dataset;
-    private Map<String, GitDao> gitdaoByProject = new HashMap<>();
+    private Map<String, GitDao> gitdaoByProject = new HashMap<>();        
     
-    /**
-     * Checks if the developer object refers to an existing entity in the local db.
-     * If that's the case, the existing entity is returned, otherwise the developer
-     * object is saved in the db and returned.
-     * @param developer
-     * @return
-     */
-    private Developer mergeDeveloper(Developer developer){
-        if (developer == null) return null;
-        Developer merged = developerDao.findByKey(developer.getKey());
-        if(merged == null){
-            merged = developerDao.save(developer);
-        }
-        return merged;
-
-    }
-        
     
-    /** https://stackoverflow.com/questions/78844495/org-springframework-dao-duplicatekeyexception-a-different-object-with-the-same */
-    private void mergeEntities(Issue issue){
-
-        mergeDevelopers(issue);
-
-    }
-    
-    private void mergeDevelopers(Issue issue){
-
-        IssueFields fields = issue.getDetails().getFields();
-        
-        fields.setAssignee(mergeDeveloper(fields.getAssignee()));
-        fields.setCreator(fields.getCreator());
-        fields.setReporter(fields.getReporter());
-
-        for (IssueComment comment : fields.getComment().getComments()) {
-            
-            comment.setAuthor(mergeDeveloper(comment.getAuthor()));
-            comment.setUpdateAuthor(mergeDeveloper(comment.getUpdateAuthor())); 
-        }
-        for (IssueWorkItem workItem : fields.getWorklog().getWorklogs()) {
-            workItem.setAuthor(mergeDeveloper(workItem.getAuthor()));
-            workItem.setUpdateAuthor(mergeDeveloper(workItem.getUpdateAuthor()));
-        }
-        for(IssueAttachment attachment : fields.getAttachments()){
-            attachment.setAuthor(mergeDeveloper(attachment.getAuthor()));
-        }
-    }
-
     private void linkIssueDetails(Issue issue, JiraDao jiraDao) throws UnableToLinkIssueDetailsException {
         try {
             IssueDetails details = jiraDao.queryIssueDetails(issue.getKey());
+            entityMerger.mergeIssueDetails(details);
             issue.setDetails(details);
-            mergeEntities(issue);
             
         } catch (UnableToGetIssueException e) {
             throw new UnableToLinkIssueDetailsException(e);

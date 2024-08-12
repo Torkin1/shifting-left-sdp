@@ -7,13 +7,12 @@ import com.google.gson.annotations.SerializedName;
 import it.torkin.dataminer.entities.jira.Developer;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.Embeddable;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
 
-@Entity
+@Embeddable
 @Data
 public class IssueWorkItem {
 
@@ -29,7 +28,7 @@ public class IssueWorkItem {
     private Timestamp started;
     private String timespent;
     private int timeSpentSeconds;
-    @Id
+    @Column(unique = true)
     @SerializedName("id")
     private String jiraId;
     private String issueId;

@@ -2,27 +2,22 @@ package it.torkin.dataminer.entities.jira.issue;
 
 import com.google.gson.annotations.SerializedName;
 
-import it.torkin.dataminer.rest.parsing.Hide;
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
 @Data
-@Entity
 @Table(name="issue_link")
+@Embeddable
 public class IssueLink{
-    @Id
-    @Hide
-    @GeneratedValue
-    private long id;
     
     @SerializedName("id")
+    @Column(unique = true)
     private String jiraId;
     
     @ManyToOne(
@@ -33,12 +28,12 @@ public class IssueLink{
         optional = true,
         cascade = { CascadeType.PERSIST, CascadeType.MERGE},
         fetch = FetchType.LAZY)
-    private UntrustedIssue outwardIssue;
+    private IssuePointer outwardIssue;
     @OneToOne(
         optional = true,
         cascade = { CascadeType.PERSIST, CascadeType.MERGE},
         fetch = FetchType.LAZY)
-    private UntrustedIssue inwardIssue;
+    private IssuePointer inwardIssue;
 
     /**
      * NOTE: The direction of the link is defined

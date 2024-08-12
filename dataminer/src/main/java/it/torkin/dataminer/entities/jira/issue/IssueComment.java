@@ -6,14 +6,13 @@ import com.google.gson.annotations.SerializedName;
 import it.torkin.dataminer.entities.jira.Developer;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import lombok.Data; 
 
 @Data
-@Entity
+@Embeddable
 public class IssueComment{
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE})
     private Developer author;
@@ -26,9 +25,9 @@ public class IssueComment{
     @Column(columnDefinition = "text")
     private String body;
     private Timestamp created;
-    
-    @Id    
+        
     @SerializedName("id")
+    @Column(unique = true)
     private String jiraId;
     private String self;
     

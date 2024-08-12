@@ -1,5 +1,6 @@
 package it.torkin.dataminer.entities.jira.issue; 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.annotations.SerializedName;
@@ -11,6 +12,7 @@ import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.FetchType;
@@ -25,9 +27,12 @@ public class IssueFields{
     
     @Column(columnDefinition = "text")
     private String description;
-    private int upTimestampd;
-    private String summary; // issue title
+    private Timestamp updated;
+    private Timestamp created;
     private Timestamp resolutiondate;
+    private Timestamp duedate;
+    private String summary; // issue title
+    private int workratio;
 
     @AttributeOverrides({
         @AttributeOverride(name="self", column=@Column(name="issue_watchers_self")),
@@ -47,28 +52,17 @@ public class IssueFields{
     })
     @Embedded private IssueVotes votes;
 
-    @OneToMany(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)
     @SerializedName("attachment")
-    private List<IssueAttachment> attachments;
+    @ElementCollection
+    private List<IssueAttachment> attachments = new ArrayList<>();
     
-    /**
-     * NOTE: We cannot trust issues pointed by subtasks and issuelinks
-     * since they may not be present in the apacheJIT dataset.
-     * We store the short versions since they are provided by default
-     * by the Jira API. 
-     * 
-     * If the extended version of the issue is needed,
-     * it must be fetched independently from the jira api if not present
-     * in the local database, and quality checked to align with the
-     * data in the apacheJIT dataset before storing it in the local db.
-     */
-
+    @ElementCollection
+    private List<IssueLink> issuelinks = new ArrayList<>();
     @OneToMany(
         cascade = { CascadeType.PERSIST, CascadeType.MERGE},
         fetch = FetchType.LAZY)
-    private List<UntrustedIssue> subtasks;
-    @OneToMany(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)
-    private List<IssueLink> issuelinks;
+    private List<IssuePointer> subtasks = new ArrayList<>();
+
 
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     private IssueStatus status;
@@ -86,7 +80,7 @@ public class IssueFields{
     private Project project;
 
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
-    private List<Component> components;
+    private List<Component> components = new ArrayList<>();
 
 }
 

@@ -6,15 +6,15 @@ import com.google.gson.annotations.SerializedName;
 
 import it.torkin.dataminer.entities.jira.Developer;
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
 @Data
-@Entity
+@Embeddable
 @Table(name="issue_attachment")
 public class IssueAttachment{
     
@@ -23,7 +23,7 @@ public class IssueAttachment{
     private String content;
     private Timestamp created;
     private String filename;
-    @Id
+    @Column(unique = true)
     @SerializedName("id")
     private String jiraId;
     private String mimeType;

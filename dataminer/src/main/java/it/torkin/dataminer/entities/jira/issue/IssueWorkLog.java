@@ -1,11 +1,10 @@
 package it.torkin.dataminer.entities.jira.issue;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Transient;
 import lombok.Data;
 
@@ -21,6 +20,6 @@ public class IssueWorkLog{
     private int maxResults;
     @Transient
     private int total;
-    @OneToMany(cascade = { CascadeType.ALL}, fetch = FetchType.LAZY)
-    private List<IssueWorkItem> worklogs;
+    @ElementCollection
+    private List<IssueWorkItem> worklogs = new ArrayList<>();
 }
