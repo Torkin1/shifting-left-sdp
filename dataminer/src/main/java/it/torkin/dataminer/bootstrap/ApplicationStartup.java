@@ -31,6 +31,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
         try {
             datasetController.loadDataset();
+            log.info("Dataset loaded");
+            log.info(datasetController.getDataset().summary());
         } catch (UnableToLoadDatasetException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
