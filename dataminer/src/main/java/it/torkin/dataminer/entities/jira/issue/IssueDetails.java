@@ -16,7 +16,7 @@ public class IssueDetails {
     @Column(unique = true) private String jiraId;
     
     /**
-     * NOTE: quoting the Jira API documentation at:
+     * NOTE: quoting the Jira API documentation:
      * 
      * > The issue is identified by its ID or key, however, if the identifier
      * > doesn't match an issue, a case-insensitive search and check for
