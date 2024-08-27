@@ -28,7 +28,10 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         
         init();
         greet();
+        // loadDatasets();
+    }
 
+    private void loadDatasets(){
         try {
             datasetController.loadDataset();
             log.info("Dataset loaded");
@@ -37,7 +40,6 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
     }
 
     private void init() {
