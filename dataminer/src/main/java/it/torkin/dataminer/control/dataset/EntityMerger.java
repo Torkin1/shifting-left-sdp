@@ -9,6 +9,7 @@ import it.torkin.dataminer.dao.local.DeveloperDao;
 import it.torkin.dataminer.dao.local.IssueLinkTypeDao;
 import it.torkin.dataminer.dao.local.IssuePointerDao;
 import it.torkin.dataminer.dao.local.IssuePriorityDao;
+import it.torkin.dataminer.dao.local.IssueResolutionDao;
 import it.torkin.dataminer.dao.local.IssueStatusDao;
 import it.torkin.dataminer.dao.local.IssueTypeDao;
 import it.torkin.dataminer.dao.local.ProjectDao;
@@ -22,6 +23,7 @@ import it.torkin.dataminer.entities.jira.issue.IssueLink;
 import it.torkin.dataminer.entities.jira.issue.IssueLinkType;
 import it.torkin.dataminer.entities.jira.issue.IssuePointer;
 import it.torkin.dataminer.entities.jira.issue.IssuePriority;
+import it.torkin.dataminer.entities.jira.issue.IssueResolution;
 import it.torkin.dataminer.entities.jira.issue.IssueStatus;
 import it.torkin.dataminer.entities.jira.issue.IssueType;
 import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
@@ -40,6 +42,7 @@ public class EntityMerger implements IEntityMerger{
     @Autowired private ComponentDao componentDao;
     @Autowired private IssuePointerDao issuePointerDao;
     @Autowired private IssueLinkTypeDao issueLinkTypeDao;
+    @Autowired private IssueResolutionDao issueResolutionDao;
 
     private class EntityFinder<T>{
 
@@ -80,6 +83,9 @@ public class EntityMerger implements IEntityMerger{
             else if (object instanceof IssueLinkType){
                 dao = (JpaRepository<T, String>) issueLinkTypeDao;
             }
+            else if (object instanceof IssueResolution){
+                dao = (JpaRepository<T, String>) issueResolutionDao;
+            }
             else{
                 throw new IllegalArgumentException(String.format("Unsupported entity type: %s", object.getClass().getName()));
             }
@@ -115,8 +121,14 @@ public class EntityMerger implements IEntityMerger{
         mergeIssueStatus(fields);
         mergeIssueType(fields);
         mergeIssuePriority(fields);
+        mergeIssueResolution(fields);
         mergeProject(fields);
         mergeComponents(fields);
+    }
+
+    private void mergeIssueResolution(IssueFields fields) {
+        if (fields.getResolution() == null) return;
+        fields.setResolution(new EntityFinder<IssueResolution>().find(fields.getResolution(), fields.getResolution().getJiraId()));
     }
 
     private void mergeIssuePointers(IssueFields fields) {
