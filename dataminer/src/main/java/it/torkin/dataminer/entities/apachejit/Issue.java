@@ -10,11 +10,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Data
+@NoArgsConstructor
 public class Issue {
     
+    public Issue(String issueKey) {
+        this.key = issueKey;
+    }
+
     @Id
     private String key; // "PROJ-123"
     

@@ -59,6 +59,36 @@ public class ApachejitController implements IDatasetController{
         }
     }
 
+    /**
+     * Gets issue entity linked to commit from DB if exists, elses creates a new one.
+     * @param commit
+     * @param progress
+     * @return
+     * @throws UnableToLinkIssueException
+     */
+    private Issue fetchIssue(Commit commit, JiraDao jiraDao, ProgressBar progress) throws UnableToLinkIssueException{
+        
+        Issue issue;
+        GitDao gitDao;
+        String issueKey;
+
+        try {
+            gitDao = getGitdaoByProject(commit.getRepoName());
+            gitDao.getCommitDetails(commit);
+            issueKey = gitDao.getLinkedIssueKeyByCommit(commit.getHash());
+            issue = issueDao.findByKey(issueKey);
+            if (issue == null){
+                issue = new Issue(issueKey);
+                progress.setExtraMessage(String.format("fetching issue details for issue %s", issue.getKey()));
+                linkIssueDetails(issue, jiraDao);
+            }
+            return issue;
+        } catch (UnableToInitRepoException | UnableToGetCommitDetailsException | UnableToGetLinkedIssueKeyException | UnableToLinkIssueDetailsException e) {
+            throw new UnableToLinkIssueException(e);
+        }
+
+    }
+    
     private void loadCommits() throws UnableToLoadCommitsException {
 // for each commit record in apachejit:
 //         - create commit entity by commit record id if not exists
@@ -72,47 +102,38 @@ public class ApachejitController implements IDatasetController{
 //         - link issue details
 //         - link commit
 //         - store issue
-        CommitRecord record;
+        CommitRecord record = null;
         Commit commit;
         ApachejitDao apachejitDao;
+        Issue issue = null;
         JiraDao jiraDao;
-        GitDao gitDao;
-        Issue issue;
 
         apachejitDao = new ApachejitDao(apachejitConfig);
         jiraDao = new JiraDao(jiraConfig);
 
-        try (Resultset<CommitRecord> commits = apachejitDao.getAllCommits();
+        try (Resultset<CommitRecord> records = apachejitDao.getAllCommits();
                 ProgressBar progress = new ProgressBar("loading commits", apachejitConfig.getExpectedSize() == null? -1 : apachejitConfig.getExpectedSize())) {
 
-            while (commits.hasNext()) {
-                record = commits.next();
-                issue = null;
-                try {
-                    commit = loadCommit(record);
-                    gitDao = getGitdaoByProject(commit.getRepoName());
-                    gitDao.getCommitDetails(commit);
-
-                    issue = new Issue();
-                    progress.setExtraMessage(String.format("mining linked issue for commit %s", commit.getHash()));
-                    linkIssueCommit(issue, commit);
-                    progress.setExtraMessage(String.format("fetching issue details for issue %s", issue.getKey()));
-                    linkIssueDetails(issue, jiraDao);
-                    if(!issueDao.existsByKey(issue.getKey()))
-                        issueDao.save(issue);
+            while (records.hasNext()) {
                 
-                } catch (UnableToLinkIssueDetailsException
-                 | CommitAlreadyLoadedException | UnableToLinkIssueException
-                 | UnableToGetCommitDetailsException e) {
+                try {
+                    record = records.next();
+                    commit = loadCommit(record);
+                    issue = fetchIssue(commit, jiraDao, progress);
+                    linkIssueCommit(issue, commit);                 
+                    issueDao.save(issue);
+                
+                } catch (CommitAlreadyLoadedException | UnableToLinkIssueException e) {
                     log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.toString()));
                     if(e.getClass() != CommitAlreadyLoadedException.class)
                         dataset.getSkipped().put(record.getCommit_id(), (issue!=null)? issue.getKey() : null);
                 }
-                progress.step();
-            }
-            
+                finally {
+                    progress.step();
+                }
+            }      
 
-        } catch (UnableToGetCommitsException | IOException | UnableToInitRepoException e) {
+        } catch (UnableToGetCommitsException | IOException e) {
             throw new UnableToLoadCommitsException(e);
         }
         
@@ -125,37 +146,19 @@ public class ApachejitController implements IDatasetController{
     }
     
     /**
-     * Loads in Issue object the key of the issue linked to the commit
-     * and registers the commit in the issue object
+     * registers the commit in the issue object
      * @param issue
      * @param commit
      * @throws UnableToLinkIssueException
      */
     private void linkIssueCommit(Issue issue, Commit commit) throws UnableToLinkIssueException{
-        
-        String project;
-        String issuekey;
-        GitDao gitDao;
-
-        try {
             
-            // Gets key of issue linked to commit
-            project = commit.getRepoName();            
-            gitDao = getGitdaoByProject(project);
-            issuekey = gitDao.getLinkedIssueKeyByCommit(commit.getHash());
-            issue.setKey(issuekey);
+        // adds commit to issue
+        issue.getCommits().add(commit);
 
-            // adds commit to issue
-            issue.getCommits().add(commit);
-
-            dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
-            if (issue.getCommits().size() > 1) 
-                dataset.getIssuesWithMultipleCommits().add(issuekey);
-            
-
-        } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException e) {
-            throw new UnableToLinkIssueException(e);
-        }
+        dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
+        if (issue.getCommits().size() > 1) 
+            dataset.getIssuesWithMultipleCommits().add(issue.getKey());
         
     }
 
