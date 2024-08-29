@@ -24,15 +24,15 @@ import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.Dataset;
-import it.torkin.dataminer.entities.apachejit.Commit;
-import it.torkin.dataminer.entities.apachejit.Issue;
+import it.torkin.dataminer.entities.dataset.Commit;
+import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
 @Service
 @Slf4j
-public class ApachejitController implements IDatasetController{
+public class DatasetController implements IDatasetController{
 
     @Autowired private ApachejitConfig apachejitConfig;
     @Autowired private JiraConfig jiraConfig;
@@ -120,8 +120,9 @@ public class ApachejitController implements IDatasetController{
                     record = records.next();
                     commit = loadCommit(record);
                     issue = fetchIssue(commit, jiraDao, progress);
-                    linkIssueCommit(issue, commit);                 
-                    issueDao.save(issue);
+                    linkIssueCommit(issue, commit);
+                    dataset.getCommits().add(commit);                 
+                    commitDao.save(commit);
                 
                 } catch (CommitAlreadyLoadedException | UnableToLinkIssueException e) {
                     log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.toString()));
@@ -155,6 +156,7 @@ public class ApachejitController implements IDatasetController{
             
         // adds commit to issue
         issue.getCommits().add(commit);
+        commit.getIssues().add(issue);
 
         dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
         if (issue.getCommits().size() > 1) 
@@ -211,6 +213,7 @@ public class ApachejitController implements IDatasetController{
     private void init(){
         dataset = new Dataset();
         dataset.setName("apachejit");
+        dataset = datasetDao.save(dataset);
     }
 
     private void exit() {

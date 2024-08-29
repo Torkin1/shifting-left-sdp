@@ -1,12 +1,12 @@
-package it.torkin.dataminer.entities.apachejit;
+package it.torkin.dataminer.entities.dataset;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import lombok.Data;
@@ -24,7 +24,7 @@ public class Issue {
     @Id
     private String key; // "PROJ-123"
     
-    @ManyToMany(cascade = CascadeType.PERSIST)
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "issues")
     private List<Commit> commits = new ArrayList<>();
 
     /**

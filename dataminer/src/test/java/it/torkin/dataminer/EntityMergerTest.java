@@ -22,7 +22,7 @@ import com.google.gson.stream.JsonReader;
 
 import it.torkin.dataminer.control.dataset.IEntityMerger;
 import it.torkin.dataminer.dao.local.IssueDao;
-import it.torkin.dataminer.entities.apachejit.Issue;
+import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import jakarta.transaction.Transactional;

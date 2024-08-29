@@ -13,7 +13,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 import it.torkin.dataminer.config.GitConfig;
-import it.torkin.dataminer.entities.apachejit.Commit;
+import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.toolbox.NoMatchFoundException;
 import it.torkin.dataminer.toolbox.Regex;
 import me.tongfei.progressbar.ProgressBar;

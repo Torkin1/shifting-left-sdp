@@ -1,21 +1,26 @@
 package it.torkin.dataminer.entities;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import it.torkin.dataminer.entities.dataset.Commit;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import lombok.Data;
 
 /**
- * Summary of statistics and measurement on a dataset.
  * Beware that the measurements are to be considered as screenshots of the dataset,
- * thus they could not reflect changes of the entities loaded in db.
+ * thus they could not reflect changes of the entities loaded in db until a new
+ * screenshot is taken.
  */
 @Entity
 @Data
@@ -54,6 +59,12 @@ public class Dataset {
     public float getLinkage(){
         return (float)nrLinkedCommits/nrCommits;
     }
+
+    /**
+     * Issues actually loaded from the dataset
+     */
+    @OneToMany(fetch = FetchType.LAZY)
+    private List<Commit> commits = new ArrayList<>();
 
     public String summary(){
 

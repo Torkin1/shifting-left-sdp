@@ -1,6 +1,6 @@
 package it.torkin.dataminer.control.dataset;
 
-import it.torkin.dataminer.entities.apachejit.Issue;
+import it.torkin.dataminer.entities.dataset.Issue;
 
 public class CommitNotFoundException extends Exception{
 

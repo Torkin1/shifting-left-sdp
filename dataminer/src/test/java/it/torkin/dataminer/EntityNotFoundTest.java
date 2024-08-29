@@ -11,7 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.dao.local.IssueDao;
-import it.torkin.dataminer.entities.apachejit.Issue;
+import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
 
 @SpringBootTest()
