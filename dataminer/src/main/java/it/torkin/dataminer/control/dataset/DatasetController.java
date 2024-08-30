@@ -1,19 +1,19 @@
 package it.torkin.dataminer.control.dataset;
 
-import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import it.torkin.dataminer.config.ApachejitConfig;
+import it.torkin.dataminer.config.DatasourceConfig;
+import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
-import it.torkin.dataminer.dao.apachejit.ApachejitDao;
-import it.torkin.dataminer.dao.apachejit.CommitRecord;
-import it.torkin.dataminer.dao.apachejit.Resultset;
-import it.torkin.dataminer.dao.apachejit.UnableToGetCommitsException;
+import it.torkin.dataminer.dao.datasources.Datasource;
 import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.git.UnableToGetCommitDetailsException;
 import it.torkin.dataminer.dao.git.UnableToGetLinkedIssueKeyException;
@@ -27,27 +27,110 @@ import it.torkin.dataminer.entities.Dataset;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
-@Service
 @Slf4j
+@Service
 public class DatasetController implements IDatasetController{
-
-    @Autowired private ApachejitConfig apachejitConfig;
+    
+    @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
     @Autowired private JiraConfig jiraConfig;
     @Autowired private GitConfig gitConfig;
 
+    @Autowired private DatasetDao datasetDao;
     @Autowired private CommitDao commitDao;
     @Autowired private IssueDao issueDao;
-    @Autowired private DatasetDao datasetDao;
 
     @Autowired private EntityMerger entityMerger;
-    
-    private Dataset dataset;
+
+    private JiraDao jiraDao;
+
+    private List<Datasource> datasources = new ArrayList<>();
     private Map<String, GitDao> gitdaoByProject = new HashMap<>();        
-    
-    
+        
+    public void createRawDataset() throws UnableToCreateRawDatasetException {
+               
+        Datasource datasource;
+        DatasourceConfig config;
+        Dataset dataset;
+
+        jiraDao = new JiraDao(jiraConfig);
+
+        try (ProgressBar progress = new ProgressBar("loading datasources", datasources.size())) {
+            
+            prepareDatasources();
+            
+            for (int i = 0; i < datasources.size(); i++) {
+                
+                datasource = datasources.get(i);
+                config = datasourceGlobalConfig.getSources().get(i);
+                progress.setExtraMessage(config.getName());
+
+                if(datasetDao.existsByName(config.getName())){
+                    log.info("Datasource {} already exists in the database. Skipping.", config.getName());
+                    continue;
+                }
+
+                dataset = new Dataset();
+                dataset.setName(config.getName());
+                loadCommits(datasource, dataset, config);
+                datasetDao.save(dataset);
+
+                datasource.close();
+                progress.step();
+
+            }
+        } catch (UnableToPrepareDatasourceException | UnableToLoadCommitsException e) {
+            throw new UnableToCreateRawDatasetException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    @Transactional
+    private void loadCommits(Datasource datasource, Dataset dataset, DatasourceConfig config) throws UnableToLoadCommitsException {
+        
+        Commit commit;
+        try (ProgressBar progress = new ProgressBar("loading commits", config.getExpectedSize())){
+            while(datasource.hasNext()){
+                commit = datasource.next();
+                try {
+                    fillCommitDetails(commit);
+                    linkIssueCommit(commit);
+                    commit.setDataset(dataset);
+                    commit = commitDao.save(commit);
+                } catch (UnableToInitRepoException e) {
+                    throw new UnableToLoadCommitsException(e);
+                } catch (UnableToFetchIssueException | UnableToGetCommitDetailsException e) {
+                    log.warn("Skipping commit {} of project {} from dataset {}: {}", commit.getHash(), commit.getProject(), dataset.getName(), e.toString());
+                }
+                progress.step();
+                
+            }       
+        }
+    }
+
+    private void fillCommitDetails(Commit commit) throws UnableToInitRepoException, UnableToGetCommitDetailsException {
+
+        GitDao gitDao;
+
+        gitDao = getGitdaoByProject(commit.getProject());
+        gitDao.getCommitDetails(commit);
+    }
+
+    private void linkIssueCommit(Commit commit) throws UnableToFetchIssueException {
+        Issue issue;
+
+        issue = fetchIssue(commit);
+        issue.getCommits().add(commit);
+        commit.getIssues().add(issue);
+
+    }
+
     private void linkIssueDetails(Issue issue, JiraDao jiraDao) throws UnableToLinkIssueDetailsException {
         try {
             IssueDetails details = jiraDao.queryIssueDetails(issue.getKey());
@@ -66,78 +149,23 @@ public class DatasetController implements IDatasetController{
      * @return
      * @throws UnableToLinkIssueException
      */
-    private Issue fetchIssue(Commit commit, JiraDao jiraDao, ProgressBar progress) throws UnableToLinkIssueException{
-        
+    private Issue fetchIssue(Commit commit) throws UnableToFetchIssueException {
         Issue issue;
         GitDao gitDao;
         String issueKey;
 
         try {
-            gitDao = getGitdaoByProject(commit.getRepoName());
-            gitDao.getCommitDetails(commit);
+            gitDao = getGitdaoByProject(commit.getProject());
             issueKey = gitDao.getLinkedIssueKeyByCommit(commit.getHash());
             issue = issueDao.findByKey(issueKey);
             if (issue == null){
                 issue = new Issue(issueKey);
-                progress.setExtraMessage(String.format("fetching issue details for issue %s", issue.getKey()));
                 linkIssueDetails(issue, jiraDao);
             }
             return issue;
-        } catch (UnableToInitRepoException | UnableToGetCommitDetailsException | UnableToGetLinkedIssueKeyException | UnableToLinkIssueDetailsException e) {
-            throw new UnableToLinkIssueException(e);
+        } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException | UnableToLinkIssueDetailsException e) {
+            throw new UnableToFetchIssueException(commit.getHash(), e);
         }
-
-    }
-    
-    private void loadCommits() throws UnableToLoadCommitsException {
-// for each commit record in apachejit:
-//         - create commit entity by commit record id if not exists
-//         - mine project name among other features
-//         - resolve project repo
-//         - if repo not available locally:
-//           - download repo in resources
-//         - get issue key from repo
-//         - get commit timestamp from repo
-//         - create issue entity if not exists
-//         - link issue details
-//         - link commit
-//         - store issue
-        CommitRecord record = null;
-        Commit commit;
-        ApachejitDao apachejitDao;
-        Issue issue = null;
-        JiraDao jiraDao;
-
-        apachejitDao = new ApachejitDao(apachejitConfig);
-        jiraDao = new JiraDao(jiraConfig);
-
-        try (Resultset<CommitRecord> records = apachejitDao.getAllCommits();
-                ProgressBar progress = new ProgressBar("loading commits", apachejitConfig.getExpectedSize() == null? -1 : apachejitConfig.getExpectedSize())) {
-
-            while (records.hasNext()) {
-                
-                try {
-                    record = records.next();
-                    commit = loadCommit(record);
-                    issue = fetchIssue(commit, jiraDao, progress);
-                    linkIssueCommit(issue, commit);
-                    dataset.getCommits().add(commit);                 
-                    commitDao.save(commit);
-                
-                } catch (CommitAlreadyLoadedException | UnableToLinkIssueException e) {
-                    log.warn(String.format("Skipping commit %s: %s", record.getCommit_id(), e.toString()));
-                    if(e.getClass() != CommitAlreadyLoadedException.class)
-                        dataset.getSkipped().put(record.getCommit_id(), (issue!=null)? issue.getKey() : null);
-                }
-                finally {
-                    progress.step();
-                }
-            }      
-
-        } catch (UnableToGetCommitsException | IOException e) {
-            throw new UnableToLoadCommitsException(e);
-        }
-        
     }
 
     private GitDao getGitdaoByProject(String project) throws UnableToInitRepoException{
@@ -145,92 +173,57 @@ public class DatasetController implements IDatasetController{
             gitdaoByProject.put(project, new GitDao(gitConfig, project));
         return gitdaoByProject.get(project);
     }
-    
+
     /**
-     * registers the commit in the issue object
-     * @param issue
-     * @param commit
-     * @throws UnableToLinkIssueException
+     * Assures that
+     * all specified datasources are accessible and ready to be mined.
+     * @throws UnableToPrepareDatasourceException 
      */
-    private void linkIssueCommit(Issue issue, Commit commit) throws UnableToLinkIssueException{
+    private void prepareDatasources() throws UnableToPrepareDatasourceException{
+
+        Datasource datasource;
+        
+        for (DatasourceConfig config : datasourceGlobalConfig.getSources()) {
+
             
-        // adds commit to issue
-        issue.getCommits().add(commit);
-        commit.getIssues().add(issue);
-
-        dataset.setNrLinkedCommits(dataset.getNrLinkedCommits() + 1);
-        if (issue.getCommits().size() > 1) 
-            dataset.getIssuesWithMultipleCommits().add(issue.getKey());
-        
-    }
-
-    /**
-     * Loads a commit record from apachejit
-     */
-    private Commit loadCommit(CommitRecord record) throws CommitAlreadyLoadedException {
-        
-        Commit commit;
-
-        if(commitDao.existsByHash(record.getCommit_id())
-        && !apachejitConfig.getRefresh()){
-            throw new CommitAlreadyLoadedException(record.getCommit_id(), apachejitConfig.getRefresh());
-        }
-
-        commit = new Commit(record);
-        dataset.setNrCommits(dataset.getNrCommits() + 1);
-
-        return commit;
-        
-    }
-
-    
-    /*
-     * Loads apachejit dataset from the filesystem into the local db,
-     * fetching issue details from Jira API
-     * 
-     * @return a @Code Dataset entity with some stats about the dataset 
-     */
-    @Override
-    public void loadDataset() throws UnableToLoadDatasetException {
-                
-
-        if(apachejitConfig.getSkipLoad()) return;
-
-        try {
-                
-            init();
-            loadCommits();
-            datasetDao.save(dataset);
-
-        } catch (UnableToLoadCommitsException e) {
-            dataset = null;
-            throw new UnableToLoadDatasetException(e);
-        } finally {
-            exit();
-        }
-    }
-
-    private void init(){
-        dataset = new Dataset();
-        dataset.setName("apachejit");
-        dataset = datasetDao.save(dataset);
-    }
-
-    private void exit() {
-        
-        gitdaoByProject.forEach((project, gitDao) -> {
-            try(gitDao) {
-            } catch (Exception e) {
-                log.warn(String.format("Unable to close git dao of project %s: %s", project, e.getMessage()));
+            try {
+                datasource = findDatasourceImpl(config);
+                datasource.init(config);
+                datasources.add(datasource);
+            } catch (UnableToFindDatasourceImplementationException | UnableToInitDatasourceException e) {
+                throw new UnableToPrepareDatasourceException(config.getName(), e);
             }
-        });
-        gitdaoByProject.clear();
-    }
 
+        }
 
-    @Override
-    public Dataset getDataset() {
-        return dataset;
     }
     
+    /**
+     * Gets the implementation of the datasource specified in the config using
+     * reflection.
+     * @param config
+     * @return
+     * @throws UnableToFindDatasourceImplementationException
+     */
+    private Datasource findDatasourceImpl(DatasourceConfig config) throws UnableToFindDatasourceImplementationException {
+
+        String implName;
+        Datasource datasource;
+
+            try {
+                implName = implNameFromConfig(config);
+                datasource = (Datasource) Class.forName(implName).getDeclaredConstructor().newInstance();
+                return datasource;
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                    | InvocationTargetException | NoSuchMethodException | SecurityException
+                    | ClassNotFoundException e) {
+                throw new UnableToFindDatasourceImplementationException(config.getName(), e);
+            }
+
+    }
+
+    private String implNameFromConfig(DatasourceConfig config) {
+        return String.format("%s.%s%s", datasourceGlobalConfig.getImplPackage(),
+         config.getName().substring(0, 1).toUpperCase(), config.getName().substring(1));
+    }
 }

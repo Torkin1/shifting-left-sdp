@@ -1,4 +1,4 @@
-package it.torkin.dataminer.toolbox;
+package it.torkin.dataminer.toolbox.regex;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

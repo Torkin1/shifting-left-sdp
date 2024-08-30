@@ -14,8 +14,8 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.entities.dataset.Commit;
-import it.torkin.dataminer.toolbox.NoMatchFoundException;
-import it.torkin.dataminer.toolbox.Regex;
+import it.torkin.dataminer.toolbox.regex.NoMatchFoundException;
+import it.torkin.dataminer.toolbox.regex.Regex;
 import me.tongfei.progressbar.ProgressBar;
 
 public class GitDao implements AutoCloseable{

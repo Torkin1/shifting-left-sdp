@@ -1,4 +1,4 @@
-package it.torkin.dataminer.toolbox;
+package it.torkin.dataminer.toolbox.regex;
 
 public class NoMatchFoundException extends Exception{
 

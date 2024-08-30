@@ -6,11 +6,10 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
-import it.torkin.dataminer.config.ApachejitConfig;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
-import it.torkin.dataminer.control.dataset.UnableToLoadDatasetException;
+import it.torkin.dataminer.control.dataset.UnableToCreateRawDatasetException;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -18,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ApplicationStartup implements ApplicationListener<ApplicationReadyEvent> {
 
     @Autowired private JiraConfig jiraConfig;
-    @Autowired private ApachejitConfig apachejitConfig;
     @Autowired private GitConfig gitConfig;
 
     @Autowired private IDatasetController datasetController;
@@ -33,10 +31,9 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     private void loadDatasets(){
         try {
-            datasetController.loadDataset();
+            datasetController.createRawDataset();
             log.info("Dataset loaded");
-            log.info(datasetController.getDataset().summary());
-        } catch (UnableToLoadDatasetException e) {
+        } catch (UnableToCreateRawDatasetException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -49,7 +46,6 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     private void printConfigs() {
 
-        log.debug(String.format("dataset config: %s", apachejitConfig));
         log.debug(String.format("jira config: %s", jiraConfig));
         log.debug(String.format("git config: %s", gitConfig));
         

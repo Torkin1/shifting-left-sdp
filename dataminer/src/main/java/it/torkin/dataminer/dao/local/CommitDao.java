@@ -6,7 +6,6 @@ import it.torkin.dataminer.entities.dataset.Commit;
 
 public interface CommitDao extends JpaRepository<Commit, Long>{
 
-    public boolean existsByHash(String hash);
-    public Commit findByHash(String hash);
+    public int countByDatasetName(String datasetName);
     
 }

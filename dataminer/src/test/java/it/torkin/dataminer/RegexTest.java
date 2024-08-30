@@ -11,8 +11,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.config.GitConfig;
-import it.torkin.dataminer.toolbox.NoMatchFoundException;
-import it.torkin.dataminer.toolbox.Regex;
+import it.torkin.dataminer.toolbox.regex.NoMatchFoundException;
+import it.torkin.dataminer.toolbox.regex.Regex;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()

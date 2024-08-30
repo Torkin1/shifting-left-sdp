@@ -1,4 +1,4 @@
-package it.torkin.dataminer.dao.apachejit;
+package it.torkin.dataminer.toolbox.csv;
 
 import java.io.File;
 import java.io.FileReader;
@@ -30,7 +30,7 @@ public class Resultset<T> implements Iterator<T>, AutoCloseable {
              .readValues(in);
             
         } catch (IOException e) {
-            throw new UnableToGetResultsetException(e);
+            throw new UnableToGetResultsetException(datafile, e);
         }
     }
 
