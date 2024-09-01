@@ -60,7 +60,7 @@ public class GitDaoTest {
         
         try (GitDao gitDao = new GitDao(gitConfig, projectName)){
 
-            actual = gitDao.getLinkedIssueKeyByCommit(commitHash);
+            actual = gitDao.getLinkedIssueKeysByCommit(commitHash).get(0);
             assertEquals(expected, actual);
 
         }

@@ -3,6 +3,8 @@ package it.torkin.dataminer.dao.git;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
@@ -128,17 +130,17 @@ public class GitDao implements AutoCloseable{
     /** Gets linked issue key from commit message
      * @throws IssueNotFoundException 
      * @throws UnableToGetLinkedIssueKeyException */
-    public String getLinkedIssueKeyByCommit(String hash) throws UnableToGetLinkedIssueKeyException {
+    public List<String> getLinkedIssueKeysByCommit(String hash) throws UnableToGetLinkedIssueKeyException {
         
-        String key;
+        List<String> keys;;
         String message;
         RevCommit commit;
         
         try {
             commit = getCommit(hash);
             message = commit.getFullMessage();
-            key = extractIssueKey(message);
-            return key;
+            keys = extractIssueKeys(message);
+            return keys;
 
         } catch (UnableToGetCommitException | NoMatchFoundException e) {
             throw new UnableToGetLinkedIssueKeyException(hash, projectName, e);
@@ -164,9 +166,14 @@ public class GitDao implements AutoCloseable{
     }
 
 
-    private String extractIssueKey(String comment) throws NoMatchFoundException {
+    private List<String> extractIssueKeys(String comment) throws NoMatchFoundException {
         
-        return Regex.findFirst(issueKeyRegexp, comment);
+        List<String> keys = new ArrayList<>();
+        
+        Regex matches = new Regex(issueKeyRegexp, comment);
+        matches.forEach((key) -> keys.add(key));
+        return keys;
+        
     }
 
     private RevCommit getCommit(String hash) throws UnableToGetCommitException {
