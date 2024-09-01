@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.dao.local.CommitDao;
+import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.Dataset;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +28,18 @@ public class DatasetControllerTest {
     @Autowired private IDatasetController datasetController;
 
     @Autowired private CommitDao commitDao;
+    @Autowired private DatasetDao datasetDao;
 
     @Test
     @Transactional
     public void testLoadDataset() throws UnableToCreateRawDatasetException{
       
+        Dataset dataset;
+        
         datasetController.createRawDataset();
         log.info("loaded {} commits from apachejit", commitDao.countByDatasetName("apachejit"));
+        dataset = datasetDao.findByName("apachejit");
+        log.info("Dataset summary : {}", dataset.toString());
 
         assertNotEquals(0, commitDao.countByDatasetName("apachejit"));
     }

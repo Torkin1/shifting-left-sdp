@@ -34,6 +34,10 @@ public class Commit {
     
     private boolean isBuggy;
     private Timestamp timestamp;
+
+    /**
+     * Must match the name given to the repo (i.e apache/myproject)
+     */
     private String project;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)

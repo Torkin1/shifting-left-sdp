@@ -68,15 +68,15 @@ public class DatasetController implements IDatasetController{
                 config = datasourceGlobalConfig.getSources().get(i);
                 progress.setExtraMessage(config.getName());
 
-                if(datasetDao.existsByName(config.getName())){
-                    log.info("Datasource {} already exists in the database. Skipping.", config.getName());
-                    continue;
+                if(!datasetDao.existsByName(config.getName())){
+                    dataset = new Dataset();
+                    dataset.setName(config.getName());
+                    loadCommits(datasource, dataset, config);
+                    datasetDao.save(dataset);    
                 }
-
-                dataset = new Dataset();
-                dataset.setName(config.getName());
-                loadCommits(datasource, dataset, config);
-                datasetDao.save(dataset);
+                else {
+                    log.warn("Datasource {} already exists in the database. Skipping.", config.getName());
+                }
 
                 datasource.close();
                 progress.step();
@@ -106,12 +106,23 @@ public class DatasetController implements IDatasetController{
                 } catch (UnableToInitRepoException e) {
                     throw new UnableToLoadCommitsException(e);
                 } catch (UnableToFetchIssueException | UnableToGetCommitDetailsException e) {
-                    log.warn("Skipping commit {} of project {} from dataset {}: {}", commit.getHash(), commit.getProject(), dataset.getName(), e.toString());
+                    handleSkippedCommit(commit, dataset, e);
                 }
                 progress.step();
                 
             }       
         }
+    }
+
+    private void handleSkippedCommit(Commit commit, Dataset dataset, Exception cause){
+                
+        log.warn("Skipping commit {} of project {} from dataset {}: {}",
+        commit.getHash(), commit.getProject(), dataset.getName(), cause.toString());
+        dataset.setSkipped(dataset.getSkipped() + 1);
+
+        if (cause instanceof UnableToFetchIssueException)
+            dataset.getUnlinkedByProject().compute(commit.getProject(),
+             (project, count) -> count == null ? 1 : count + 1);
     }
 
     private void fillCommitDetails(Commit commit) throws UnableToInitRepoException, UnableToGetCommitDetailsException {

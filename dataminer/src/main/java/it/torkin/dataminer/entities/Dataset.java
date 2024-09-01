@@ -1,16 +1,15 @@
 package it.torkin.dataminer.entities;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.Data;
 
-/**
- * Beware that the measurements are to be considered as screenshots of the dataset,
- * thus they could not reflect changes of the entities loaded in db until a new
- * screenshot is taken.
- */
 @Entity
 @Data
 public class Dataset {
@@ -21,5 +20,17 @@ public class Dataset {
 
     @Column(unique=true, nullable = false)
     private String name;
+
+    /**
+     * Number of commits that couldn't be loaded from the datasource.
+     */
+    private int skipped;
+
+    /**
+     * Number of commits that couldn't be linked to an issue,
+     * divided by project name.
+     */
+    @ElementCollection
+    private Map<String, Integer> unlinkedByProject = new HashMap<>();
     
 }
