@@ -31,7 +31,9 @@ public class RegexTest {
         String commitMessage = String.format("%s: test commit message", expected);
         String actual;
 
-        actual = Regex.findFirst(gitConfig.getLinkedIssueKeyRegexp(), commitMessage);
+        Regex keys = new Regex(gitConfig.getLinkedIssueKeyRegexp(), commitMessage);
+
+        actual = keys.iterator().next();
         assertEquals(expected, actual);
     }
 }

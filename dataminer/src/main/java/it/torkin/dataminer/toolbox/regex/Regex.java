@@ -1,36 +1,44 @@
 package it.torkin.dataminer.toolbox.regex;
 
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import lombok.experimental.UtilityClass;
+public class Regex implements Iterable<String> {
 
-@UtilityClass
-public class Regex {
+    private Pattern pattern;
+    private Matcher matcher;
+    
+    boolean hasNext;
 
-    /**
-     * Find the first occurrence of a regular expression in a string
-     * @param regexp
-     * @param haystack
-     * @return
-     * @throws NoMatchFoundException 
-     */
-    public String findFirst(String regexp, String haystack) throws NoMatchFoundException{
-        Pattern pattern;
-        Matcher matcher;
-        String needle;
+    public Regex(String regex, String haystack) {
 
-        pattern = Pattern.compile(regexp);
+        pattern = Pattern.compile(regex);
         matcher = pattern.matcher(haystack);
-
-        if (matcher.find()){
-            needle = matcher.group();
-            return needle;
-        }
-
-        throw new NoMatchFoundException(regexp, haystack);
-
-
+        hasNext = matcher.find();
     }
     
+    @Override
+    public Iterator<String> iterator() {
+        return new Iterator<String>() {
+            @Override
+            public boolean hasNext() {
+                return hasNext;
+                
+            }
+
+            @Override
+            public String next() {
+
+                String needle;
+
+                needle = matcher.group();
+                hasNext = matcher.find();
+
+                return needle;
+            }
+        };
+    }
+
+
 }
