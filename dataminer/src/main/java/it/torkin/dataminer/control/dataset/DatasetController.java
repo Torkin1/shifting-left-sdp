@@ -100,7 +100,7 @@ public class DatasetController implements IDatasetController{
                 commit = datasource.next();
                 try {
                     fillCommitDetails(commit);
-                    linkIssueCommit(commit);
+                    linkCommitIssues(commit);
                     commit.setDataset(dataset);
                     commit = commitDao.save(commit);
                 } catch (UnableToInitRepoException e) {
@@ -133,12 +133,15 @@ public class DatasetController implements IDatasetController{
         gitDao.getCommitDetails(commit);
     }
 
-    private void linkIssueCommit(Commit commit) throws UnableToFetchIssueException {
-        Issue issue;
+    private void linkCommitIssues(Commit commit) throws UnableToFetchIssueException {
+        List<Issue> issues;
+        
+        issues = fetchLinkedIssues(commit);
 
-        issue = fetchIssue(commit);
-        issue.getCommits().add(commit);
-        commit.getIssues().add(issue);
+        for (Issue issue : issues){
+            issue.getCommits().add(commit);
+            commit.getIssues().add(issue);
+        }
 
     }
 
@@ -160,20 +163,24 @@ public class DatasetController implements IDatasetController{
      * @return
      * @throws UnableToLinkIssueException
      */
-    private Issue fetchIssue(Commit commit) throws UnableToFetchIssueException {
+    private List<Issue> fetchLinkedIssues(Commit commit) throws UnableToFetchIssueException {
+        List<Issue> issues = new ArrayList<>();
         Issue issue;
         GitDao gitDao;
-        String issueKey;
+        List<String> issueKeys;
 
         try {
             gitDao = getGitdaoByProject(commit.getProject());
-            issueKey = gitDao.getLinkedIssueKeyByCommit(commit.getHash());
-            issue = issueDao.findByKey(issueKey);
-            if (issue == null){
-                issue = new Issue(issueKey);
-                linkIssueDetails(issue, jiraDao);
+            issueKeys = gitDao.getLinkedIssueKeysByCommit(commit.getHash());
+            for (String issueKey : issueKeys){
+                issue = issueDao.findByKey(issueKey);
+                if (issue == null){
+                    issue = new Issue(issueKey);
+                    linkIssueDetails(issue, jiraDao);
+                }
+                issues.add(issue);
             }
-            return issue;
+            return issues;
         } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException | UnableToLinkIssueDetailsException e) {
             throw new UnableToFetchIssueException(commit.getHash(), e);
         }

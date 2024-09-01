@@ -142,7 +142,7 @@ public class GitDao implements AutoCloseable{
             keys = extractIssueKeys(message);
             return keys;
 
-        } catch (UnableToGetCommitException | NoMatchFoundException e) {
+        } catch (NoMatchFoundException | UnableToGetCommitException e) {
             throw new UnableToGetLinkedIssueKeyException(hash, projectName, e);
         }
 
@@ -172,6 +172,8 @@ public class GitDao implements AutoCloseable{
         
         Regex matches = new Regex(issueKeyRegexp, comment);
         matches.forEach((key) -> keys.add(key));
+        
+        if (keys.isEmpty()) throw new NoMatchFoundException(issueKeyRegexp, comment);
         return keys;
         
     }

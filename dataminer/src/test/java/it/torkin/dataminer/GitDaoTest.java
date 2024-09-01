@@ -19,6 +19,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.dao.git.GitDao;
+import it.torkin.dataminer.dao.git.UnableToInitRepoException;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
@@ -32,6 +33,7 @@ public class GitDaoTest {
 
     private final String projectName = "Torkin1/test";
     private final String commitHash = "3b12fed371b70bc25c83bdf10ee0508c45e8b474";
+    private final String commitMultipleIssuesHash = "e8fb3311e489a67ebfb8c84613e5c65767f4c254";
     
     @Test
     public void testRepoInit() throws Exception{
@@ -61,6 +63,20 @@ public class GitDaoTest {
         try (GitDao gitDao = new GitDao(gitConfig, projectName)){
 
             actual = gitDao.getLinkedIssueKeysByCommit(commitHash).get(0);
+            assertEquals(expected, actual);
+
+        }
+    }
+
+    @Test
+    public void testMultipleLinkedIssues() throws UnableToInitRepoException, Exception{
+
+        int expected = 2;
+        int actual;
+
+        try (GitDao gitDao = new GitDao(gitConfig, projectName)){
+
+            actual = gitDao.getLinkedIssueKeysByCommit(commitMultipleIssuesHash).size();
             assertEquals(expected, actual);
 
         }
