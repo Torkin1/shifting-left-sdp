@@ -13,13 +13,13 @@ public class Resultset<T> implements Iterator<T>, AutoCloseable {
     private final FileReader in;
     private final MappingIterator<T> records;
 
-    public Resultset(String datafile_path, Class<? extends T> recipientClass) throws UnableToGetResultsetException{
+    public Resultset(String datafile_path, Class<?> recipientClass) throws UnableToGetResultsetException{
 
         this(new File(datafile_path), recipientClass);
         
     }
 
-    public Resultset(File datafile, Class<? extends T> recipientClass) throws UnableToGetResultsetException{
+    public Resultset(File datafile, Class<?> recipientClass) throws UnableToGetResultsetException{
         CsvSchema schema;
         try {
             in = new FileReader(datafile);

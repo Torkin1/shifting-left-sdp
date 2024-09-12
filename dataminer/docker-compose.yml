@@ -1,0 +1,37 @@
+version: '3.1'
+
+volumes:
+  db_data:
+
+services:
+    
+  # Spring App + Java
+  backend:
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: ./src/main/resources/Dockerfile.backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=container
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    expose:
+      - 8080
+    
+  # postgres
+  db:
+    image: postgres:15.2-alpine3.17
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+
+      # NOTE: the following values must be specified in the corresponding
+      # environment variables before launching this docker compose file.
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+      
+      PGDATA: /var/lib/postgresql/data
+    
