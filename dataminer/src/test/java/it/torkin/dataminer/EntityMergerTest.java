@@ -20,7 +20,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 
-import it.torkin.dataminer.control.dataset.IEntityMerger;
+import it.torkin.dataminer.control.dataset.raw.IEntityMerger;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;

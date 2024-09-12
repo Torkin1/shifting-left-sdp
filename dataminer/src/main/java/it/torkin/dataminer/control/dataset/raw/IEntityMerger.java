@@ -1,4 +1,4 @@
-package it.torkin.dataminer.control.dataset;
+package it.torkin.dataminer.control.dataset.raw;
 
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 

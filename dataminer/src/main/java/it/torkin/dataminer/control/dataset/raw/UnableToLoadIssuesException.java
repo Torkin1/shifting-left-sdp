@@ -1,4 +1,4 @@
-package it.torkin.dataminer.control.dataset;
+package it.torkin.dataminer.control.dataset.raw;
 
 public class UnableToLoadIssuesException extends Exception {
 

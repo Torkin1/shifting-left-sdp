@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
-import it.torkin.dataminer.control.dataset.UnableToCreateRawDatasetException;
+import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import lombok.extern.slf4j.Slf4j;
 
 @Component

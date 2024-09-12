@@ -3,7 +3,7 @@ package it.torkin.dataminer.dao.datasources;
 import java.util.Map;
 
 import it.torkin.dataminer.config.DatasourceConfig;
-import it.torkin.dataminer.control.dataset.UnableToInitDatasourceException;
+import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;

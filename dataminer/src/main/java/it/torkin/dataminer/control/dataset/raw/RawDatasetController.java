@@ -1,4 +1,4 @@
-package it.torkin.dataminer.control.dataset;
+package it.torkin.dataminer.control.dataset.raw;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import me.tongfei.progressbar.ProgressBar;
 
 @Slf4j
 @Service
-public class DatasetController implements IDatasetController{
+public class RawDatasetController implements IRawDatasetController{
     
     @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
     @Autowired private JiraConfig jiraConfig;

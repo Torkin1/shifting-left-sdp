@@ -10,8 +10,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import it.torkin.dataminer.control.dataset.IDatasetController;
-import it.torkin.dataminer.control.dataset.UnableToCreateRawDatasetException;
+import it.torkin.dataminer.control.dataset.raw.IRawDatasetController;
+import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.Dataset;
@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DatasetControllerTest {
 
-    @Autowired private IDatasetController datasetController;
+    @Autowired private IRawDatasetController datasetController;
 
     @Autowired private CommitDao commitDao;
     @Autowired private DatasetDao datasetDao;
