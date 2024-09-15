@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package it.torkin.dataminer.nlp;
+
+import "nlp/request.proto";
+
+message BuggyTicketsSimilarityResponse{
+    string issue_key = 1;
+    
+    repeated float similarity_scores = 2;
+}
+
+
+service BuggyTicketsSimilarityMining{
+
+    rpc getBuggyTicketsSimilarity(stream NlpRequest) returns (stream BuggyTicketsSimilarityResponse);    
+}

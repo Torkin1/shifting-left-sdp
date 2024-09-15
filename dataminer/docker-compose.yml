@@ -10,8 +10,8 @@ services:
     depends_on:
       - db
     build:
-      context: .
-      dockerfile: ./src/main/resources/Dockerfile.backend
+      context: ./backend
+      dockerfile: src/main/resources/Dockerfile.backend
     environment:
       - SPRING_PROFILES_ACTIVE=container
       - DB_NAME=${DB_NAME}
