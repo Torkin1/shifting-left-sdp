@@ -53,6 +53,5 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     
     private void greet(){
         log.info("Application started");
-        printConfigs();  
     }
 }
