@@ -26,13 +26,13 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         
         init();
         greet();
-        // loadDatasets();
-    }
 
-    private void loadDatasets(){
         try {
+            
             datasetController.createRawDataset();
             log.info("Dataset loaded");
+
+            
         } catch (UnableToCreateRawDatasetException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -46,8 +46,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     private void printConfigs() {
 
-        log.debug(String.format("jira config: %s", jiraConfig));
-        log.debug(String.format("git config: %s", gitConfig));
+        log.info(String.format("jira config: %s", jiraConfig));
+        log.info(String.format("git config: %s", gitConfig));
         
     }
     
