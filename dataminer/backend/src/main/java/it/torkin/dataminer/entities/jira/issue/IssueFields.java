@@ -58,7 +58,7 @@ public class IssueFields{
     
     @ElementCollection
     private List<IssueLink> issuelinks = new ArrayList<>();
-    @OneToMany(
+    @ManyToMany(
         cascade = { CascadeType.PERSIST, CascadeType.MERGE},
         fetch = FetchType.LAZY)
     private List<IssuePointer> subtasks = new ArrayList<>();
