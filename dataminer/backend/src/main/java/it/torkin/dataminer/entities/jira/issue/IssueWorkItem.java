@@ -17,9 +17,9 @@ import lombok.Data;
 public class IssueWorkItem {
 
     private String self;
-    @ManyToOne(cascade = { CascadeType.PERSIST}, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     private Developer author;
-    @ManyToOne(cascade = { CascadeType.PERSIST}, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     private Developer updateAuthor;
     @Column(columnDefinition = "text")
     private String comment;

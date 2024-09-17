@@ -32,10 +32,10 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             datasetController.createRawDataset();
             log.info("Dataset loaded");
 
-            
+
         } catch (UnableToCreateRawDatasetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.error("fatal", e);
+            throw new RuntimeException(e);
         }
     }
 

@@ -54,7 +54,6 @@ public class RawDatasetController implements IRawDatasetController{
                
         Datasource datasource;
         DatasourceConfig config;
-        Dataset dataset;
 
         jiraDao = new JiraDao(jiraConfig);
 
@@ -69,10 +68,8 @@ public class RawDatasetController implements IRawDatasetController{
                 progress.setExtraMessage(config.getName());
 
                 if(!datasetDao.existsByName(config.getName())){
-                    dataset = new Dataset();
-                    dataset.setName(config.getName());
-                    loadCommits(datasource, dataset, config);
-                    datasetDao.save(dataset);    
+                    log.info("loading datasource {}", config.getName());
+                    loadDatasource(datasource, config);
                 }
                 else {
                     log.warn("Datasource {} already exists in the database. Skipping.", config.getName());
@@ -85,13 +82,25 @@ public class RawDatasetController implements IRawDatasetController{
         } catch (UnableToPrepareDatasourceException | UnableToLoadCommitsException e) {
             throw new UnableToCreateRawDatasetException(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Unexpected error", e);
+            if (e instanceof RuntimeException)
+                throw new UnableToCreateRawDatasetException(e);
         }
 
 
     }
 
     @Transactional
+    private void loadDatasource(Datasource datasource, DatasourceConfig config) throws UnableToLoadCommitsException{
+        
+        Dataset dataset;
+        
+        dataset = new Dataset();
+        dataset.setName(config.getName());
+        datasetDao.save(dataset);    
+        loadCommits(datasource, dataset, config);
+}
+
     private void loadCommits(Datasource datasource, Dataset dataset, DatasourceConfig config) throws UnableToLoadCommitsException {
         
         Commit commit;
@@ -177,6 +186,7 @@ public class RawDatasetController implements IRawDatasetController{
                 if (issue == null){
                     issue = new Issue(issueKey);
                     linkIssueDetails(issue, jiraDao);
+                    issue = issueDao.save(issue);
                 }
                 issues.add(issue);
             }

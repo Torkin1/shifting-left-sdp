@@ -24,7 +24,7 @@ public class Issue {
     @Id
     private String key; // "PROJ-123"
     
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "issues")
+    @ManyToMany(mappedBy = "issues", fetch = FetchType.EAGER)
     private List<Commit> commits = new ArrayList<>();
 
     /**

@@ -60,7 +60,6 @@ public class EntityMerger implements IEntityMerger{
              */
             if (object instanceof Developer){
                 dao = (JpaRepository<T, String>) developerDao;
-                entity = (T) developerDao.findByKey(key);   
             }
             else if(object instanceof IssueStatus){
                 dao = (JpaRepository<T, String>) issueStatusDao;
@@ -89,18 +88,29 @@ public class EntityMerger implements IEntityMerger{
             else{
                 throw new IllegalArgumentException(String.format("Unsupported entity type: %s", object.getClass().getName()));
             }
+            
+            /**
+             * Most jira entities can be fetched by their id,
+             * but developers are fetched by their key
+             * TODO: keep an eye on this. It seems rendundant because
+             * save method already should find the entity by its primary key
+             * before saving it.
+             * If no problems arise, this can be removed.
+             */
+            // if (object instanceof Developer){
+            //     entity = (T) developerDao.findByKey(key);
+            // }
+            // else {
+            //    entity = (T) dao.findById(key).orElse(null);
+            // }
 
-            if (object instanceof Developer){
-                entity = (T) developerDao.findByKey(key);
-            }
-            else {
-                entity = (T) dao.findById(key).orElse(null);
-            }
-
+            /**
+             * Now the actual merging: if the entity is not found in the db, save it
+             * and return the saved entity. Otherwise, return the entity fetched from the db.
+             */
             if (entity == null){
                 entity = dao.save(object);
             }   
-            
             return entity;
             
         }

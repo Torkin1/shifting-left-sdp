@@ -40,9 +40,9 @@ public class Commit {
      */
     private String project;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @ManyToMany(fetch = FetchType.EAGER)
     private List<Issue> issues = new ArrayList<>();
 
-    @ManyToOne(cascade = CascadeType.PERSIST, optional = false)
+    @ManyToOne(optional = false)
     private Dataset dataset;
 }
