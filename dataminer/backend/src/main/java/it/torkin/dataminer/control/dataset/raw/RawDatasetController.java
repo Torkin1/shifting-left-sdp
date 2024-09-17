@@ -90,7 +90,7 @@ public class RawDatasetController implements IRawDatasetController{
 
     }
 
-    @Transactional
+    @Transactional(rollbackOn = Exception.class)
     private void loadDatasource(Datasource datasource, DatasourceConfig config) throws UnableToLoadCommitsException{
         
         Dataset dataset;

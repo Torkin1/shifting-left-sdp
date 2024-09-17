@@ -3,7 +3,6 @@ package it.torkin.dataminer.entities.jira.issue;
 import com.google.gson.annotations.SerializedName;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
@@ -16,7 +15,6 @@ import lombok.Data;
 public class IssueLink{
     
     @SerializedName("id")
-    @Column(unique = true)
     private String jiraId;
     
     @ManyToOne(
