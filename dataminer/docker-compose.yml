@@ -2,7 +2,7 @@ version: '3.1'
 
 volumes:
   db_data:
-  backend_log:
+  backend_data:
 
 services:
     
@@ -21,7 +21,7 @@ services:
     expose:
       - 8080
     volumes:
-      - backend_log:/logs/
+      - backend_data:/data/
     
   # postgres
   db:
