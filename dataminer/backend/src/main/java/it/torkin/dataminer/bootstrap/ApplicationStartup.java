@@ -3,6 +3,7 @@ package it.torkin.dataminer.bootstrap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.env.Environment;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -21,12 +22,16 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     @Autowired private IDatasetController datasetController;
 
+    @Autowired private Environment env;
+
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         
         init();
         greet();
 
+        if (isTest()) return;
+        
         try {
             
             datasetController.createRawDataset();
@@ -37,6 +42,13 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             log.error("fatal", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean isTest() {
+        for (String profile : env.getActiveProfiles()) {
+            if (profile.equals("test")) return true;
+        }
+        return false;
     }
 
     private void init() {
