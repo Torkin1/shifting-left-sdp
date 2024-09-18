@@ -91,9 +91,15 @@ public class RawDatasetController implements IRawDatasetController{
         commit.getHash(), commit.getProject(), dataset.getName(), cause.toString());
         dataset.setSkipped(dataset.getSkipped() + 1);
 
-        if (cause instanceof UnableToFetchIssueException)
+        if (cause instanceof UnableToFetchIssueException){
             dataset.getUnlinkedByProject().compute(commit.getProject(),
              (project, count) -> count == null ? 1 : count + 1);
+            if (commit.isBuggy()){
+                dataset.getBuggyUnlinkedByProject().compute(commit.getProject(),
+                 (project, count) -> count == null ? 1 : count + 1);
+            }
+        }
+
     }
 
     private void fillCommitDetails(Commit commit) throws UnableToInitRepoException, UnableToGetCommitDetailsException {

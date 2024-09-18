@@ -32,5 +32,12 @@ public class Dataset {
      */
     @ElementCollection
     private Map<String, Integer> unlinkedByProject = new HashMap<>();
+
+    /**
+     * Number of buggy commits that couldn't be linked to an issue,
+     * divided by project name.
+     */
+    @ElementCollection
+    private Map<String, Integer> buggyUnlinkedByProject = new HashMap<>();
     
 }

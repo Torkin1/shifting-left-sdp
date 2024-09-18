@@ -31,7 +31,7 @@ public class Commit {
 
     private String hash;
     
-    private boolean isBuggy;
+    private boolean buggy;
     private Timestamp timestamp;
 
     /**
