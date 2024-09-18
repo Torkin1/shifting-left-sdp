@@ -64,6 +64,9 @@ public class DatasetControllerTest {
 
         try (Datasource datasource = new Apachejit()) {
             datasource.init(config);
+            // modify loadDatasource to throw an exception, or 
+            // put in datasource commits with a linked issue that
+            // can trigger an exception(for example, with duplicated primary keys)
             rawDatasetController.loadDatasource(datasource, config);
         } catch (UnableToLoadCommitsException | RuntimeException e) {
             
