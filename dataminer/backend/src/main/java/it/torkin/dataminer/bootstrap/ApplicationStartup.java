@@ -1,5 +1,7 @@
 package it.torkin.dataminer.bootstrap;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -11,6 +13,10 @@ import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
+import it.torkin.dataminer.control.dataset.stats.ILinkageController;
+import it.torkin.dataminer.control.dataset.stats.LinkageBean;
+import it.torkin.dataminer.dao.local.DatasetDao;
+import it.torkin.dataminer.entities.Dataset;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -21,11 +27,15 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Autowired private GitConfig gitConfig;
 
     @Autowired private IDatasetController datasetController;
+    @Autowired private ILinkageController linkageController;
+    @Autowired private DatasetDao datasetDao;
 
     @Autowired private Environment env;
 
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
+        
+        List<Dataset> datasets;
         
         init();
         greet();
@@ -36,6 +46,16 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             
             datasetController.createRawDataset();
             log.info("Dataset loaded");
+
+            datasets = datasetDao.findAll();
+            for (Dataset dataset : datasets) {
+                LinkageBean linkage = new LinkageBean(dataset.getName());
+                LinkageBean buggyLinkage = new LinkageBean(dataset.getName());
+                linkageController.calcTicketLinkage(linkage);
+                linkageController.calcBuggyTicketLinkage(buggyLinkage);
+                log.info(String.format("Linkage for dataset %s: %s", dataset.getName(), linkage));
+                log.info(String.format("Buggy linkage for dataset %s: %s", dataset.getName(), buggyLinkage));
+            }          
 
 
         } catch (UnableToCreateRawDatasetException e) {
