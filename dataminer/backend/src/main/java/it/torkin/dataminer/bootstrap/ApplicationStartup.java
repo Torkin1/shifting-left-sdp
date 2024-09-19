@@ -16,7 +16,7 @@ import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
 import it.torkin.dataminer.control.dataset.stats.LinkageBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
-import it.torkin.dataminer.entities.Dataset;
+import it.torkin.dataminer.entities.dataset.Dataset;
 import lombok.extern.slf4j.Slf4j;
 
 @Component

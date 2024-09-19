@@ -1,5 +1,6 @@
-package it.torkin.dataminer.entities;
+package it.torkin.dataminer.entities.dataset;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,5 +40,7 @@ public class Dataset {
      */
     @ElementCollection
     private Map<String, Integer> buggyUnlinkedByProject = new HashMap<>();
+
+    private Timestamp lastUpdatedTime;
     
 }

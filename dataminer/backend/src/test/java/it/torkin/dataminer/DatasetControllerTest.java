@@ -21,7 +21,7 @@ import it.torkin.dataminer.dao.datasources.Apachejit;
 import it.torkin.dataminer.dao.datasources.Datasource;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
-import it.torkin.dataminer.entities.Dataset;
+import it.torkin.dataminer.entities.dataset.Dataset;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 

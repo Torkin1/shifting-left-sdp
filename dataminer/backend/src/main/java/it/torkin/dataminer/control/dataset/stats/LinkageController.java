@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
-import it.torkin.dataminer.entities.Dataset;
+import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 
 @Service

@@ -21,10 +21,11 @@ import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
-import it.torkin.dataminer.entities.Dataset;
 import it.torkin.dataminer.entities.dataset.Commit;
+import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
+import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,7 @@ public class RawDatasetController implements IRawDatasetController{
         
         dataset = new Dataset();
         dataset.setName(config.getName());
+        dataset.setLastUpdatedTime(TimeTools.now());
         datasetDao.save(dataset);
         loadCommits(datasource, dataset, config);
 }
