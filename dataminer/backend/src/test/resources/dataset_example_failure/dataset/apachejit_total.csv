@@ -1,0 +1,2 @@
+commit_id,project,buggy,fix,year,author_date,la,ld,nf,nd,ns,ent,ndev,age,nuc,aexp,arexp,asexp
+7b8480744ea6e6fb41efd4329bb470c8f3c763db,apache/groovy,False,False,2003,1070355653,372,23,8,3,3,2.6697429443897702,0.25,3.625,2.125,243,243.0,0.683584822589726

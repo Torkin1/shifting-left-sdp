@@ -1,12 +1,9 @@
 package it.torkin.dataminer.control.dataset.raw;
 
+import it.torkin.dataminer.config.DatasourceConfig;
+import it.torkin.dataminer.dao.datasources.Datasource;
+
 public interface IRawDatasetController {
 
-    /**
-     * Creates raw dataset from datasources
-     * @return 
-     * @throws UnableToCreateRawDatasetException
-     */
-    void createRawDataset() throws UnableToCreateRawDatasetException;
-    
+    public void loadDatasource(Datasource datasource, DatasourceConfig config) throws UnableToLoadCommitsException;
 }

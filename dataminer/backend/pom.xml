@@ -104,23 +104,29 @@
 			<artifactId>grpc-netty-shaded</artifactId>
 			<version>1.66.0</version>
 			<scope>runtime</scope>
-		  </dependency>
-		  <dependency>
+		</dependency>
+		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-protobuf</artifactId>
 			<version>1.66.0</version>
-		  </dependency>
-		  <dependency>
+		</dependency>
+		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-stub</artifactId>
 			<version>1.66.0</version>
-		  </dependency>
-		  <dependency> <!-- necessary for Java 9+ -->
+		</dependency>
+		<dependency> <!-- necessary for Java 9+ -->
 			<groupId>org.apache.tomcat</groupId>
 			<artifactId>annotations-api</artifactId>
 			<version>6.0.53</version>
 			<scope>provided</scope>
-		  </dependency>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework/spring-tx -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+			<version>6.1.13</version>
+		</dependency>
 		
 	</dependencies>
 
