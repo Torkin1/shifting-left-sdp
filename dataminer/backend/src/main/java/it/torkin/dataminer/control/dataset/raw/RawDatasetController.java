@@ -87,7 +87,7 @@ public class RawDatasetController implements IRawDatasetController{
 
     private void handleSkippedCommit(Commit commit, Dataset dataset, Exception cause){
                 
-        log.warn("Skipping commit {} of project {} from dataset {}: {}",
+        log.debug("Skipping commit {} of project {} from dataset {}: {}",
         commit.getHash(), commit.getProject(), dataset.getName(), cause.toString());
         dataset.setSkipped(dataset.getSkipped() + 1);
 
