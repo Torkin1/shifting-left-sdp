@@ -19,6 +19,7 @@ public class Feature {
     /**
      * Value is stored as a string to make it digestible
      * by the database, so we need to store the type as well.
+     * if we want to manipulate the value.
      */
     private String value;
     private Class<?> type;
