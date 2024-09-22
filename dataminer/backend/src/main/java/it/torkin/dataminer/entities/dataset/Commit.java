@@ -3,8 +3,11 @@ package it.torkin.dataminer.entities.dataset;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -43,4 +46,7 @@ public class Commit {
 
     @ManyToOne(optional = false)
     private Dataset dataset;
+
+    @ElementCollection
+    private Set<Feature> features = new HashSet<>();
 }
