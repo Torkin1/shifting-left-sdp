@@ -17,6 +17,7 @@ import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.toolbox.time.TimeTools;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
@@ -47,10 +48,12 @@ public class ApacheJitTest {
             Commit commit = apachejit.next();
             commit.setDataset(dataset);
 
+            commit.getMeasurement().setPredictionDate(TimeTools.now());
+            commit.getMeasurement().setCommit(commit);
             commit = commitDao.save(commit);
             log.debug(commit.toString());
 
-            assertNotEquals(0, commit.getFeatures().size());
+            assertNotEquals(0, commit.getMeasurement().getFeatures().size());
 
         }
     }

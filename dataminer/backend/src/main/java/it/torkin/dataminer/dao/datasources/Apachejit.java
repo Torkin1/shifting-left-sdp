@@ -9,6 +9,7 @@ import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Feature;
+import it.torkin.dataminer.entities.dataset.Measurement;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +29,11 @@ public class Apachejit implements Datasource{
     public Commit next() {
         Map<String, String> record;
         Commit commit;
+        Measurement measurement;
         
         record = records.next();
         commit = new Commit();
+        measurement = new Measurement();
 
         record.forEach((k,v) -> {
                                     
@@ -47,20 +50,20 @@ public class Apachejit implements Datasource{
                 case "fix":
                     // positive value could be different from the "true" string we expect,
                     // so we parse it first and then convert it to a string again to obtain the standard "true" string
-                    commit.getFeatures().add(new Feature(k, Boolean.toString(v.equals("True")), Boolean.class));
+                    measurement.getFeatures().add(new Feature(k, Boolean.toString(v.equals("True")), Boolean.class));
                     break;
                 case "year":
-                    commit.getFeatures().add(new Feature(k, v, Year.class));
+                    measurement.getFeatures().add(new Feature(k, v, Year.class));
                     break;
                 case "author_date":
-                    commit.getFeatures().add(new Feature(k, v, Instant.class));
+                    measurement.getFeatures().add(new Feature(k, v, Instant.class));
                     break;
                 case "la":
                 case "ld":
                 case "nf":
                 case "nd":
                 case "ns":
-                    commit.getFeatures().add(new Feature(k, v, Integer.class));
+                    measurement.getFeatures().add(new Feature(k, v, Integer.class));
                     break;
                 case "ent":
                 case "ndev":
@@ -69,7 +72,7 @@ public class Apachejit implements Datasource{
                 case "aexp":
                 case "arexp":
                 case "asexp":
-                    commit.getFeatures().add(new Feature(k, v, Double.class));
+                    measurement.getFeatures().add(new Feature(k, v, Double.class));
                     break;
                 default:
                     log.debug("Unknown feature from apachejit: {}={}", k, v);
@@ -77,6 +80,8 @@ public class Apachejit implements Datasource{
             }
         });
 
+        commit.setMeasurement(measurement);
+        measurement.setCommit(commit);
         return commit;
         
     }

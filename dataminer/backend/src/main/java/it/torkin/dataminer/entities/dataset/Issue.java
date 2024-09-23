@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -33,5 +36,9 @@ public class Issue {
      */
     @Embedded
     private IssueDetails details;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "issue")
+    @OrderBy("prediction_date ASC")
+    private List<Measurement> measurements = new ArrayList<>();
 
 }

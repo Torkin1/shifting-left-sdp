@@ -1,19 +1,17 @@
 package it.torkin.dataminer.entities.dataset;
 
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
@@ -47,6 +45,11 @@ public class Commit {
     @ManyToOne(optional = false)
     private Dataset dataset;
 
-    @ElementCollection
-    private Set<Feature> features = new HashSet<>();
+    /**
+     * NOTE: commits have only one prediction date, namely
+     * the date of commit.
+     */
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "commit")
+    private Measurement measurement;
+
 }
