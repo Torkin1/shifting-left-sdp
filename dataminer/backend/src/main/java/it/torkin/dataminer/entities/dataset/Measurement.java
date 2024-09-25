@@ -33,8 +33,8 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"issue_key", "prediction_date"}),
-        @UniqueConstraint(columnNames = {"commit_id", "prediction_date"})
+        @UniqueConstraint(columnNames = {"issue_key", "measurement_date"}),
+        @UniqueConstraint(columnNames = {"commit_id", "measurement_date"})
     }
 )
 @Check(constraints = "(issue_key IS NOT NULL AND commit_id IS NULL) OR (issue_key IS NULL AND commit_id IS NOT NULL)")
@@ -61,26 +61,38 @@ public class Measurement {
      * 
      * <pre>
      * 
-     * | -----------------|???????????????????????????> Values of d over time
+     * |------------------|???????????????????????????> Values of d over time
      *    past      predictionDate           future...
      *                    ^
      *                    here data values are usable and most fresh!
      * </pre>
      * 
-     * Since we want our model to have access
-     * to the most recent data in the hope that it can better grasp the relationsips
-     * among the features, feature values of a Measurement must be calculated
-     * using data values at the time represented by the prediciton date.
+     * Data values used for measurements have to be selected according to a given
+     * measurement date.
+     * 
+     * <pre>
+     * |------------|---------------------|???????????????????>
+     * 0            ^                     ^                   
+     *         Any value in the past       predictionDate is the divide
+     *         can be a                    between past and future values
+     *         measurementDate
+     * </pre>
+     * 
+     * We can have a measurementDate strictly before a prediction date
+     * (i.e. to cope with snoring issues) or a measurementDate == predictionDate, 
+     * but NOT a measurementDate > predictionDate.
+     * 
+     * 
      */
     @Column(nullable = false)
-    private Timestamp predictionDate;
+    private Timestamp measurementDate;
 
     @ElementCollection
     private Set<Feature> features = new HashSet<>();
 
     @Override
     public String toString() {
-        return "Measurement [id=" + id + ", predictionDate=" + predictionDate
+        return "Measurement [id=" + id + ", measurementDate=" + measurementDate
                 + ", features=" + features + "]";
     }
 

@@ -48,7 +48,7 @@ public class ApacheJitTest {
             Commit commit = apachejit.next();
             commit.setDataset(dataset);
 
-            commit.getMeasurement().setPredictionDate(TimeTools.now());
+            commit.getMeasurement().setMeasurementDate(TimeTools.now());
             commit.getMeasurement().setCommit(commit);
             commit = commitDao.save(commit);
             log.debug(commit.toString());

@@ -110,7 +110,7 @@ public class RawDatasetController implements IRawDatasetController{
 
         gitDao = getGitdaoByProject(commit.getProject());
         gitDao.getCommitDetails(commit);
-        commit.getMeasurement().setPredictionDate(commit.getTimestamp());
+        commit.getMeasurement().setMeasurementDate(commit.getTimestamp());
     }
 
     private void linkCommitIssues(Commit commit) throws UnableToFetchIssueException {
