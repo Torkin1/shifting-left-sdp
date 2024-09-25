@@ -1,5 +1,7 @@
 package it.torkin.dataminer.entities.dataset;
 
+import jakarta.persistence.FetchType;
+
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,14 +33,14 @@ public class Dataset {
      * Number of commits that couldn't be linked to an issue,
      * divided by project name.
      */
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Map<String, Integer> unlinkedByProject = new HashMap<>();
 
     /**
      * Number of buggy commits that couldn't be linked to an issue,
      * divided by project name.
      */
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Map<String, Integer> buggyUnlinkedByProject = new HashMap<>();
 
     private Timestamp lastUpdatedTime;
