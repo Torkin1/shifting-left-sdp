@@ -10,7 +10,11 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 
+import lombok.extern.slf4j.Slf4j;
+
+
 @Service
+@Slf4j
 public class LinkageController implements ILinkageController {
 
     @Autowired private CommitDao commitDao;
@@ -39,11 +43,11 @@ public class LinkageController implements ILinkageController {
         for (String project : projects) {
 
             if(buggyOnly){
-                linkedCount = commitDao.countByDatasetNameAndProjectAndBuggy(dataset.getName(), project, true);
-                count = dataset.getBuggyUnlinkedByProject().get(project);
+                linkedCount = SafeMath.nullAsZero(commitDao.countByDatasetNameAndProjectAndBuggy(dataset.getName(), project, true));
+                count = SafeMath.nullAsZero(dataset.getBuggyUnlinkedByProject().get(project));
             } else {
-                linkedCount = commitDao.countByDatasetNameAndProject(dataset.getName(), project);
-                count = dataset.getUnlinkedByProject().get(project);
+                linkedCount =  SafeMath.nullAsZero(commitDao.countByDatasetNameAndProject(dataset.getName(), project));
+                count =  SafeMath.nullAsZero(dataset.getUnlinkedByProject().get(project));
             }
             count += linkedCount;
 
