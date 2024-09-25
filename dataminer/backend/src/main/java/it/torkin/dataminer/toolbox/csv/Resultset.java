@@ -10,20 +10,29 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 public class Resultset<T> implements Iterator<T>, AutoCloseable {
-    private final FileReader in;
-    private final MappingIterator<T> records;
+    private FileReader in;
+    private MappingIterator<T> records;
 
     public Resultset(String datafile_path, Class<?> recipientClass) throws UnableToGetResultsetException{
 
-        this(new File(datafile_path), recipientClass);
+        CsvSchemaBean bean = new CsvSchemaBean();
+        bean.setColumnSeparator(',');
+        
+        init(new File(datafile_path), recipientClass, bean);
         
     }
 
-    public Resultset(File datafile, Class<?> recipientClass) throws UnableToGetResultsetException{
+    public Resultset(File datafile, Class<?> recipientClass, CsvSchemaBean bean) throws UnableToGetResultsetException{
+        init(datafile, recipientClass, bean);
+    }
+
+    private void init(File datafile, Class<?> recipientClass, CsvSchemaBean bean) throws UnableToGetResultsetException{
         CsvSchema schema;
         try {
             in = new FileReader(datafile);
-            schema = CsvSchema.emptySchema().withHeader();
+            schema = CsvSchema.emptySchema()
+             .withHeader()
+             .withColumnSeparator(bean.getColumnSeparator());
             this.records = new CsvMapper()
              .readerFor(recipientClass)
              .with(schema)

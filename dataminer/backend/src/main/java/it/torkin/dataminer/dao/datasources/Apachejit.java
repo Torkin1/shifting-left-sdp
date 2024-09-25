@@ -12,6 +12,7 @@ import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Measurement;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;
+import it.torkin.dataminer.toolbox.string.BooleanReader;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -30,6 +31,7 @@ public class Apachejit implements Datasource{
         Map<String, String> record;
         Commit commit;
         Measurement measurement;
+        BooleanReader booleanReader = new BooleanReader("True", "False");
         
         record = records.next();
         commit = new Commit();
@@ -42,15 +44,13 @@ public class Apachejit implements Datasource{
                     commit.setHash(v);
                     break;
                 case "buggy":
-                    commit.setBuggy(v.equals("True"));
+                    commit.setBuggy(booleanReader.read(v));
                     break;
                 case "project":
                     commit.setProject(v);
                     break;
                 case "fix":
-                    // positive value could be different from the "true" string we expect,
-                    // so we parse it first and then convert it to a string again to obtain the standard "true" string
-                    measurement.getFeatures().add(new Feature(k, Boolean.toString(v.equals("True")), Boolean.class));
+                    measurement.getFeatures().add(new Feature(k, booleanReader.toString(v), Boolean.class));
                     break;
                 case "year":
                     measurement.getFeatures().add(new Feature(k, v, Year.class));

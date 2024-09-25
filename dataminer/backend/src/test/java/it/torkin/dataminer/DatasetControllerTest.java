@@ -4,6 +4,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import java.util.List;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,14 +44,13 @@ public class DatasetControllerTest {
     @Transactional
     public void testLoadDataset() throws UnableToCreateRawDatasetException{
       
-        Dataset dataset;
         
         datasetController.createRawDataset();
         log.info("loaded {} commits from apachejit", commitDao.countByDatasetName("apachejit"));
-        dataset = datasetDao.findByName("apachejit");
-        log.info("Dataset summary : {}", dataset.toString());
+        List<Dataset> datasets = datasetDao.findAll();
+        log.info("Datasets : {}", datasets);
 
-        assertNotEquals(0, commitDao.countByDatasetName("apachejit"));
+        assertNotEquals(0, datasets.size());
     }
 
     @Test

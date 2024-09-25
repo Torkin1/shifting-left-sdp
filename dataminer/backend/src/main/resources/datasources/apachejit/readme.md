@@ -23,5 +23,3 @@ Citing the apachejit paper:
 > Apache Mesos data and continued with the remaining 14 projects.
 
 So, it is safe to exclude issues in MESOS since we don't know the corresponding fixing commit (we can store MESOS issue anyways, in case fixing commits will be available later).
-
-Lines mentioning commits to `apache/hadoop` are loaded in db but ignored in the rest of the application since the project is not mentioned in the paper and there is no way to link the inducing issue to the commit using files in the dataset.
