@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
@@ -18,8 +21,10 @@ import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.toolbox.regex.NoMatchFoundException;
 import it.torkin.dataminer.toolbox.regex.Regex;
+import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
+@Slf4j
 public class GitDao implements AutoCloseable{
 
     private String remoteUrl;
@@ -45,7 +50,7 @@ public class GitDao implements AutoCloseable{
     private String forgeLocal(String localPath, String projectName){
         return String.format("%s/%s", localPath, projectName);
     }
-
+    
     private void initRepo() throws UnableToInitRepoException{
         
         FileRepositoryBuilder repoBuilder = new FileRepositoryBuilder();
@@ -53,7 +58,7 @@ public class GitDao implements AutoCloseable{
         // opens local copy of the repository if found, else
         // clones the remote repository
         try {
-            if(!localDir.exists()) cloneRepo(repoBuilder);
+            cloneRepo(repoBuilder);
             repository = repoBuilder
              .setWorkTree(localDir)
              .setMustExist(true)
@@ -66,61 +71,93 @@ public class GitDao implements AutoCloseable{
 
     }
     
+    private boolean gitDirExists(File directory, FileRepositoryBuilder repoBuilder) {
+
+        boolean gitDirExists;
+        
+        repoBuilder.findGitDir(directory);
+        gitDirExists = repoBuilder.getGitDir() != null;
+
+        return gitDirExists;
+    }
+
+    private boolean isDirEmpty(File directory){
+        try(DirectoryStream<Path> contents = Files.newDirectoryStream(directory.toPath())){
+            return !contents.iterator().hasNext();
+        } catch (IOException e) {
+            log.error("error checking if localdir is empty", e);
+            return false;
+        }
+    }
+    
     private void cloneRepo(FileRepositoryBuilder repoBuilder) throws UnableToCloneRepoException {
 
-        localDir.mkdirs();
-
-        try (Git git = Git.cloneRepository()
-         .setURI(remoteUrl)
-         .setDirectory(localDir)
-         .setProgressMonitor(new ProgressMonitor() {
-
-            private ProgressBar progress;
-            private ProgressBar subtaskProgress;
+        boolean localDirEmpty;
+        boolean gitDirExists;        
+        try{
             
-            @Override
-            public void start(int totalTasks) {
-                progress = new ProgressBar(String.format("cloning repository %s", projectName), totalTasks);
-            }
+            localDir.mkdirs();
+            localDirEmpty = isDirEmpty(localDir);
+            gitDirExists = gitDirExists(localDir, repoBuilder);
+            
+            if(!localDirEmpty && gitDirExists) return;
+            if(!localDirEmpty && !gitDirExists)
+                throw new CloneInNonEmptyDirException(localDir); 
 
-            @Override
-            public void beginTask(String title, int totalWork) {
-                if(subtaskProgress != null) subtaskProgress.close();
-                subtaskProgress = new ProgressBar(title, totalWork);
-            }
+            Git git = Git.cloneRepository()
+             .setURI(remoteUrl)
+             .setDirectory(localDir)
+             .setProgressMonitor(new ProgressMonitor() {
 
-            @Override
-            public void update(int completed) {
-                if (subtaskProgress != null)
-                {
-                    subtaskProgress.stepBy(completed);
-                    if (subtaskProgress.getMax() == subtaskProgress.getCurrent()){
-                        subtaskProgress.close();
+                private ProgressBar progress;
+                private ProgressBar subtaskProgress;
+                
+                @Override
+                public void start(int totalTasks) {
+                    progress = new ProgressBar(String.format("cloning repository %s", projectName), totalTasks);
+                }
+
+                @Override
+                public void beginTask(String title, int totalWork) {
+                    if(subtaskProgress != null) subtaskProgress.close();
+                    subtaskProgress = new ProgressBar(title, totalWork);
+                }
+
+                @Override
+                public void update(int completed) {
+                    if (subtaskProgress != null)
+                    {
+                        subtaskProgress.stepBy(completed);
+                        if (subtaskProgress.getMax() == subtaskProgress.getCurrent()){
+                            subtaskProgress.close();
+                        }
                     }
                 }
-            }
 
-            @Override
-            public void endTask() {
-                subtaskProgress.close();
-                progress.step();
-                if(progress.getMax() == progress.getCurrent()){
-                    progress.close();
+                @Override
+                public void endTask() {
+                    subtaskProgress.close();
+                    progress.step();
+                    if(progress.getMax() == progress.getCurrent()){
+                        progress.close();
+                    }
                 }
-            }
 
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
+                @Override
+                public boolean isCancelled() {
+                    return false;
+                }
 
-            @Override
-            public void showDuration(boolean enabled) {
-                // not implemented
-            }
-            
-         })
-         .call()) { }
+                @Override
+                public void showDuration(boolean enabled) {
+                    // not implemented
+                }
+                
+             })
+             .call();
+            git.close();
+        }
+        
         catch(Exception e){
             throw new UnableToCloneRepoException(e, remoteUrl, localDir);
         }
