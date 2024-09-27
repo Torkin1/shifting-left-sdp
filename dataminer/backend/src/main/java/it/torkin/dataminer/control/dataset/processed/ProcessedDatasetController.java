@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,10 +29,13 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     /**
      * We want to return issues only if they pass the filters.
      */
-    private boolean passesFilters(IssueFilterBean bean, Map<String, Integer> filteredByFilter) {
+    private boolean passesFilters(IssueFilterBean bean, Map<String, Map<String, Integer>> filteredByFilterPerProject) {
         for (Function<IssueFilterBean, Boolean> filter : issueFilters){
             if (!filter.apply(bean)) {
-                filteredByFilter.compute(filter.getClass().getName(), (k, v) -> v == null ? 1 : v + 1);
+                // we update filtered issues count per project for this filter
+                String project = bean.getIssue().getDetails().getFields().getProject().getName();
+                String filterName = filter.getClass().getSimpleName();
+                filteredByFilterPerProject.get(filterName).compute(project, (k, v) -> v == null ? 1 : v + 1);
                 return false;
             }
         }
@@ -42,8 +46,9 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     @Transactional
     public Stream<Issue> getFilteredIssues(ProcessedIssuesBean bean) {
 
+        issueFilters.forEach((filter) -> bean.getFilteredByFilterPerProjecy().put(filter.getClass().getSimpleName(), new HashMap<>()));
         return issueDao.findAllByDatasetName(bean.getDatasetName())
-                                .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByFilter()));  
+                                .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByFilterPerProjecy()));  
     }
     
 
