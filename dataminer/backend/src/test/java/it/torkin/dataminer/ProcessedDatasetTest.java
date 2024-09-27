@@ -1,7 +1,5 @@
 package it.torkin.dataminer;
 
-import static org.junit.Assert.assertNotEquals;
-
 import java.util.stream.Stream;
 
 import org.junit.Test;
