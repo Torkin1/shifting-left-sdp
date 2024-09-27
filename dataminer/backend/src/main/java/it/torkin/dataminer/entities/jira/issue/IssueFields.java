@@ -31,7 +31,7 @@ public class IssueFields{
     private Timestamp resolutiondate;
     private Timestamp duedate;
     private String summary; // issue title
-    private int workratio;
+    private Integer workratio;
 
     @AttributeOverrides({
         @AttributeOverride(name="self", column=@Column(name="issue_watchers_self")),
