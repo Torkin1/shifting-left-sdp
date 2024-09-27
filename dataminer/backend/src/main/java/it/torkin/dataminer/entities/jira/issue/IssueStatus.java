@@ -3,6 +3,7 @@ package it.torkin.dataminer.entities.jira.issue;
 import com.google.gson.annotations.SerializedName;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -19,6 +20,7 @@ public class IssueStatus{
     
     private String name;
     private String self;
+    @Column(columnDefinition = "text")
     private String description;
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     private IssueStatusCategory statusCategory;

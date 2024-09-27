@@ -46,7 +46,7 @@ public class DatasetControllerTest {
       
         
         datasetController.createRawDataset();
-        log.info("loaded {} commits from apachejit", commitDao.countByDatasetName("apachejit"));
+        // log.info("loaded {} commits from apachejit", commitDao.countByDatasetName("apachejit"));
         List<Dataset> datasets = datasetDao.findAll();
         log.info("Datasets : {}", datasets);
 

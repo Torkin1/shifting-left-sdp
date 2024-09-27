@@ -20,6 +20,7 @@ public class IssueAttachment{
     
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     private Developer author;
+    @Column(columnDefinition = "text")
     private String content;
     private Timestamp created;
     private String filename;
