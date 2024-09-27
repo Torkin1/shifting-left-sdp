@@ -1,6 +1,9 @@
 package it.torkin.dataminer.dao.local;
 
+import java.util.stream.Stream;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import it.torkin.dataminer.entities.dataset.Issue;
@@ -9,9 +12,9 @@ import it.torkin.dataminer.entities.dataset.Issue;
 public interface IssueDao extends JpaRepository<Issue, String>{
 
     boolean existsByKey(String issueKey);
-
     Issue findByKey(String expected);
 
-    
+    @Query("SELECT i FROM Issue i JOIN i.commits c WHERE c.dataset.name = :datasetName")
+    Stream<Issue> findAllByDatasetName(String datasetName);
     
 }

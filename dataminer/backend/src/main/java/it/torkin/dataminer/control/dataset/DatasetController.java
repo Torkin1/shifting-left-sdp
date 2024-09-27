@@ -3,12 +3,15 @@ package it.torkin.dataminer.control.dataset;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.config.DatasourceGlobalConfig;
+import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
+import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.dataset.raw.IRawDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.raw.UnableToFindDatasourceImplementationException;
@@ -17,6 +20,7 @@ import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.control.dataset.raw.UnableToPrepareDatasourceException;
 import it.torkin.dataminer.dao.datasources.Datasource;
 import it.torkin.dataminer.dao.local.DatasetDao;
+import it.torkin.dataminer.entities.dataset.Issue;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
@@ -25,6 +29,7 @@ import me.tongfei.progressbar.ProgressBar;
 public class DatasetController implements IDatasetController {
 
     @Autowired private IRawDatasetController rawDatasetController;
+    @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private DatasetDao datasetDao;
     @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
 
@@ -118,5 +123,10 @@ public class DatasetController implements IDatasetController {
     private String implNameFromConfig(DatasourceConfig config) {
         return String.format("%s.%s%s", datasourceGlobalConfig.getImplPackage(),
          config.getName().substring(0, 1).toUpperCase(), config.getName().substring(1));
+    }
+
+    @Override
+    public Stream<Issue> getProcessedIssues(ProcessedIssuesBean bean) {
+        return processedDatasetController.getFilteredIssues(bean);
     }
 }

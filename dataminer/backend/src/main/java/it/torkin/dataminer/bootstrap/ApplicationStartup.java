@@ -1,7 +1,5 @@
 package it.torkin.dataminer.bootstrap;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -9,9 +7,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
-import it.torkin.dataminer.config.GitConfig;
-import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
+import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
 import it.torkin.dataminer.control.dataset.stats.LinkageBean;
@@ -23,9 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ApplicationStartup implements ApplicationListener<ApplicationReadyEvent> {
 
-    @Autowired private JiraConfig jiraConfig;
-    @Autowired private GitConfig gitConfig;
-
     @Autowired private IDatasetController datasetController;
     @Autowired private ILinkageController linkageController;
     @Autowired private DatasetDao datasetDao;
@@ -35,8 +29,6 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         
-        List<Dataset> datasets;
-        
         init();
         greet();
 
@@ -44,17 +36,11 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         
         try {
             
-            datasetController.createRawDataset();
-            log.info("Dataset loaded");
+            createRawDataset();
 
-            datasets = datasetDao.findAll();
-            for (Dataset dataset : datasets) {
-                LinkageBean linkage = new LinkageBean(dataset.getName());
-                LinkageBean buggyLinkage = new LinkageBean(dataset.getName());
-                linkageController.calcTicketLinkage(linkage);
-                linkageController.calcBuggyTicketLinkage(buggyLinkage);
-                log.info(String.format("Linkage for dataset %s: %s", dataset.getName(), linkage));
-                log.info(String.format("Buggy linkage for dataset %s: %s", dataset.getName(), buggyLinkage));
+            for (Dataset dataset : datasetDao.findAll()) {
+                calcLinkage(dataset);
+                processDataset(dataset);
             }          
 
 
@@ -76,14 +62,29 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         
     }
 
-    private void printConfigs() {
-
-        log.info(String.format("jira config: %s", jiraConfig));
-        log.info(String.format("git config: %s", gitConfig));
-        
+    private void createRawDataset() throws UnableToCreateRawDatasetException {
+        datasetController.createRawDataset();
+        log.info("Dataset loaded");
     }
     
+    private void calcLinkage(Dataset dataset){
+        LinkageBean linkage = new LinkageBean(dataset.getName());
+        LinkageBean buggyLinkage = new LinkageBean(dataset.getName());
+        linkageController.calcTicketLinkage(linkage);
+        linkageController.calcBuggyTicketLinkage(buggyLinkage);
+        log.info(String.format("Linkage for dataset %s: %s", dataset.getName(), linkage));
+        log.info(String.format("Buggy linkage for dataset %s: %s", dataset.getName(), buggyLinkage));
+    }
+
     private void greet(){
         log.info("Application started");
+    }
+
+    private void processDataset(Dataset dataset) {
+        ProcessedIssuesBean bean = new ProcessedIssuesBean();
+        bean.setDatasetName(dataset.getName());
+        datasetController.getProcessedIssues(bean);
+        log.info("Processed issues count: " + bean.getProcessedIssues().count());
+        log.info(bean.toString());
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
+import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilters;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
@@ -37,7 +38,7 @@ public class IssueFilterTest {
 
         Dataset dataset = new Dataset();
         dataset.setName("dataset_test");
-        datasetDao.save(dataset);
+        dataset = datasetDao.save(dataset);
         
         Issue issue1 = new Issue();
         issue1.setKey("ISSUE-1");
@@ -99,9 +100,9 @@ public class IssueFilterTest {
          * - issue 3 to pass the filter since it has no buggy commits
          */
         IssueFilter filter = new ExclusiveBuggyCommitsOnlyFilters();
-        assertTrue(filter.apply(issue1));
-        assertFalse(filter.apply(issue2));
-        assertTrue(filter.apply(issue3));
+        assertTrue(filter.apply(new IssueFilterBean(issue1, dataset.getName())));
+        assertFalse(filter.apply(new IssueFilterBean(issue2, dataset.getName())));
+        assertTrue(filter.apply(new IssueFilterBean(issue3, dataset.getName())));
 
     }
     

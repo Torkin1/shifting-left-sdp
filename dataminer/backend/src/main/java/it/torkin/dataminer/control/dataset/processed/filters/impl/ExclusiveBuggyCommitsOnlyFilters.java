@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
+import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
@@ -18,14 +19,14 @@ public class ExclusiveBuggyCommitsOnlyFilters implements IssueFilter{
 
     @Override
     @Transactional
-    public Boolean apply(Issue issue) {
+    public Boolean apply(IssueFilterBean bean) {
 
         int nrSharedBuggyCommit = 0;
         int nrBuggyCommit = 0;
         List<Issue> issuesClosedBySameCommit;
 
-        for (Commit commit : issue.getCommits()){
-            if (commit.isBuggy()){
+        for (Commit commit : bean.getIssue().getCommits()){
+            if (commit.isBuggy() && commit.getDataset().getName().equals(bean.getDatasetName())){
                 nrBuggyCommit++;
                 issuesClosedBySameCommit = commit.getIssues();
                 if (issuesClosedBySameCommit.size() > 1){
