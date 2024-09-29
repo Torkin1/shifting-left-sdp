@@ -14,6 +14,7 @@ import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.dao.local.IssueDao;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import it.torkin.dataminer.entities.dataset.Issue;
 
 @Service
 @Slf4j
@@ -46,7 +47,22 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
 
         issueFilters.forEach((filter) -> bean.getFilteredByFilterPerProjecy().put(filter.getClass().getSimpleName(), new HashMap<>()));
         bean.setProcessedIssues(issueDao.findAllByDatasetName(bean.getDatasetName())
-        .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByFilterPerProjecy())));;  
+        .map(new Function<Issue, Issue>() {
+
+            long traversed = 0;
+            
+            @Override
+            public Issue apply(Issue issue) {
+                
+                traversed++;
+                if (traversed % 1000 == 0) {
+                    log.info("traversed {} issues of dataset {}", traversed, bean.getDatasetName());
+                }
+                return issue;
+            }
+            
+         })
+         .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByFilterPerProjecy())));  
     }
     
 
