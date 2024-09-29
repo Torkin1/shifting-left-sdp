@@ -84,7 +84,5 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         ProcessedIssuesBean bean = new ProcessedIssuesBean();
         bean.setDatasetName(dataset.getName());
         datasetController.getProcessedIssues(bean);
-        log.info("Processed issues count: " + bean.getProcessedIssues().count());
-        log.info(bean.toString());
     }
 }
