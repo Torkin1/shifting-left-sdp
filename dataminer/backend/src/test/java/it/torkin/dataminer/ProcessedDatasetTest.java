@@ -47,10 +47,10 @@ public class ProcessedDatasetTest {
 
         ProcessedIssuesBean bean = new ProcessedIssuesBean();
         bean.setDatasetName("apachejit");
-        Stream<Issue> processedIssues = processedDatasetController.getFilteredIssues(bean);
+        processedDatasetController.getFilteredIssues(bean);
         
         log.info(bean.toString());
-        log.info("Processed issues count: " + processedIssues.count());
+        log.info("Processed issues count: " + bean.getProcessedIssues().count());
         log.info(bean.toString());
     }
     
