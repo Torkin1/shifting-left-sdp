@@ -10,6 +10,7 @@ import lombok.Data;
 @Data
 public class ProcessedIssuesBean {
 
+    // TODO: #63: move both this fields in a ProcessedIssues class (package entities.transient)
     private String datasetName;
     private Stream<Issue> processedIssues;
 

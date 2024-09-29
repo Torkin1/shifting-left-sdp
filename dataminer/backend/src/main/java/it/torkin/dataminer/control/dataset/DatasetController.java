@@ -3,7 +3,6 @@ package it.torkin.dataminer.control.dataset;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,6 @@ import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.control.dataset.raw.UnableToPrepareDatasourceException;
 import it.torkin.dataminer.dao.datasources.Datasource;
 import it.torkin.dataminer.dao.local.DatasetDao;
-import it.torkin.dataminer.entities.dataset.Issue;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
@@ -126,7 +124,7 @@ public class DatasetController implements IDatasetController {
     }
 
     @Override
-    public Stream<Issue> getProcessedIssues(ProcessedIssuesBean bean) {
-        return processedDatasetController.getFilteredIssues(bean);
+    public void getProcessedIssues(ProcessedIssuesBean bean) {
+        processedDatasetController.getFilteredIssues(bean);
     }
 }

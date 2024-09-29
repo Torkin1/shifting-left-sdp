@@ -1,9 +1,5 @@
 package it.torkin.dataminer.control.dataset.processed;
 
-import java.util.stream.Stream;
-
-import it.torkin.dataminer.entities.dataset.Issue;
-
 public interface IProcessedDatasetController {
 
     /**
@@ -14,6 +10,6 @@ public interface IProcessedDatasetController {
      * to that dataset.
      * @return Stream of issues
      */
-    Stream<Issue> getFilteredIssues(ProcessedIssuesBean bean);
+    void getFilteredIssues(ProcessedIssuesBean bean);
 
 }

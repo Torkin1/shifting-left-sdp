@@ -1,11 +1,10 @@
 package it.torkin.dataminer.control.dataset.processed;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
-import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.dao.local.IssueDao;
-import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,11 +42,11 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
 
     @Override
     @Transactional
-    public Stream<Issue> getFilteredIssues(ProcessedIssuesBean bean) {
+    public void getFilteredIssues(ProcessedIssuesBean bean) {
 
         issueFilters.forEach((filter) -> bean.getFilteredByFilterPerProjecy().put(filter.getClass().getSimpleName(), new HashMap<>()));
-        return issueDao.findAllByDatasetName(bean.getDatasetName())
-                                .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByFilterPerProjecy()));  
+        bean.setProcessedIssues(issueDao.findAllByDatasetName(bean.getDatasetName())
+        .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByFilterPerProjecy())));;  
     }
     
 
