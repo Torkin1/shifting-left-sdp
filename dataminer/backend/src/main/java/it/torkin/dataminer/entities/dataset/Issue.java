@@ -41,4 +41,12 @@ public class Issue {
     @OrderBy("prediction_date ASC")
     private List<Measurement> measurements = new ArrayList<>();
 
+    /**
+     * Returns true if this issue has at least one buggy commit
+     * belonging to the specified dataset.
+     */
+    public boolean isBuggy(String datasetName){
+        return commits.stream().anyMatch((commit) -> commit.isBuggy() && commit.getDataset().getName().equals(datasetName));
+    }
+
 }
