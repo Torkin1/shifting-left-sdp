@@ -1,7 +1,5 @@
 package it.torkin.dataminer;
 
-import java.util.stream.Stream;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +16,6 @@ import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.dao.datasources.Apachejit;
 import it.torkin.dataminer.dao.datasources.Datasource;
-import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
