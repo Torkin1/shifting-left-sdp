@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
-import it.torkin.dataminer.control.features.measurementdate.MeasurementDate;
+import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.entities.dataset.Issue;
 import lombok.Data;
 

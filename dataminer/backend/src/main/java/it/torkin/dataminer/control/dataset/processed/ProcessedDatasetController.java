@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
+import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
@@ -64,7 +65,8 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
                 }   
             })
             // we order the issues by the MeasurementDate from least to most recent
-            .sorted((issue1, issue2) -> bean.getMeasurementDate().apply(issue1).compareTo(bean.getMeasurementDate().apply(issue2)))
+            .sorted((issue1, issue2) -> bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue1))
+                .compareTo(bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue2))))
             // we filter out issues that do not pass the filters
             .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByProjecy())));  
     }
