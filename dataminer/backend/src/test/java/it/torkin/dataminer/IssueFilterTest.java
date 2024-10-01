@@ -1,7 +1,10 @@
 package it.torkin.dataminer;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,15 +14,21 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import it.torkin.dataminer.config.NotMostRecentFilterConfig;
+import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilter;
+import it.torkin.dataminer.control.dataset.processed.filters.impl.NotMostRecentFilter;
+import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.toolbox.math.SafeMath;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
@@ -32,7 +41,34 @@ public class IssueFilterTest {
     @Autowired private IssueDao issueDao;
     @Autowired private CommitDao commitDao;
     @Autowired private DatasetDao datasetDao;
+
+    @Autowired private IDatasetController datasetController; 
+    @Autowired private NotMostRecentFilterConfig notMostRecentFilterConfig;
+    
+    @Autowired private NotMostRecentFilter filter;
+
+    @Test
+    @Transactional
+    public void testNotMostRecentFilter() throws UnableToCreateRawDatasetException{
         
+        datasetController.createRawDataset();
+        filter.reset();
+
+
+        long totalCount = issueDao.countAllByDatasetName("leveragingjit");
+        long expectedFilteredCount = SafeMath.ceiledInversePercentage(notMostRecentFilterConfig.getPercentage(), totalCount);
+        Stream<Issue> issues = issueDao.findAllByDatasetName("leveragingjit")
+            .filter((issue) -> filter.apply(new IssueFilterBean(issue, "leveragingjit")));
+        long actualCount = issues.count();
+        long expectedCount = totalCount - expectedFilteredCount;
+
+        log.info("Expected count: {}, Actual count: {}", expectedCount, actualCount);
+        log.info("Total count: {}, expected filtered count: {}", totalCount, expectedFilteredCount);
+        log.info(notMostRecentFilterConfig.toString());        
+
+        assertEquals(expectedCount, actualCount);
+    }
+    
     @Test
     public void testExclusiveBuggyCommitsOnlyFilters() {
 

@@ -14,7 +14,10 @@ public interface IssueDao extends JpaRepository<Issue, String>{
     boolean existsByKey(String issueKey);
     Issue findByKey(String expected);
 
-    @Query("SELECT i FROM Issue i JOIN i.commits c WHERE c.dataset.name = :datasetName")
+    @Query("SELECT DISTINCT i FROM Issue i JOIN i.commits c WHERE c.dataset.name = :datasetName")
     Stream<Issue> findAllByDatasetName(String datasetName);
-    
+
+    @Query("SELECT COUNT(DISTINCT i) FROM Issue i JOIN i.commits c WHERE c.dataset.name = :datasetName")
+    long countAllByDatasetName(String datasetName);
+
 }

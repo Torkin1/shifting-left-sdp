@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
+import it.torkin.dataminer.control.features.measurementdate.MeasurementDate;
 import it.torkin.dataminer.entities.dataset.Issue;
 import lombok.Data;
 
@@ -20,5 +21,7 @@ public class ProcessedIssuesBean {
      * filtered out issues is not known until the stream is fully consumed.
      */
     private Map<String, Integer> filteredByProjecy = new HashMap<>();
+
+    private MeasurementDate measurementDate;
     
 }

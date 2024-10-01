@@ -15,12 +15,12 @@ import jakarta.transaction.Transactional;
  * all related tickets must be discarded.
  */
 @Component
-public class ExclusiveBuggyCommitsOnlyFilter implements IssueFilter{
+public class ExclusiveBuggyCommitsOnlyFilter extends IssueFilter{
 
     @Override
     @Transactional
-    public Boolean apply(IssueFilterBean bean) {
-
+    public Boolean applyFilter(IssueFilterBean bean) {
+        
         int nrSharedBuggyCommit = 0;
         int nrBuggyCommit = 0;
         List<Issue> issuesClosedBySameCommit;

@@ -28,38 +28,44 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
      * We want to return issues only if they pass the filters.
      */
     private boolean passesFilters(IssueFilterBean bean, Map<String, Integer> filteredByProject) {
+        
         for (Function<IssueFilterBean, Boolean> filter : issueFilters){
             if (!filter.apply(bean)) {
-                // we update filtered issues count per project
-                String project = bean.getIssue().getDetails().getFields().getProject().getName();
-                filteredByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
-                return false;
+                if (!bean.isFiltered()) {
+                    // we update filtered issues count per project
+                    String project = bean.getIssue().getDetails().getFields().getProject().getName();
+                    filteredByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
+                    bean.setFiltered(true);
+                }
             }
         }
-        return true;
+        return !bean.isFiltered();
     }
 
     @Override
     @Transactional
     public void getFilteredIssues(ProcessedIssuesBean bean) {
-
+        
+        issueFilters.forEach((filter) -> filter.reset());
         bean.setProcessedIssues(issueDao.findAllByDatasetName(bean.getDatasetName())
-        // we want to log the progress while traversing the issues
-        .map(new Function<Issue, Issue>() {
+            // we want to log the progress while traversing the issues
+            .map(new Function<Issue, Issue>() {
 
-            long traversed = 0;
-            
-            @Override
-            public Issue apply(Issue issue) {
+                long traversed = 0;
                 
-                traversed++;
-                if (traversed % 1000 == 0) {
-                    log.info("traversed {} issues of dataset {}", traversed, bean.getDatasetName());
-                }
-                return issue;
-            }   
-         })
-         // we filter out issues that do not pass the filters
-         .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByProjecy())));  
+                @Override
+                public Issue apply(Issue issue) {
+                    
+                    traversed++;
+                    if (traversed % 10000 == 0) {
+                        log.info("traversed {} issues of dataset {}", traversed, bean.getDatasetName());
+                    }
+                    return issue;
+                }   
+            })
+            // we order the issues by the MeasurementDate from least to most recent
+            .sorted((issue1, issue2) -> bean.getMeasurementDate().apply(issue1).compareTo(bean.getMeasurementDate().apply(issue2)))
+            // we filter out issues that do not pass the filters
+            .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByProjecy())));  
     }
 }
