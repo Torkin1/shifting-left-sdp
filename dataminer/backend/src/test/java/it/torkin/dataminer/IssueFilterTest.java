@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
-import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilters;
+import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilter;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
@@ -99,7 +99,7 @@ public class IssueFilterTest {
          * - issue 2 to be filtered out since it has only shared buggy commits
          * - issue 3 to pass the filter since it has no buggy commits
          */
-        IssueFilter filter = new ExclusiveBuggyCommitsOnlyFilters();
+        IssueFilter filter = new ExclusiveBuggyCommitsOnlyFilter();
         assertTrue(filter.apply(new IssueFilterBean(issue1, dataset.getName())));
         assertFalse(filter.apply(new IssueFilterBean(issue2, dataset.getName())));
         assertTrue(filter.apply(new IssueFilterBean(issue3, dataset.getName())));

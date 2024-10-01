@@ -15,7 +15,7 @@ import jakarta.transaction.Transactional;
  * all related tickets must be discarded.
  */
 @Component
-public class ExclusiveBuggyCommitsOnlyFilters implements IssueFilter{
+public class ExclusiveBuggyCommitsOnlyFilter implements IssueFilter{
 
     @Override
     @Transactional
