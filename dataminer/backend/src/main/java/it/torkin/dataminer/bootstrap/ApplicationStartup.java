@@ -1,5 +1,7 @@
 package it.torkin.dataminer.bootstrap;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -8,11 +10,10 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import it.torkin.dataminer.control.dataset.IDatasetController;
-import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
+import it.torkin.dataminer.control.dataset.stats.IStatsController;
 import it.torkin.dataminer.control.dataset.stats.LinkageBean;
-import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,29 +23,21 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     @Autowired private IDatasetController datasetController;
     @Autowired private ILinkageController linkageController;
-    @Autowired private DatasetDao datasetDao;
+    @Autowired private IStatsController statsController;
 
     @Autowired private Environment env;
 
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         
-        init();
-        greet();
-
         if (isTest()) return;
         
         try {
             
             createRawDataset();
+            printStats();         
 
-            for (Dataset dataset : datasetDao.findAll()) {
-                calcLinkage(dataset);
-                processDataset(dataset);
-            }          
-
-
-        } catch (UnableToCreateRawDatasetException e) {
+        } catch (UnableToCreateRawDatasetException | IOException e) {
             log.error("fatal", e);
             throw new RuntimeException(e);
         }
@@ -57,9 +50,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         return false;
     }
 
-    private void init() {
-
-        
+    private void printStats() throws IOException{
+        statsController.printStatsToCSV();
     }
 
     private void createRawDataset() throws UnableToCreateRawDatasetException {
@@ -74,15 +66,5 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         linkageController.calcBuggyTicketLinkage(buggyLinkage);
         log.info(String.format("Linkage for dataset %s: %s", dataset.getName(), linkage));
         log.info(String.format("Buggy linkage for dataset %s: %s", dataset.getName(), buggyLinkage));
-    }
-
-    private void greet(){
-        log.info("Application started");
-    }
-
-    private void processDataset(Dataset dataset) {
-        ProcessedIssuesBean bean = new ProcessedIssuesBean();
-        bean.setDatasetName(dataset.getName());
-        datasetController.getProcessedIssues(bean);
     }
 }
