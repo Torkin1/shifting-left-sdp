@@ -20,7 +20,7 @@ public class ProcessedIssuesBean {
      * Since the issues are returned as a Stream object, the total number of
      * filtered out issues is not known until the stream is fully consumed.
      */
-    private Map<String, Integer> filteredByProjecy = new HashMap<>();
+    private Map<String, Integer> filteredByProject = new HashMap<>();
 
     private MeasurementDate measurementDate;
     

@@ -97,7 +97,7 @@ public class Leveragingjit implements Datasource{
 
             switch (k) {
                 case "Project":
-                    commit.setProject(toRepo(v));
+                    commit.setRepository(toRepo(v));
                     break;
                 case "Commit":
                     commit.setHash(v);

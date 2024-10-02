@@ -47,7 +47,7 @@ public class Apachejit implements Datasource{
                     commit.setBuggy(booleanReader.read(v));
                     break;
                 case "project":
-                    commit.setProject(v);
+                    commit.setRepository(v);
                     break;
                 case "fix":
                     measurement.getFeatures().add(new Feature(k, booleanReader.toString(v), Boolean.class));

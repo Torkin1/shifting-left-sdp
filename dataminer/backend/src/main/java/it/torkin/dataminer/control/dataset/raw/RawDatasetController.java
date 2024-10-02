@@ -90,14 +90,14 @@ public class RawDatasetController implements IRawDatasetController{
     private void handleSkippedCommit(Commit commit, Dataset dataset, Exception cause){
                 
         log.debug("Skipping commit {} of project {} from dataset {}: {}",
-        commit.getHash(), commit.getProject(), dataset.getName(), cause.toString());
+        commit.getHash(), commit.getRepository(), dataset.getName(), cause.toString());
         dataset.setSkipped(dataset.getSkipped() + 1);
 
         if (cause instanceof UnableToFetchIssueException){
-            dataset.getUnlinkedByProject().compute(commit.getProject(),
+            dataset.getUnlinkedByRepository().compute(commit.getRepository(),
              (project, count) -> count == null ? 1 : count + 1);
             if (commit.isBuggy()){
-                dataset.getBuggyUnlinkedByProject().compute(commit.getProject(),
+                dataset.getBuggyUnlinkedByRepository().compute(commit.getRepository(),
                  (project, count) -> count == null ? 1 : count + 1);
             }
         }
@@ -108,7 +108,7 @@ public class RawDatasetController implements IRawDatasetController{
 
         GitDao gitDao;
 
-        gitDao = getGitdaoByProject(commit.getProject());
+        gitDao = getGitdaoByProject(commit.getRepository());
         gitDao.getCommitDetails(commit);
         commit.getMeasurement().setMeasurementDate(commit.getTimestamp());
     }
@@ -150,7 +150,7 @@ public class RawDatasetController implements IRawDatasetController{
         List<String> issueKeys;
 
         try {
-            gitDao = getGitdaoByProject(commit.getProject());
+            gitDao = getGitdaoByProject(commit.getRepository());
             issueKeys = gitDao.getLinkedIssueKeysByCommit(commit.getHash());
             for (String issueKey : issueKeys){
                 issue = issueDao.findByKey(issueKey);

@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"hash", "project", "dataset_id"})
+    @UniqueConstraint(columnNames = {"hash", "repository", "dataset_id"})
 })
 public class Commit {
     
@@ -34,10 +34,7 @@ public class Commit {
     private boolean buggy;
     private Timestamp timestamp;
 
-    /**
-     * Must match the name given to the repo (i.e apache/myproject)
-     */
-    private String project;
+    private String repository;
 
     @ManyToMany(fetch = FetchType.EAGER)
     private List<Issue> issues = new ArrayList<>();

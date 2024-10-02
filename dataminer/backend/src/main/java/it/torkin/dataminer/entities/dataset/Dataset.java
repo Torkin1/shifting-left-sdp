@@ -34,14 +34,14 @@ public class Dataset {
      * divided by project name.
      */
     @ElementCollection(fetch = FetchType.EAGER)
-    private Map<String, Integer> unlinkedByProject = new HashMap<>();
+    private Map<String, Integer> unlinkedByRepository = new HashMap<>();
 
     /**
      * Number of buggy commits that couldn't be linked to an issue,
      * divided by project name.
      */
     @ElementCollection(fetch = FetchType.EAGER)
-    private Map<String, Integer> buggyUnlinkedByProject = new HashMap<>();
+    private Map<String, Integer> buggyUnlinkedByRepository = new HashMap<>();
 
     private Timestamp lastUpdatedTime;
     

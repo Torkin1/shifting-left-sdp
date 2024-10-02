@@ -9,7 +9,7 @@ import lombok.Data;
 public class LinkageBean {
 
     
-    public static final String ALL_PROJECTS = "all_projects";
+    public static final String ALL_REPOSITORIES = "all_repositories";
     
     private final String datasetName;
     
@@ -22,6 +22,6 @@ public class LinkageBean {
      * that project were all filtered away while crating the processsed dataset,
      * thus we can assume that the linkage for that project is 0.
      */
-    private final Map<String, Double> linkageByProject = new HashMap<>();
+    private final Map<String, Double> linkageByRepository = new HashMap<>();
 
 }
