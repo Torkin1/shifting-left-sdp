@@ -1,6 +1,8 @@
 package it.torkin.dataminer;
 
-import java.util.stream.Stream;
+import static org.junit.Assert.assertFalse;
+
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,11 +13,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.config.DatasourceConfig;
+import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.dataset.raw.IRawDatasetController;
+import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
+import it.torkin.dataminer.control.measurementdate.MeasurementDate;
+import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
+import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
 import it.torkin.dataminer.dao.datasources.Apachejit;
 import it.torkin.dataminer.dao.datasources.Datasource;
 import it.torkin.dataminer.entities.dataset.Issue;
@@ -31,6 +38,7 @@ public class ProcessedDatasetTest {
 
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private IRawDatasetController rawDatasetController;
+    @Autowired private IDatasetController datasetController;
     
     @Test
     @Transactional
@@ -52,6 +60,34 @@ public class ProcessedDatasetTest {
         log.info(bean.toString());
         log.info("Processed issues count: " + bean.getProcessedIssues().count());
         log.info(bean.toString());
+    }
+
+    @Test
+    @Transactional
+    public void testIssuesOrderedByMeasurementDate() throws UnableToCreateRawDatasetException{
+        final String datasetName = "leveragingjit";
+        ProcessedIssuesBean bean = new ProcessedIssuesBean();
+        MeasurementDate measurementDate = new FirstCommitDate();
+        bean.setDatasetName(datasetName);
+        bean.setMeasurementDate(measurementDate);
+
+        datasetController.createRawDataset();
+        processedDatasetController.getFilteredIssues(bean);
+
+        bean.getProcessedIssues().forEach(new Consumer<Issue>() {
+
+            private Issue lastIssue = null;
+            
+            @Override
+            public void accept(Issue issue) {
+                if (lastIssue != null){
+                    assertFalse(measurementDate.apply(new MeasurementDateBean(datasetName, lastIssue))
+                        .after(measurementDate.apply(new MeasurementDateBean(datasetName, issue))));
+                }
+                lastIssue = issue;
+            }
+        });
+
     }
     
 }

@@ -37,22 +37,22 @@ public class LinkageController implements ILinkageController {
         Dataset dataset;
         
         dataset = datasetDao.findByName(linkageBean.getDatasetName());
-        projects = commitDao.findDistinctProjectsByDatasetName(dataset.getName());
+        projects = commitDao.findDistinctRepositoriesByDatasetName(dataset.getName());
 
         // calcs linkage for each project
         for (String project : projects) {
 
             if(buggyOnly){
-                linkedCount = SafeMath.nullAsZero(commitDao.countByDatasetNameAndProjectAndBuggy(dataset.getName(), project, true));
-                count = SafeMath.nullAsZero(dataset.getBuggyUnlinkedByProject().get(project));
+                linkedCount = SafeMath.nullAsZero(commitDao.countByDatasetNameAndRepositoryAndBuggy(dataset.getName(), project, true));
+                count = SafeMath.nullAsZero(dataset.getBuggyUnlinkedByRepository().get(project));
             } else {
-                linkedCount =  SafeMath.nullAsZero(commitDao.countByDatasetNameAndProject(dataset.getName(), project));
-                count =  SafeMath.nullAsZero(dataset.getUnlinkedByProject().get(project));
+                linkedCount =  SafeMath.nullAsZero(commitDao.countByDatasetNameAndRepository(dataset.getName(), project));
+                count =  SafeMath.nullAsZero(dataset.getUnlinkedByRepository().get(project));
             }
             count += linkedCount;
 
             linkage = SafeMath.calcPercentage(linkedCount, count);
-            linkageBean.getLinkageByProject().put(project, linkage);
+            linkageBean.getLinkageByRepository().put(project, linkage);
             
             totalLinkedCount += linkedCount;
             totalCount += count;
@@ -60,7 +60,7 @@ public class LinkageController implements ILinkageController {
 
         // calcs total linkage
         linkage = SafeMath.calcPercentage(totalLinkedCount, totalCount);
-        linkageBean.getLinkageByProject().put(LinkageBean.ALL_PROJECTS, linkage);
+        linkageBean.getLinkageByRepository().put(LinkageBean.ALL_REPOSITORIES, linkage);
     }
 
     @Override

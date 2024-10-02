@@ -7,4 +7,9 @@ import lombok.Data;
 public class IssueFilterBean {
     private final  Issue issue;
     private final String datasetName;
+
+    /**
+     * NOTE: filters must access this field in read-only mode.
+     */
+    private boolean filtered = false;
 }
