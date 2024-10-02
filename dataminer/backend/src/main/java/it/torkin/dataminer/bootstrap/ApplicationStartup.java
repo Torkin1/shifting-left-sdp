@@ -35,7 +35,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         try {
             
             createRawDataset();
-            printStats();         
+            printStats();
 
         } catch (UnableToCreateRawDatasetException | IOException e) {
             log.error("fatal", e);
@@ -52,6 +52,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     private void printStats() throws IOException{
         statsController.printStatsToCSV();
+        log.info("dataset stats printed");
     }
 
     private void createRawDataset() throws UnableToCreateRawDatasetException {
