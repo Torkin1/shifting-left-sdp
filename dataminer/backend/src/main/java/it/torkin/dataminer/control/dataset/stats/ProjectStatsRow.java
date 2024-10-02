@@ -5,12 +5,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
 @Data
-@JsonPropertyOrder({"dataset", "project", "measurementDate", "usableTickets", "excludedTickets"})
+@JsonPropertyOrder({
+    "dataset",
+    "project", 
+    "measurementDate", 
+    "usableTickets", 
+    "usableBuggyTickets", 
+    "excludedTickets"
+})
 public class ProjectStatsRow {
     private String dataset;
     private String project;
     private String measurementDate;
     private int usableTickets;
+    private int usableBuggyTickets;
     private int excludedTickets;
 
 }

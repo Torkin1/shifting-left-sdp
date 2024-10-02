@@ -98,6 +98,7 @@ public class StatsController implements IStatsController{
         for (Dataset dataset : datasets){
             
             Map<String, Integer> issuesByProject = new HashMap<>();
+            Map<String, Integer> buggyIssuesByProject = new HashMap<>();
             ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean();
             processedIssuesBean.setDatasetName(dataset.getName());
             // TODO: measurement dates should be fetched by a dedicated controller
@@ -106,6 +107,9 @@ public class StatsController implements IStatsController{
             // we must first count each project's issues in order to trigger filters
             processedIssuesBean.getProcessedIssues().forEach((issue) -> {
                 String project = issue.getDetails().getFields().getProject().getName();
+                if(issue.isBuggy(dataset.getName())){
+                    buggyIssuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
+                }
                 issuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
             });
             // now we have filtered out issue counts by project and can proceed
