@@ -122,6 +122,7 @@ public class StatsController implements IStatsController{
                     row.setMeasurementDate(processedIssuesBean.getMeasurementDate().getClass().getSimpleName());
                     row.setUsableTickets(count);
                     row.setExcludedTickets(processedIssuesBean.getFilteredByProject().getOrDefault(project, 0));
+                    row.setUsableBuggyTickets(buggyIssuesByProject.getOrDefault(project, 0));
                     try {
                         sequenceWriter.write(row);
                     } catch (IOException e) {
