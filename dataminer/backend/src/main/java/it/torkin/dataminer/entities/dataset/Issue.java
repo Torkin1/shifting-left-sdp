@@ -39,7 +39,7 @@ public class Issue {
     private IssueDetails details;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "issue")
-    @OrderBy("prediction_date ASC")
+    @OrderBy("measurementDate ASC")
     private List<Measurement> measurements = new ArrayList<>();
 
     /**
