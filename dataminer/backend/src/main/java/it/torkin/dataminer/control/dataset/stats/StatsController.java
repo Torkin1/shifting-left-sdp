@@ -99,10 +99,8 @@ public class StatsController implements IStatsController{
             
             Map<String, Integer> issuesByProject = new HashMap<>();
             Map<String, Integer> buggyIssuesByProject = new HashMap<>();
-            ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean();
-            processedIssuesBean.setDatasetName(dataset.getName());
             // TODO: measurement dates should be fetched by a dedicated controller
-            processedIssuesBean.setMeasurementDate(new FirstCommitDate());
+            ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), new FirstCommitDate());
             processedDatasetController.getFilteredIssues(processedIssuesBean);
             // we must first count each project's issues in order to trigger filters
             processedIssuesBean.getProcessedIssues().forEach((issue) -> {
@@ -121,7 +119,7 @@ public class StatsController implements IStatsController{
                     row.setProject(project);
                     row.setMeasurementDate(processedIssuesBean.getMeasurementDate().getClass().getSimpleName());
                     row.setUsableTickets(count);
-                    row.setExcludedTickets(processedIssuesBean.getFilteredByProject().getOrDefault(project, 0));
+                    row.setExcludedTickets(processedIssuesBean.getExcludedByProject().getOrDefault(project, 0));
                     row.setUsableBuggyTickets(buggyIssuesByProject.getOrDefault(project, 0));
                     try {
                         sequenceWriter.write(row);

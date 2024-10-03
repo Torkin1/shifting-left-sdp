@@ -12,19 +12,15 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
-import it.torkin.dataminer.control.dataset.raw.IRawDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
-import it.torkin.dataminer.dao.datasources.Apachejit;
-import it.torkin.dataminer.dao.datasources.Datasource;
 import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -37,24 +33,15 @@ import lombok.extern.slf4j.Slf4j;
 public class ProcessedDatasetTest {
 
     @Autowired private IProcessedDatasetController processedDatasetController;
-    @Autowired private IRawDatasetController rawDatasetController;
     @Autowired private IDatasetController datasetController;
     
     @Test
     @Transactional
-    public void getFilteredIssuesTest() throws UnableToLoadCommitsException, UnableToInitDatasourceException {
+    public void getFilteredIssuesTest() throws UnableToLoadCommitsException, UnableToInitDatasourceException, UnableToCreateRawDatasetException {
 
-        Datasource datasource = new Apachejit();
-        DatasourceConfig config = new DatasourceConfig();
-        config.setName("apachejit");
-        config.setPath("./src/test/resources/dataset_example/");
-        config.setExpectedSize(2000);
+        datasetController.createRawDataset();
         
-        datasource.init(config);
-        rawDatasetController.loadDatasource(datasource, config);
-
-        ProcessedIssuesBean bean = new ProcessedIssuesBean();
-        bean.setDatasetName("apachejit");
+        ProcessedIssuesBean bean = new ProcessedIssuesBean("leveragingjit", new FirstCommitDate());
         processedDatasetController.getFilteredIssues(bean);
         
         log.info(bean.toString());
@@ -66,10 +53,8 @@ public class ProcessedDatasetTest {
     @Transactional
     public void testIssuesOrderedByMeasurementDate() throws UnableToCreateRawDatasetException{
         final String datasetName = "leveragingjit";
-        ProcessedIssuesBean bean = new ProcessedIssuesBean();
+        ProcessedIssuesBean bean = new ProcessedIssuesBean("leveragingjit", new FirstCommitDate());
         MeasurementDate measurementDate = new FirstCommitDate();
-        bean.setDatasetName(datasetName);
-        bean.setMeasurementDate(measurementDate);
 
         datasetController.createRawDataset();
         processedDatasetController.getFilteredIssues(bean);

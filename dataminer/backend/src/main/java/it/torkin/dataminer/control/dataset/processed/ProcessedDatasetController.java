@@ -1,8 +1,8 @@
 package it.torkin.dataminer.control.dataset.processed;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,19 +28,25 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     /**
      * We want to return issues only if they pass the filters.
      */
-    private boolean passesFilters(IssueFilterBean bean, Map<String, Integer> filteredByProject) {
+    private boolean passesFilters(IssueFilterBean issueFilterBean, ProcessedIssuesBean processedIssuesBean) {
         
-        for (Function<IssueFilterBean, Boolean> filter : issueFilters){
-            if (!filter.apply(bean)) {
-                if (!bean.isFiltered()) {
-                    // we update filtered issues count per project
-                    String project = bean.getIssue().getDetails().getFields().getProject().getName();
-                    filteredByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
-                    bean.setFiltered(true);
+        for (IssueFilter filter : issueFilters){
+            if (!filter.apply(issueFilterBean)) {
+                String filterName = filter.getClass().getSimpleName();
+                String project = issueFilterBean.getIssue().getDetails().getFields().getProject().getName();
+                if (!issueFilterBean.isFiltered()) {
+                    // we update excluded issues count per project
+                    processedIssuesBean.getExcludedByProject()
+                     .compute(project, (k, v) -> v == null ? 1 : v + 1);
+                    issueFilterBean.setFiltered(true);
                 }
+                // we truck issues filtered by this filter for the project
+                processedIssuesBean.getFilteredByProjectGroupedByFilter().putIfAbsent(filterName, new HashMap<>());
+                processedIssuesBean.getFilteredByProjectGroupedByFilter().get(filterName)
+                 .compute(project, (k, v) -> v == null ? 1 : v + 1);
             }
         }
-        return !bean.isFiltered();
+        return !issueFilterBean.isFiltered();
     }
 
     @Override
@@ -68,6 +74,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
             .sorted((issue1, issue2) -> bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue1))
                 .compareTo(bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue2))))
             // we filter out issues that do not pass the filters
-            .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean.getFilteredByProject())));  
+            .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean)));  
     }
 }
