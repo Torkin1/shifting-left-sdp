@@ -57,45 +57,45 @@ public class StatsController implements IStatsController{
     }
 
     private void printRepositoriesStats(List<Dataset> datasets, ObjectWriter writer,
-        File output) throws IOException{
+        File output) throws IOException {
 
+        try (SequenceWriter sequenceWriter = writer.writeValues(output)) {
+            for (Dataset dataset : datasets) {
 
-        for (Dataset dataset : datasets) {
-            
-            LinkageBean linkageBean = new LinkageBean(dataset.getName());
-            LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
-            
-            linkageController.calcTicketLinkage(linkageBean);
-            linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
+                LinkageBean linkageBean = new LinkageBean(dataset.getName());
+                LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
 
-            try(SequenceWriter sequenceWriter = writer.writeValues(output)){
+                linkageController.calcTicketLinkage(linkageBean);
+                linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
+
                 linkageBean.getLinkageByRepository().forEach((repository, linkage) -> {
-                
-                    if (!repository.equals(LinkageBean.ALL_REPOSITORIES)){
+
+                    if (!repository.equals(LinkageBean.ALL_REPOSITORIES)) {
                         RepositoriesStatsRow row = new RepositoriesStatsRow();
                         row.setDataset(dataset.getName());
                         row.setRepository(repository);
                         row.setLinkage(linkage);
                         row.setBuggyLinkage(
-                            buggyLinkageBean.getLinkageByRepository().getOrDefault(repository, 0.0)
+                                buggyLinkageBean.getLinkageByRepository().getOrDefault(repository, 0.0)
                         );
                         try {
                             sequenceWriter.write(row);
-                            
+
                         } catch (IOException e) {
                             log.error("Cannot write row to CSV at {}, row is {}", output, row, e);
                         }
                     }
                 });
-            }            
-        }   
-
+                log.info("repository stats dumped for dataset {}", dataset.getName());
+            }
+        }
     }
 
     private void printProjectsStats(List<Dataset> datasets, ObjectWriter writer,
     File output) throws IOException{
-                
-        for (Dataset dataset : datasets){
+
+        try (SequenceWriter sequenceWriter = writer.writeValues(output)){
+            for (Dataset dataset : datasets){
             
             Map<String, Integer> issuesByProject = new HashMap<>();
             Map<String, Integer> buggyIssuesByProject = new HashMap<>();
@@ -112,7 +112,6 @@ public class StatsController implements IStatsController{
             });
             // now we have filtered out issue counts by project and can proceed
             // to write stats to csv
-            try (SequenceWriter sequenceWriter = writer.writeValues(output)){
                 issuesByProject.forEach((project, count) -> {
                     ProjectStatsRow row = new ProjectStatsRow();
                     row.setDataset(dataset.getName());
@@ -127,9 +126,9 @@ public class StatsController implements IStatsController{
                         log.error("Cannot write row to CSV at {}, row is {}", output, row, e);
                     }
                 });
+                log.info("project stats dumped for dataset {}", dataset.getName());
             }
         }
-
     }
 
 }
