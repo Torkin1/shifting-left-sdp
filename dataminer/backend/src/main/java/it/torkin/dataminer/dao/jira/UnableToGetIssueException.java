@@ -6,4 +6,8 @@ public class UnableToGetIssueException extends Exception {
         super(String.format("unable to get issue %s from %s", key, hostname ), cause);
     }
 
+    public UnableToGetIssueException(String string, String hostname, String key) {
+        super(String.format("unable to get issue %s from %s: %s", key, hostname, string));
+    }
+
 }
