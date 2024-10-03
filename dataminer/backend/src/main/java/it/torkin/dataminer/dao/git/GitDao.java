@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -208,7 +209,10 @@ public class GitDao implements AutoCloseable{
         List<String> keys = new ArrayList<>();
         
         Regex matches = new Regex(issueKeyRegexp, comment);
-        matches.forEach((key) -> keys.add(key));
+        matches.forEach((key) -> {
+            key = key.toUpperCase(Locale.ROOT);
+            keys.add(key);
+        });
         
         if (keys.isEmpty()) throw new NoMatchFoundException(issueKeyRegexp, comment);
         return keys;
