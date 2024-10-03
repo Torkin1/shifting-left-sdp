@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -63,7 +61,6 @@ public class RawDatasetController implements IRawDatasetController{
     private ExecutorService workers;
     private ProgressBar progress;
     
-    @PostConstruct
     private void init(){
         jiraDao = new JiraDao(jiraConfig);
         commits = new ArrayList<>(datasourceGlobalConfig.getCommitBatchSize());
@@ -71,6 +68,7 @@ public class RawDatasetController implements IRawDatasetController{
     }
         
     private void cleanup(){
+
         workers.shutdown();
         for(GitDao dao : gitdaoByProject.values()){
             try {
@@ -85,7 +83,8 @@ public class RawDatasetController implements IRawDatasetController{
     public void loadDatasource(Datasource datasource, DatasourceConfig config) throws UnableToLoadCommitsException{
         
         Dataset dataset;
-        
+
+        init();
         try {
             dataset = new Dataset();
             dataset.setName(config.getName());
@@ -119,10 +118,20 @@ public class RawDatasetController implements IRawDatasetController{
                 if (datasourceGlobalConfig.getParallelismLevel() == 0){
                     processCommit(task);
                 } else {
-                    results.add(workers.submit(() -> {
-                        processCommit(task);
-                        return task;
-                    }));
+                    boolean submitted = false;
+                    while(!submitted){
+                        try{
+                            results.add(workers.submit(() -> {
+                                processCommit(task);
+                                return task;
+                            }));
+                            submitted = true;
+                        } catch (RejectedExecutionException e) {
+                            log.warn("workers may be overloaded, retrying in {} seconds for someone to finish", datasourceGlobalConfig.getTaskSubmitRetryTimeout(), e);
+                            e.printStackTrace();
+                            workers.awaitTermination(datasourceGlobalConfig.getTaskSubmitRetryTimeout(), TimeUnit.SECONDS);
+                        }
+                    }
                 }
                 seen ++;
                 if (seen == datasourceGlobalConfig.getCommitBatchSize() || !datasource.hasNext()){

@@ -26,26 +26,31 @@ public class DatasourceGlobalConfig {
      * some room for other processes
      */
     private static final int DEFAULT_MAX_WORKERS = Runtime.getRuntime().availableProcessors() / 2;
-    
+
     @PostConstruct
-    private void init(){
-        if (parallelismLevel == null || parallelismLevel > DEFAULT_MAX_WORKERS){
+    private void init() {
+        if (parallelismLevel == null || parallelismLevel > DEFAULT_MAX_WORKERS) {
             log.warn("Max workers not set or set too high, using default value {}", DEFAULT_MAX_WORKERS);
             parallelismLevel = DEFAULT_MAX_WORKERS;
         }
     }
-    
-    /**Each desired datasource must come with a config object
+
+    /**
+     * Each desired datasource must come with a config object
      * listed here
      */
     @NotNull
     private List<DatasourceConfig> sources = new ArrayList<>();
 
-    /**Package containing datasources implementations */
+    /**
+     * Package containing datasources implementations
+     */
     @NotBlank
     private String implPackage;
 
-    /** How many commits we can load from datasources before storing them to db */
+    /**
+     * How many commits we can load from datasources before storing them to db
+     */
     @NotNull
     private Integer commitBatchSize;
 
@@ -54,4 +59,11 @@ public class DatasourceGlobalConfig {
      * A value of 0 means that loading of commits is done in the main thread.
      */
     private Integer parallelismLevel;
+
+    /**
+     * How many milliseconds the main thread waits before retrying to submit a processing
+     * commit task if this one has been rejected by the workers
+     */
+    @Min(0)
+    private Long taskSubmitRetryTimeout;
 }
