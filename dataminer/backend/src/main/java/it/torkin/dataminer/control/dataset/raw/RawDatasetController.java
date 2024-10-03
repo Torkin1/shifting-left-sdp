@@ -4,11 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.config.DatasourceConfig;
+import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.dao.datasources.Datasource;
@@ -31,12 +35,16 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Slf4j
 @Service
 public class RawDatasetController implements IRawDatasetController{
     
     @Autowired private GitConfig gitConfig;
     @Autowired private JiraConfig jiraConfig;
+    @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
 
     @Autowired private DatasetDao datasetDao;
     @Autowired private CommitDao commitDao;
@@ -47,44 +55,131 @@ public class RawDatasetController implements IRawDatasetController{
     private JiraDao jiraDao;
 
     private Map<String, GitDao> gitdaoByProject = new HashMap<>();
+
+    private List<Commit> commits;
+    private Map<String, Set<IssueEntry>> issuesByCommit = new HashMap<>();
+    private List<Future<ProcessCommitTask>> results = new ArrayList<>();
+
+    private ExecutorService workers;
+    private ProgressBar progress;
     
     @PostConstruct
     private void init(){
         jiraDao = new JiraDao(jiraConfig);
+        commits = new ArrayList<>(datasourceGlobalConfig.getCommitBatchSize());
+        workers = Executors.newWorkStealingPool(datasourceGlobalConfig.getParallelismLevel());
     }
         
+    private void cleanup(){
+        workers.shutdown();
+        for(GitDao dao : gitdaoByProject.values()){
+            try {
+                dao.close();
+            } catch (Exception e) {
+                log.error("Unable to close gitDao for {}", dao.getProjectName(), e);
+            }
+        }
+    }
+    
     @Transactional(rollbackOn = Exception.class)
     public void loadDatasource(Datasource datasource, DatasourceConfig config) throws UnableToLoadCommitsException{
         
         Dataset dataset;
         
-        dataset = new Dataset();
-        dataset.setName(config.getName());
-        dataset.setLastUpdatedTime(TimeTools.now());
-        datasetDao.save(dataset);
-        loadCommits(datasource, dataset, config);
-}
+        try {
+            dataset = new Dataset();
+            dataset.setName(config.getName());
+            dataset.setLastUpdatedTime(TimeTools.now());
+            dataset = datasetDao.save(dataset);
+            loadCommits(datasource, dataset, config);
+        } finally { 
+            cleanup();
+        }       
+    }
 
+    /**
+     * For each read commit, a task is created and submitted to the workers pool
+     * to process commit and linked issue details.
+     * @param datasource
+     * @param dataset
+     * @param config
+     * @throws UnableToLoadCommitsException
+     */
     private void loadCommits(Datasource datasource, Dataset dataset, DatasourceConfig config) throws UnableToLoadCommitsException {
-                
-        Commit commit;
-        try (ProgressBar progress = new ProgressBar("loading commits", config.getExpectedSize())){
+        
+        long seen = 0;
+        progress = new ProgressBar("loading commits", config.getExpectedSize());
+        try {
             while(datasource.hasNext()){
-                commit = datasource.next();
-                try {
-                    fillCommitDetails(commit);
-                    linkCommitIssues(commit);
-                    commit.setDataset(dataset);
-                    commit = commitDao.save(commit);
-                } catch (UnableToInitRepoException e) {
-                    throw new UnableToLoadCommitsException(e);
-                } catch (UnableToFetchIssueException | UnableToGetCommitDetailsException e) {
-                    handleSkippedCommit(commit, dataset, e);
-                }
-                progress.step();
                 
-            }       
+                Commit commit = datasource.next();
+                ProcessCommitTask task = new ProcessCommitTask(commit, dataset);
+                
+                commit.setDataset(dataset);
+                if (datasourceGlobalConfig.getParallelismLevel() == 0){
+                    processCommit(task);
+                } else {
+                    results.add(workers.submit(() -> {
+                        processCommit(task);
+                        return task;
+                    }));
+                }
+                seen ++;
+                if (seen == datasourceGlobalConfig.getCommitBatchSize() || !datasource.hasNext()){
+                    collectCommitsFromProcessingResults();
+                    saveCommits();
+                    seen = 0;
+                }
+            }
+        } catch (Exception e) {
+            throw new UnableToLoadCommitsException(e);
+        } finally {
+            progress.close();
         }
+    }
+
+    private void collectCommitsFromProcessingResults() throws Exception {
+        for (Future<ProcessCommitTask> result : results){
+            ProcessCommitTask task = result.get();
+            if (task.getException() != null){
+                if (task.getException() instanceof UnableToFetchIssueException || task.getException() instanceof UnableToGetCommitDetailsException){
+                    handleSkippedCommit(task.getCommit(), task.getDataset(), task.getException());
+                } else {
+                    throw task.getException();
+                }
+            } else {
+                commits.add(task.getCommit());
+            }
+        }
+        results.clear();
+    }
+
+    private void saveCommits() {
+
+        saveIssues();
+        
+        commitDao.saveAll(commits);
+        log.info("Commit batch saved");
+        commits.clear();
+    }
+
+    private void linkIssueCommit(Issue issue, Commit commit) {
+        issue.getCommits().add(commit);
+        commit.getIssues().add(issue);
+    }
+
+    private void saveIssues() {        
+                
+        for (Commit commit: commits){
+            Set<IssueEntry> commitIssues = issuesByCommit.get(commit.getHash());
+            for (IssueEntry entry : commitIssues){
+                Issue issue = entry.getIssue();
+                entityMerger.mergeIssueDetails(issue.getDetails());
+                issue = issueDao.save(issue);
+                linkIssueCommit(issue, commit);
+            }  
+        }
+        issuesByCommit.clear();
     }
 
     private void handleSkippedCommit(Commit commit, Dataset dataset, Exception cause){
@@ -94,12 +189,30 @@ public class RawDatasetController implements IRawDatasetController{
         dataset.setSkipped(dataset.getSkipped() + 1);
 
         if (cause instanceof UnableToFetchIssueException){
-            dataset.getUnlinkedByRepository().compute(commit.getRepository(),
-             (project, count) -> count == null ? 1 : count + 1);
-            if (commit.isBuggy()){
-                dataset.getBuggyUnlinkedByRepository().compute(commit.getRepository(),
-                 (project, count) -> count == null ? 1 : count + 1);
+            try {
+                if (log.isDebugEnabled()){
+                    log.debug("No linkable issue found in commit comment: {}", getGitdaoByProject(commit.getRepository()).getCommitMessage(commit.getHash()));
+                }
+            } catch (Exception e){
+                e.printStackTrace();
             }
+        }
+        dataset.getUnlinkedByRepository().compute(commit.getRepository(),
+            (project, count) -> count == null ? 1 : count + 1);
+        if (commit.isBuggy()){
+            dataset.getBuggyUnlinkedByRepository().compute(commit.getRepository(),
+                (project, count) -> count == null ? 1 : count + 1);
+        }
+    }
+
+    private void processCommit(ProcessCommitTask task) {
+        try {
+            getCommitIssues(task.getCommit());
+            fillCommitDetails(task.getCommit());
+        } catch (UnableToInitRepoException | UnableToGetCommitDetailsException | UnableToFetchIssueException e) {
+            task.setException(e);
+        } finally {
+            progress.step();
         }
 
     }
@@ -113,14 +226,15 @@ public class RawDatasetController implements IRawDatasetController{
         commit.getMeasurement().setMeasurementDate(commit.getTimestamp());
     }
 
-    private void linkCommitIssues(Commit commit) throws UnableToFetchIssueException {
-        List<Issue> issues;
+    private void getCommitIssues(Commit commit) throws UnableToFetchIssueException {
+        List<Issue> fetched;
         
-        issues = fetchLinkedIssues(commit);
-
-        for (Issue issue : issues){
-            issue.getCommits().add(commit);
-            commit.getIssues().add(issue);
+        fetched = fetchLinkedIssues(commit);
+        synchronized (issuesByCommit){
+            issuesByCommit.putIfAbsent(commit.getHash(), new HashSet<>());
+            for (Issue issue : fetched){
+                issuesByCommit.get(commit.getHash()).add(new IssueEntry(issue, issue.getKey()));
+            }
         }
 
     }
@@ -128,7 +242,6 @@ public class RawDatasetController implements IRawDatasetController{
     private void linkIssueDetails(Issue issue, JiraDao jiraDao) throws UnableToLinkIssueDetailsException {
         try {
             IssueDetails details = jiraDao.queryIssueDetails(issue.getKey());
-            entityMerger.mergeIssueDetails(details);
             issue.setDetails(details);
             
         } catch (UnableToGetIssueException e) {
@@ -153,23 +266,29 @@ public class RawDatasetController implements IRawDatasetController{
             gitDao = getGitdaoByProject(commit.getRepository());
             issueKeys = gitDao.getLinkedIssueKeysByCommit(commit.getHash());
             for (String issueKey : issueKeys){
-                issue = issueDao.findByKey(issueKey);
-                if (issue == null){
-                    issue = new Issue(issueKey);
+                try{
+                    issue = new Issue();
+                    issue.setKey(issueKey);
                     linkIssueDetails(issue, jiraDao);
-                    issue = issueDao.save(issue);
+                    issues.add(issue);
+                } catch (UnableToLinkIssueDetailsException e) {
+                    log.debug("Unable to link issue details for issue {}: {}", issueKey, e.toString());
                 }
-                issues.add(issue);
+            }
+            if (issues.isEmpty()){
+                throw new UnableToFetchIssueException(commit.getHash(), "no issues found for given key set: " + issueKeys.toString());
             }
             return issues;
-        } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException | UnableToLinkIssueDetailsException e) {
+        } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException e) {
             throw new UnableToFetchIssueException(commit.getHash(), e);
         }
     }
 
-    private GitDao getGitdaoByProject(String project) throws UnableToInitRepoException{
-        if(!gitdaoByProject.containsKey(project))
+    synchronized private GitDao getGitdaoByProject(String project) throws UnableToInitRepoException{
+        
+        if(!gitdaoByProject.containsKey(project)){
             gitdaoByProject.put(project, new GitDao(gitConfig, project));
+        }
         return gitdaoByProject.get(project);
     }
 

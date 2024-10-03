@@ -22,6 +22,7 @@ import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.toolbox.regex.NoMatchFoundException;
 import it.torkin.dataminer.toolbox.regex.Regex;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
@@ -31,7 +32,8 @@ public class GitDao implements AutoCloseable{
     private String remoteUrl;
     private File localDir;
     private String issueKeyRegexp;
-    private String projectName;
+    @Getter
+    private final String projectName;
 
     private Repository repository;
         
@@ -231,6 +233,11 @@ public class GitDao implements AutoCloseable{
 
             throw new UnableToGetCommitException(hash, e);
         }
+    }
+
+    public String getCommitMessage(String hash) throws UnableToGetCommitException{
+        RevCommit commit = getCommit(hash);
+        return commit.getFullMessage();
     }
 
     @Override
