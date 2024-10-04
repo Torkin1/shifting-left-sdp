@@ -80,4 +80,11 @@ public class DatasourceGlobalConfig {
      */
     @Min(0)
     private Long taskSubmitRetryTimeout;
+
+    /**
+     * How many retries the main thread will do before giving up on submitting a processing
+     * commit task
+     */
+    @Min(0)
+    private Integer taskSubmitMaxRetries = 3;
 }

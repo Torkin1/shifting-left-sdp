@@ -79,6 +79,7 @@ public class RawDatasetController implements IRawDatasetController{
                 log.error("Unable to close gitDao for {}", dao.getProjectName(), e);
             }
         }
+        gitdaoByProject.clear();
     }
     
     @Transactional(rollbackOn = Exception.class)
@@ -115,13 +116,40 @@ public class RawDatasetController implements IRawDatasetController{
                 
                 Commit commit = datasource.next();
                 ProcessCommitTask task = new ProcessCommitTask(commit, dataset);
-                
                 commit.setDataset(dataset);
+
+                // Commit is processed immediately if parallelism level is 0
+                // by the main thread, else it is submitted to the workers pool.
+                // In both cases, the processed commit is stored as a Future
+                // object in the results list.
                 if (datasourceGlobalConfig.getParallelismLevel() == 0){
                     processCommit(task);
+                    results.add(new Future<ProcessCommitTask>() {
+                        @Override
+                        public boolean cancel(boolean mayInterruptIfRunning) {
+                            return false;
+                        }
+                        @Override
+                        public boolean isCancelled() {
+                            return false;
+                        }
+                        @Override
+                        public boolean isDone() {
+                            return true;
+                        }
+                        @Override
+                        public ProcessCommitTask get() {
+                            return task;
+                        }
+                        @Override
+                        public ProcessCommitTask get(long timeout, TimeUnit unit) {
+                            return task;
+                        }
+                    });
                 } else {
                     boolean submitted = false;
                     while(!submitted){
+                        int retry = 0;
                         try{
                             results.add(workers.submit(() -> {
                                 processCommit(task);
@@ -129,17 +157,25 @@ public class RawDatasetController implements IRawDatasetController{
                             }));
                             submitted = true;
                         } catch (RejectedExecutionException e) {
+                            if(retry > datasourceGlobalConfig.getTaskSubmitMaxRetries()){
+                                log.error("reached max retry attempts to submit processing commit task {}", task, e);
+                                throw new UnableToLoadCommitsException(e);
+                            }
                             log.warn("workers may be overloaded, retrying in {} seconds for someone to finish", datasourceGlobalConfig.getTaskSubmitRetryTimeout(), e);
                             e.printStackTrace();
                             workers.awaitTermination(datasourceGlobalConfig.getTaskSubmitRetryTimeout(), TimeUnit.SECONDS);
+                            retry ++;
                         }
                     }
                 }
+
+                // When we loaded enough commits from datasource,
+                // we wait the workers to finish processing the commits
+                // before collecting and saving them.
                 seen ++;
-                if (seen == datasourceGlobalConfig.getCommitBatchSize() || !datasource.hasNext()){
+                if (seen % datasourceGlobalConfig.getCommitBatchSize() == 0 || !datasource.hasNext()){
                     collectCommitsFromProcessingResults();
                     saveCommits();
-                    seen = 0;
                 }
             }
         } catch (Exception e) {
@@ -150,6 +186,7 @@ public class RawDatasetController implements IRawDatasetController{
     }
 
     private void collectCommitsFromProcessingResults() throws Exception {
+        log.info("Collecting commits from processing results");
         for (Future<ProcessCommitTask> result : results){
             ProcessCommitTask task = result.get();
             if (task.getException() != null){
@@ -167,6 +204,7 @@ public class RawDatasetController implements IRawDatasetController{
 
     private void saveCommits() {
 
+        log.info("saving commit batch");
         saveIssues();
         
         commitDao.saveAll(commits);
