@@ -131,7 +131,10 @@ public class StatsController implements IStatsController{
                     row.setExcludedTickets(excludedTickets);
                     row.setUsableBuggyTicketsPercentage(SafeMath.calcPercentage(usableBuggyTickets, usableTickets));
                     processedIssuesBean.getFilteredByProjectGroupedByFilter().forEach((filter, filteredByProject) -> {
-                        row.getFilteredTicketsByFilterMap().put(filter, filteredByProject.getOrDefault(project, 0L));
+                        long filteredTickets = filteredByProject.getOrDefault(project, 0L);
+                        if (filteredTickets > 0){
+                            row.getFilteredTicketsByFilterMap().put(filter, filteredTickets);
+                        }
                     });
                     
                     try {
