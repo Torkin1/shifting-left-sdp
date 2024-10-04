@@ -20,6 +20,7 @@ import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.toolbox.math.SafeMath;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -83,6 +84,7 @@ public class StatsController implements IStatsController{
 
                         } catch (IOException e) {
                             log.error("Cannot write row to CSV at {}, row is {}", output, row, e);
+                            throw new RuntimeException(e);
                         }
                     }
                 });
@@ -113,17 +115,30 @@ public class StatsController implements IStatsController{
             // now we have filtered out issue counts by project and can proceed
             // to write stats to csv
                 issuesByProject.forEach((project, count) -> {
+                    
                     ProjectStatsRow row = new ProjectStatsRow();
+                    String measurementDate = processedIssuesBean.getMeasurementDate().getClass().getSimpleName();
+                    long excludedTickets = processedIssuesBean.getExcludedByProject().getOrDefault(project, 0);
+                    long usableBuggyTickets = buggyIssuesByProject.getOrDefault(project, 0);
+                    long usableTickets = count;
+                    long tickets = usableTickets + excludedTickets;
+
                     row.setDataset(dataset.getName());
                     row.setProject(project);
-                    row.setMeasurementDate(processedIssuesBean.getMeasurementDate().getClass().getSimpleName());
+                    row.setMeasurementDate(measurementDate);
+                    row.setTickets(tickets);
                     row.setUsableTickets(count);
-                    row.setExcludedTickets(processedIssuesBean.getExcludedByProject().getOrDefault(project, 0));
-                    row.setUsableBuggyTickets(buggyIssuesByProject.getOrDefault(project, 0));
+                    row.setExcludedTickets(excludedTickets);
+                    row.setUsableBuggyTicketsPercentage(SafeMath.calcPercentage(usableBuggyTickets, usableTickets));
+                    processedIssuesBean.getFilteredByProjectGroupedByFilter().forEach((filter, filteredByProject) -> {
+                        row.getFilteredTicketsByFilterMap().put(filter, filteredByProject.getOrDefault(project, 0L));
+                    });
+                    
                     try {
                         sequenceWriter.write(row);
                     } catch (IOException e) {
                         log.error("Cannot write row to CSV at {}, row is {}", output, row, e);
+                        throw new RuntimeException(e);
                     }
                 });
                 log.info("project stats dumped for dataset {}", dataset.getName());

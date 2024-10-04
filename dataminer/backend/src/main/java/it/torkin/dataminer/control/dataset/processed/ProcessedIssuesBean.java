@@ -33,7 +33,7 @@ public class ProcessedIssuesBean {
      * An Issue can be excluded by multiple filters, so the sum of the values for each project
      * can be greater than the corresponding value in the excludedByProject map.
      */
-    private Map<String, Map<String, Integer>> filteredByProjectGroupedByFilter = new HashMap<>();
+    private Map<String, Map<String, Long>> filteredByProjectGroupedByFilter = new HashMap<>();
 
     private final MeasurementDate measurementDate;
     
