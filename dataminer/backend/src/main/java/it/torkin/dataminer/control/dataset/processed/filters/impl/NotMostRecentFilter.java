@@ -8,7 +8,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import it.torkin.dataminer.config.NotMostRecentFilterConfig;
+import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
@@ -26,7 +26,7 @@ import it.torkin.dataminer.toolbox.math.SafeMath;
 @Component
 public class NotMostRecentFilter extends IssueFilter{
 
-    @Autowired private NotMostRecentFilterConfig config;
+    @Autowired private DatasourceGlobalConfig config;
     @Autowired private IssueDao issueDao;
     @Autowired private DatasetDao datasetDao;
     @Autowired private ProjectDao projectDao;
@@ -37,6 +37,7 @@ public class NotMostRecentFilter extends IssueFilter{
 
     private boolean initialized = false;
 
+    
     private void init() {
 
         /** Calculates amount of issues corresponding to the desired percentage */
@@ -46,6 +47,7 @@ public class NotMostRecentFilter extends IssueFilter{
             thresholdsByProjectGroupedByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
             issuesCountByProjectGroupedByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
             remainingsByProjectGroupedByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
+            double percentage = config.getSourcesMap().get(dataset.getName()).getSnoringPercentage();
 
             projects = projectDao.findAllByDataset(dataset.getName());
             for (Project project : projects){
@@ -56,7 +58,7 @@ public class NotMostRecentFilter extends IssueFilter{
                 remainingsByProjectGroupedByDataset.get(dataset.getName())
                     .put(project.getName(), issueCount);
                 thresholdsByProjectGroupedByDataset.get(dataset.getName())
-                    .put(project.getName(), SafeMath.ceiledInversePercentage(config.getPercentage(), issueCount));
+                    .put(project.getName(), SafeMath.ceiledInversePercentage(percentage, issueCount));
             }
         }
         initialized = true;

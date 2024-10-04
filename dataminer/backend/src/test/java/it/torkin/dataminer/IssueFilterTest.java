@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -17,7 +18,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import it.torkin.dataminer.config.NotMostRecentFilterConfig;
+import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
@@ -49,40 +50,48 @@ public class IssueFilterTest {
     @Autowired private ProjectDao projectDao;
 
     @Autowired private IDatasetController datasetController; 
-    @Autowired private NotMostRecentFilterConfig notMostRecentFilterConfig;
     
     @Autowired private NotMostRecentFilter filter;
+
+    @Autowired private DatasourceGlobalConfig config;
 
     @Test
     @Transactional
     public void testNotMostRecentFilter() throws UnableToCreateRawDatasetException{
         
-        Map<String, Long> actualCountByProject = new HashMap<>();
-        Map<String, Long> expectedCountByProject = new HashMap<>();
 
         datasetController.createRawDataset();
-        filter.reset();
 
-        Set<Project> projects = projectDao.findAllByDataset("leveragingjit");
-        for (Project project : projects){
-            long totalCount = issueDao.countByDatasetAndProject("leveragingjit", project.getName());
-            long expectedFilteredCount = SafeMath.ceiledInversePercentage(notMostRecentFilterConfig.getPercentage(), totalCount);
-            long expectedCount = totalCount - expectedFilteredCount;
-            log.info("expected count for project {}: {} - {} = {}", project.getName(), totalCount, expectedFilteredCount, expectedCount);
-            expectedCountByProject.put(project.getName(), expectedCount);
+        List<Dataset> datasets = datasetDao.findAll();
+        for (Dataset dataset : datasets){
+            Map<String, Long> actualCountByProject = new HashMap<>();
+            Map<String, Long> expectedCountByProject = new HashMap<>();
+
+            filter.reset();
+
+            Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
+            for (Project project : projects){
+                long totalCount = issueDao.countByDatasetAndProject(dataset.getName(), project.getName());
+                double percentage = config.getSourcesMap().get(dataset.getName()).getSnoringPercentage();
+                long expectedFilteredCount = SafeMath.ceiledInversePercentage(percentage, totalCount);
+                long expectedCount = totalCount - expectedFilteredCount;
+                log.info("expected count for project {}: {} - {} = {}", project.getName(), totalCount, expectedFilteredCount, expectedCount);
+                expectedCountByProject.put(project.getName(), expectedCount);
+            }
+            Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
+                .filter((issue) -> filter.apply(new IssueFilterBean(issue, dataset.getName())));
+            issues.forEach((issue) -> {
+                Project project = issue.getDetails().getFields().getProject();
+                actualCountByProject.compute(project.getName(), (p, count) -> count == null ? 1 : count + 1);
+            });
+    
+            log.info("Expected count by project: {}", expectedCountByProject);
+            log.info("Actual count by project: {}", actualCountByProject);
+            expectedCountByProject.forEach((project, expectedCount) -> {
+                assertEquals(expectedCount, actualCountByProject.getOrDefault(project, 0L));
+            });
         }
-        Stream<Issue> issues = issueDao.findAllByDataset("leveragingjit")
-            .filter((issue) -> filter.apply(new IssueFilterBean(issue, "leveragingjit")));
-        issues.forEach((issue) -> {
-            Project project = issue.getDetails().getFields().getProject();
-            actualCountByProject.compute(project.getName(), (p, count) -> count == null ? 1 : count + 1);
-        });
-
-        log.info("Expected count by project: {}", expectedCountByProject);
-        log.info("Actual count by project: {}", actualCountByProject);
-        expectedCountByProject.forEach((project, expectedCount) -> {
-            assertEquals(expectedCount, actualCountByProject.getOrDefault(project, 0L));
-        });
+        
     }
     
     @Test
