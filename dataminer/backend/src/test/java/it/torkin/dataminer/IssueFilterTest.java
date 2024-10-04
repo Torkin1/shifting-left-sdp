@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -24,9 +27,11 @@ import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
+import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +46,7 @@ public class IssueFilterTest {
     @Autowired private IssueDao issueDao;
     @Autowired private CommitDao commitDao;
     @Autowired private DatasetDao datasetDao;
+    @Autowired private ProjectDao projectDao;
 
     @Autowired private IDatasetController datasetController; 
     @Autowired private NotMostRecentFilterConfig notMostRecentFilterConfig;
@@ -51,22 +57,32 @@ public class IssueFilterTest {
     @Transactional
     public void testNotMostRecentFilter() throws UnableToCreateRawDatasetException{
         
+        Map<String, Long> actualCountByProject = new HashMap<>();
+        Map<String, Long> expectedCountByProject = new HashMap<>();
+
         datasetController.createRawDataset();
         filter.reset();
 
-
-        long totalCount = issueDao.countAllByDatasetName("leveragingjit");
-        long expectedFilteredCount = SafeMath.ceiledInversePercentage(notMostRecentFilterConfig.getPercentage(), totalCount);
-        Stream<Issue> issues = issueDao.findAllByDatasetName("leveragingjit")
+        Set<Project> projects = projectDao.findAllByDataset("leveragingjit");
+        for (Project project : projects){
+            long totalCount = issueDao.countByDatasetAndProject("leveragingjit", project.getName());
+            long expectedFilteredCount = SafeMath.ceiledInversePercentage(notMostRecentFilterConfig.getPercentage(), totalCount);
+            long expectedCount = totalCount - expectedFilteredCount;
+            log.info("expected count for project {}: {} - {} = {}", project.getName(), totalCount, expectedFilteredCount, expectedCount);
+            expectedCountByProject.put(project.getName(), expectedCount);
+        }
+        Stream<Issue> issues = issueDao.findAllByDataset("leveragingjit")
             .filter((issue) -> filter.apply(new IssueFilterBean(issue, "leveragingjit")));
-        long actualCount = issues.count();
-        long expectedCount = totalCount - expectedFilteredCount;
+        issues.forEach((issue) -> {
+            Project project = issue.getDetails().getFields().getProject();
+            actualCountByProject.compute(project.getName(), (p, count) -> count == null ? 1 : count + 1);
+        });
 
-        log.info("Expected count: {}, Actual count: {}", expectedCount, actualCount);
-        log.info("Total count: {}, expected filtered count: {}", totalCount, expectedFilteredCount);
-        log.info(notMostRecentFilterConfig.toString());        
-
-        assertEquals(expectedCount, actualCount);
+        log.info("Expected count by project: {}", expectedCountByProject);
+        log.info("Actual count by project: {}", actualCountByProject);
+        expectedCountByProject.forEach((project, expectedCount) -> {
+            assertEquals(expectedCount, actualCountByProject.getOrDefault(project, 0L));
+        });
     }
     
     @Test

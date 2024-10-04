@@ -54,7 +54,7 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     public void getFilteredIssues(ProcessedIssuesBean bean) {
         
         issueFilters.forEach((filter) -> filter.reset());
-        bean.setProcessedIssues(issueDao.findAllByDatasetName(bean.getDatasetName())
+        bean.setProcessedIssues(issueDao.findAllByDataset(bean.getDatasetName())
             // we want to log the progress while traversing the issues
             .map(new Function<Issue, Issue>() {
 

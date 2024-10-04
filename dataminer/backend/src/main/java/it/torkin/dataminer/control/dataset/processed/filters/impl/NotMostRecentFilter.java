@@ -3,6 +3,7 @@ package it.torkin.dataminer.control.dataset.processed.filters.impl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,9 @@ import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
+import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 
 /**
@@ -26,10 +29,11 @@ public class NotMostRecentFilter extends IssueFilter{
     @Autowired private NotMostRecentFilterConfig config;
     @Autowired private IssueDao issueDao;
     @Autowired private DatasetDao datasetDao;
+    @Autowired private ProjectDao projectDao;
     
-    private Map<String, Long> datasetIssuesCounts = new HashMap<>();
-    private Map<String, Long> remainings = new HashMap<>();
-    private Map<String, Long> thresholds = new HashMap<>();
+    private Map<String, Map<String, Long>> issuesCountByProjectGroupedByDataset = new HashMap<>();
+    private Map<String, Map<String, Long>> remainingsByProjectGroupedByDataset = new HashMap<>();
+    private Map<String, Map<String, Long>> thresholdsByProjectGroupedByDataset = new HashMap<>();
 
     private boolean initialized = false;
 
@@ -37,11 +41,23 @@ public class NotMostRecentFilter extends IssueFilter{
 
         /** Calculates amount of issues corresponding to the desired percentage */
         List<Dataset> datasets = datasetDao.findAll();
-        long datasetIssuesCount;
+        Set<Project> projects;
         for (Dataset dataset : datasets){
-            datasetIssuesCount = issueDao.countAllByDatasetName(dataset.getName());
-            datasetIssuesCounts.put(dataset.getName(), datasetIssuesCount);
-            thresholds.put(dataset.getName(), SafeMath.ceiledInversePercentage(config.getPercentage(), datasetIssuesCount));
+            thresholdsByProjectGroupedByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
+            issuesCountByProjectGroupedByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
+            remainingsByProjectGroupedByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
+
+            projects = projectDao.findAllByDataset(dataset.getName());
+            for (Project project : projects){
+                long issueCount = issueDao
+                    .countByDatasetAndProject(dataset.getName(), project.getName());
+                issuesCountByProjectGroupedByDataset.get(dataset.getName())
+                    .put(project.getName(), issueCount);
+                remainingsByProjectGroupedByDataset.get(dataset.getName())
+                    .put(project.getName(), issueCount);
+                thresholdsByProjectGroupedByDataset.get(dataset.getName())
+                    .put(project.getName(), SafeMath.ceiledInversePercentage(config.getPercentage(), issueCount));
+            }
         }
         initialized = true;
 
@@ -49,18 +65,24 @@ public class NotMostRecentFilter extends IssueFilter{
     
     @Override
     protected void beforeApply(IssueFilterBean bean) {
-        remainings.compute(bean.getDatasetName(), (k, v) -> { return SafeMath.nullAsZero(v) - 1; } );
+        String dataset = bean.getDatasetName();
+        String project = bean.getIssue().getDetails().getFields().getProject().getName();
+        remainingsByProjectGroupedByDataset.get(dataset).compute(project, (k, v) -> { return v - 1; } );
     }
     
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
-        return remainings.get(bean.getDatasetName()) >= thresholds.get(bean.getDatasetName());
+        String dataset = bean.getDatasetName();
+        String project = bean.getIssue().getDetails().getFields().getProject().getName();
+        return remainingsByProjectGroupedByDataset.get(dataset).get(project) >= thresholdsByProjectGroupedByDataset.get(dataset).get(project);
     }
 
     @Override
     public void reset() {
         if (!initialized) init();
-        datasetIssuesCounts.forEach((dataset, count) -> remainings.compute(dataset, (k, remaining) -> count));    
+        remainingsByProjectGroupedByDataset.forEach((dataset, remainingsByProject) -> {
+            remainingsByProject.replaceAll((project, remaining) -> issuesCountByProjectGroupedByDataset.get(dataset).get(project));
+        });
     }
 
 
