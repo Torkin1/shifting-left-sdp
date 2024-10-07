@@ -31,8 +31,9 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     private boolean passesFilters(IssueFilterBean issueFilterBean, ProcessedIssuesBean processedIssuesBean) {
         
         for (IssueFilter filter : issueFilters){
+            String filterName = filter.getClass().getSimpleName();
+            processedIssuesBean.getFilteredByProjectGroupedByFilter().putIfAbsent(filterName, new HashMap<>());
             if (!filter.apply(issueFilterBean)) {
-                String filterName = filter.getClass().getSimpleName();
                 String project = issueFilterBean.getIssue().getDetails().getFields().getProject().getName();
                 if (!issueFilterBean.isFiltered()) {
                     // we update excluded issues count per project
@@ -40,8 +41,7 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
                      .compute(project, (k, v) -> v == null ? 1 : v + 1);
                     issueFilterBean.setFiltered(true);
                 }
-                // we truck issues filtered by this filter for the project
-                processedIssuesBean.getFilteredByProjectGroupedByFilter().putIfAbsent(filterName, new HashMap<>());
+                // we track issues filtered by this filter for the project
                 processedIssuesBean.getFilteredByProjectGroupedByFilter().get(filterName)
                  .compute(project, (k, v) -> v == null ? 1 : v + 1);
             }
@@ -74,6 +74,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
             .sorted((issue1, issue2) -> bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue1))
                 .compareTo(bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue2))))
             // we filter out issues that do not pass the filters
-            .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName()), bean)));  
+            .filter((issue) -> passesFilters(new IssueFilterBean(issue, bean.getDatasetName(), true), bean)));  
     }
 }

@@ -17,7 +17,7 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
     @Transactional
     public final Boolean apply(IssueFilterBean bean){
         beforeApply(bean);
-        if (bean.isFiltered()) return false;
+        if (bean.isFiltered() && !bean.isApplyAnyway()) return false;
         return applyFilter(bean);
     }
 
@@ -37,7 +37,8 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
 
     /**
      * Implementations must override this method to apply the filter.
-     * Filter is applied only if issue has not been already filtered out.
+     * Filter is applied only if issue has not been already filtered out,
+     * or if applyAnyway flag has been set.
      */
     protected abstract Boolean applyFilter(IssueFilterBean bean);
     

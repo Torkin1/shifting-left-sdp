@@ -12,4 +12,9 @@ public class IssueFilterBean {
      * NOTE: filters must access this field in read-only mode.
      */
     private boolean filtered = false;
+
+    /**
+     * If true, filter will be applied even if issue has been already filtered out.
+     */
+    private final boolean applyAnyway;
 }

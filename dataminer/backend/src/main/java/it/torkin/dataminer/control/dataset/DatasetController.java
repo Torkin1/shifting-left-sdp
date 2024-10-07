@@ -17,7 +17,7 @@ import it.torkin.dataminer.control.dataset.raw.UnableToFindDatasourceImplementat
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.control.dataset.raw.UnableToPrepareDatasourceException;
-import it.torkin.dataminer.dao.datasources.Datasource;
+import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
