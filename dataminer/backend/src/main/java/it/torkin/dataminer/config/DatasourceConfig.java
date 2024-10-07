@@ -1,5 +1,6 @@
 package it.torkin.dataminer.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.annotation.PostConstruct;
@@ -11,12 +12,9 @@ import lombok.Data;
 public class DatasourceConfig {
 
 
-    @Autowired private DatasourceGlobalConfig config;
-
-    @PostConstruct
-    private void init() {
+    public void init(DatasourceGlobalConfig config) {
         path = config.getDir() + path;
-    
+
         if (snoringPercentage < 0.0 || snoringPercentage > 100.0){
             throw new IllegalArgumentException("snoringPercentage must be between 0 and 100, but is " + snoringPercentage);  
         }
