@@ -79,7 +79,7 @@ public class IssueFilterTest {
                 expectedCountByProject.put(project.getName(), expectedCount);
             }
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
-                .filter((issue) -> filter.apply(new IssueFilterBean(issue, dataset.getName())));
+                .filter((issue) -> filter.apply(new IssueFilterBean(issue, dataset.getName(), false)));
             issues.forEach((issue) -> {
                 Project project = issue.getDetails().getFields().getProject();
                 actualCountByProject.compute(project.getName(), (p, count) -> count == null ? 1 : count + 1);
@@ -161,9 +161,9 @@ public class IssueFilterTest {
          * - issue 3 to pass the filter since it has no buggy commits
          */
         IssueFilter filter = new ExclusiveBuggyCommitsOnlyFilter();
-        assertTrue(filter.apply(new IssueFilterBean(issue1, dataset.getName())));
-        assertFalse(filter.apply(new IssueFilterBean(issue2, dataset.getName())));
-        assertTrue(filter.apply(new IssueFilterBean(issue3, dataset.getName())));
+        assertTrue(filter.apply(new IssueFilterBean(issue1, dataset.getName(), false)));
+        assertFalse(filter.apply(new IssueFilterBean(issue2, dataset.getName(), false)));
+        assertTrue(filter.apply(new IssueFilterBean(issue3, dataset.getName(), false)));
 
     }
     
