@@ -19,7 +19,7 @@ import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
-import it.torkin.dataminer.dao.datasources.Datasource;
+import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
 import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.git.UnableToGetCommitDetailsException;
 import it.torkin.dataminer.dao.git.UnableToGetLinkedIssueKeyException;
@@ -258,8 +258,8 @@ public class RawDatasetController implements IRawDatasetController{
 
     private void processCommit(ProcessCommitTask task) {
         try {
-            getCommitIssues(task.getCommit());
             fillCommitDetails(task.getCommit());
+            getCommitIssues(task.getCommit());
         } catch (UnableToInitRepoException | UnableToGetCommitDetailsException | UnableToFetchIssueException e) {
             task.setException(e);
         } finally {

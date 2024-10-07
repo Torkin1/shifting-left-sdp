@@ -1,7 +1,7 @@
 package it.torkin.dataminer.control.dataset.raw;
 
 import it.torkin.dataminer.config.DatasourceConfig;
-import it.torkin.dataminer.dao.datasources.Datasource;
+import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
 
 public interface IRawDatasetController {
 

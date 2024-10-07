@@ -11,8 +11,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.config.DatasourceConfig;
-import it.torkin.dataminer.dao.datasources.Apachejit;
-import it.torkin.dataminer.dao.datasources.Datasource;
+import it.torkin.dataminer.control.dataset.raw.datasources.Apachejit;
+import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Commit;
