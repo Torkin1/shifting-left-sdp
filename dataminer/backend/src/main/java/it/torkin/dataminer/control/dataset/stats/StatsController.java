@@ -44,17 +44,24 @@ public class StatsController implements IStatsController{
          * Commit stats are calculated using repositories (registered in Git),
          * while tickets stats are calculated using projects (registered in Jira)
          */
-        
-        CsvSchema repositoriesSchema = mapper.schemaFor(RepositoriesStatsRow.class).withUseHeader(true);
+
         File repositoriesOutput = new File(statsConfig.getRepositoriesStats());
-        ObjectWriter repositoriesWriter = mapper.writer(repositoriesSchema);
-        printRepositoriesStats(datasets, repositoriesWriter, repositoriesOutput);
+        if (!repositoriesOutput.exists()) {
+            CsvSchema repositoriesSchema = mapper.schemaFor(RepositoriesStatsRow.class).withUseHeader(true);
+            ObjectWriter repositoriesWriter = mapper.writer(repositoriesSchema);
+            printRepositoriesStats(datasets, repositoriesWriter, repositoriesOutput);
+        } else {
+          log.info("Repositories stats already exists at {}", repositoriesOutput.getAbsolutePath());
+        }
 
-        CsvSchema projectsSchema = mapper.schemaFor(ProjectStatsRow.class).withUseHeader(true);
         File projectsOutput = new File(statsConfig.getProjectsStats());
-        ObjectWriter projectsWriter = mapper.writer(projectsSchema);
-        printProjectsStats(datasets, projectsWriter, projectsOutput);
-
+        if (!projectsOutput.exists()) {
+            CsvSchema projectsSchema = mapper.schemaFor(ProjectStatsRow.class).withUseHeader(true);
+            ObjectWriter projectsWriter = mapper.writer(projectsSchema);
+            printProjectsStats(datasets, projectsWriter, projectsOutput);
+        } else {
+            log.info("Projects stats already exists at {}", projectsOutput.getAbsolutePath());
+        }
     }
 
     private void printRepositoriesStats(List<Dataset> datasets, ObjectWriter writer,
