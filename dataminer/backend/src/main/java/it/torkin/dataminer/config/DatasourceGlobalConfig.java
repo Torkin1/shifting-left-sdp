@@ -35,7 +35,10 @@ public class DatasourceGlobalConfig {
             log.warn("Max workers not set or set too high, using default value {}", DEFAULT_MAX_WORKERS);
             parallelismLevel = DEFAULT_MAX_WORKERS;
         }
-        sources.forEach((source) -> sourcesMap.put(source.getName(), source));
+        sources.forEach((source) -> {
+            source.init(this);
+            sourcesMap.put(source.getName(), source);
+        });
     }
 
     /**

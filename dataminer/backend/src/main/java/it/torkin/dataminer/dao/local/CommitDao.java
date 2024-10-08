@@ -14,6 +14,6 @@ public interface CommitDao extends JpaRepository<Commit, Long>{
     public int countByDatasetNameAndBuggy(String datasetName, boolean buggy);
     public int countByDatasetNameAndRepository(String datasetName, String projectName);
 
-    @Query("SELECT DISTINCT c.repository FROM Commit c JOIN Dataset d ON c.dataset.id = dataset.id WHERE d.name = ?1")
+    @Query("SELECT c.repository FROM Commit c WHERE c.dataset.name = :datasetName")
     public Set<String> findDistinctRepositoriesByDatasetName(String datasetName);
 }
