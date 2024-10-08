@@ -108,7 +108,7 @@ public class StatsController implements IStatsController{
             
             Map<String, Integer> issuesByProject = new HashMap<>();
             Map<String, Integer> buggyIssuesByProject = new HashMap<>();
-            // TODO: measurement dates should be fetched by a dedicated controller
+            // For stats purpose only, the date of first commit is enough
             ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), new FirstCommitDate());
             processedDatasetController.getFilteredIssues(processedIssuesBean);
             // we must first count each project's issues in order to trigger filters
