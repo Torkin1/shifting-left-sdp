@@ -3,10 +3,13 @@ package it.torkin.dataminer.control.measurementdate.impl;
 import java.sql.Timestamp;
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.entities.dataset.Commit;
 
+@Component
 public class FirstCommitDate implements MeasurementDate{
 
     @Override
