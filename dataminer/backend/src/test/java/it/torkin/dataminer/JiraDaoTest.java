@@ -1,6 +1,7 @@
 package it.torkin.dataminer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,11 +26,13 @@ import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
 @ActiveProfiles("test")
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@Slf4j
 public class JiraDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
 
     
@@ -52,6 +55,10 @@ public class JiraDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
         for (File issue_sample : issue_samples){
             expected = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
             actual = jiraDao.queryIssueDetails(expected.getJiraKey());
+            log.info("issue changelog first item: {}", actual.getChangelog().getHistories().get(0).getItems().get(0));
+            actual.getChangelog().getHistories().forEach(history -> {
+                assertNotNull(history.getCreated());
+            });
             assertEquals(expected.getJiraId(), actual.getJiraId());
         }
         

@@ -39,6 +39,7 @@ public class IssueDetails {
     private String self; // link to issue in Jira
 
     @Embedded private IssueFields fields;
+    @Embedded private IssueChangelog changelog;
 
     
 }
