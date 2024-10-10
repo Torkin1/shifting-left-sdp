@@ -11,13 +11,14 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
-import it.torkin.dataminer.entities.dataset.IssueBugginessBean;
+import it.torkin.dataminer.entities.dataset.IssueBean;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +32,7 @@ public class IssueTest {
     @Autowired private IssueDao issueDao;
     @Autowired private CommitDao commitDao;
     @Autowired private DatasetDao datasetDao;
+    @Autowired private IIssueController issueController;
 
     @Test
     public void testIsBuggy(){
@@ -96,10 +98,10 @@ public class IssueTest {
          * - issue3 to be clean according to the right dataset
          * - issue3 to be buggy according to the wrong dataset
          */
-        assertTrue(issue1.isBuggy(new IssueBugginessBean("dataset_test", TimeTools.now())));
-        assertFalse(issue2.isBuggy(new IssueBugginessBean("dataset_test", TimeTools.now())));
-        assertFalse(issue3.isBuggy(new IssueBugginessBean("dataset_test", TimeTools.now())));
-        assertTrue(issue3.isBuggy(new IssueBugginessBean("dataset_test2", TimeTools.now())));
+        assertTrue(issueController.isBuggy(new IssueBean(issue1, dataset.getName())));
+        assertFalse(issueController.isBuggy(new IssueBean(issue2, "dataset_test")));
+        assertFalse(issueController.isBuggy(new IssueBean(issue3, "dataset_test")));
+        assertTrue(issueController.isBuggy(new IssueBean(issue3, "dataset_test2")));
         
 
     }
