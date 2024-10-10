@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Configuration
 @ConfigurationProperties(
-    prefix = "dataminer.data.output.stats",
+    prefix = "dataminer.stats",
     ignoreUnknownFields = false)
 @Data
 public class StatsConfig {
