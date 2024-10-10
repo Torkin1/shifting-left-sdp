@@ -41,5 +41,9 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
      * or if applyAnyway flag has been set.
      */
     protected abstract Boolean applyFilter(IssueFilterBean bean);
+
+    public final String getName(){
+        return this.getClass().getSimpleName();
+    }
     
 }
