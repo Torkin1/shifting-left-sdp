@@ -17,6 +17,8 @@ import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.dataset.IssueBugginessBean;
+import it.torkin.dataminer.toolbox.time.TimeTools;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
@@ -52,16 +54,19 @@ public class IssueTest {
         buggyCommit.setBuggy(true);
         buggyCommit.setDataset(dataset);
         buggyCommit.setHash("buggyCommit");
+        buggyCommit.setTimestamp(TimeTools.now());
 
         Commit cleanCommit = new Commit();
         cleanCommit.setBuggy(false);
         cleanCommit.setDataset(dataset);
         cleanCommit.setHash("cleanCommit");
+        cleanCommit.setTimestamp(TimeTools.now());
 
         Commit buggyCommitWrongDataset = new Commit();
         buggyCommitWrongDataset.setBuggy(true);
         buggyCommitWrongDataset.setDataset(wrongDataset);
         buggyCommitWrongDataset.setHash("buggyCommitWrongDataset");
+        buggyCommitWrongDataset.setTimestamp(TimeTools.now());
 
         issue1.getCommits().add(buggyCommit);
         buggyCommit.getIssues().add(issue1);
@@ -91,10 +96,10 @@ public class IssueTest {
          * - issue3 to be clean according to the right dataset
          * - issue3 to be buggy according to the wrong dataset
          */
-        assertTrue(issue1.isBuggy("dataset_test"));
-        assertFalse(issue2.isBuggy("dataset_test"));
-        assertFalse(issue3.isBuggy("dataset_test"));
-        assertTrue(issue3.isBuggy("dataset_test2"));
+        assertTrue(issue1.isBuggy(new IssueBugginessBean("dataset_test", TimeTools.now())));
+        assertFalse(issue2.isBuggy(new IssueBugginessBean("dataset_test", TimeTools.now())));
+        assertFalse(issue3.isBuggy(new IssueBugginessBean("dataset_test", TimeTools.now())));
+        assertTrue(issue3.isBuggy(new IssueBugginessBean("dataset_test2", TimeTools.now())));
         
 
     }

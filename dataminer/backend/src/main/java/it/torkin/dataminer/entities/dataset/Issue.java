@@ -1,9 +1,11 @@
 package it.torkin.dataminer.entities.dataset;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
+import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -43,11 +45,28 @@ public class Issue {
     private List<Measurement> measurements = new ArrayList<>();
 
     /**
-     * Returns true if this issue has at least one buggy commit
-     * belonging to the specified dataset.
+     * Returns if this issue has at least one buggy commit belonging
+     * to the given dataset.
+     * A measurement date can be specified to consider only the commits
+     * strictly before that date.
      */
-    public boolean isBuggy(String datasetName){
-        return commits.stream().anyMatch((commit) -> commit.isBuggy() && commit.getDataset().getName().equals(datasetName));
+    public boolean isBuggy(IssueBugginessBean bean){
+
+        return commits.stream().anyMatch(commit -> {
+            
+            Timestamp measurementDate = bean.getMeasurementDate();
+            if (measurementDate == null){
+                // we assume that the measurement date is now,
+                // to include all the related commits in the dataset
+                // (all data in dataset should be in the past with respect to now)
+                measurementDate = TimeTools.now();
+            }
+                
+            return commit.isBuggy()
+             && commit.getDataset().getName().equals(bean.getDataset())
+             && !commit.getTimestamp().after(measurementDate);
+        });
+
     }
 
 }
