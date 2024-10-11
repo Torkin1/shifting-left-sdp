@@ -2,6 +2,7 @@ package it.torkin.dataminer.entities.dataset;
 
 import java.sql.Timestamp;
 
+import io.micrometer.common.lang.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -11,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class IssueBean {
     private String dataset;
-    private Timestamp measurementDate = null;
-    private Issue issue;
+    private Timestamp measurementDate;
+    @NonNull private Issue issue;
 
     public IssueBean(Issue issue, String dataset) {
         this.dataset = dataset;
@@ -23,4 +24,5 @@ public class IssueBean {
         this.issue = issue;
         this.measurementDate = measurementDate;
     }
+
 }

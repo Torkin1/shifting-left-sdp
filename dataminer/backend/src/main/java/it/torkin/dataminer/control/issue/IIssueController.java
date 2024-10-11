@@ -20,7 +20,7 @@ public interface IIssueController {
      * measurement date.
      * @param dataset nullable (ignored)
      * @param issue non null
-     * @param measurementDate nullable (fallback to now)
+     * @param measurementDate non null
      * @return
      */
     public String getDescription(IssueBean bean);
