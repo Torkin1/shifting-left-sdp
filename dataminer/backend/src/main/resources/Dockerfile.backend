@@ -1,14 +1,18 @@
-FROM eclipse-temurin:17-jdk-alpine
+FROM eclipse-temurin:17-jdk
+
 ENV SPRING_PROFILES_ACTIVE=container
+
+COPY --from=proto . ./proto
+WORKDIR ./backend
 
 # preinstall the dependencies
 COPY .mvn .mvn
-COPY ./mvnw ./mvnw
-COPY ./pom.xml ./pom.xml
+COPY mvnw mvnw
+COPY pom.xml pom.xml
 RUN ./mvnw dependency:resolve
 
 # copy sources and compile them in a jar
-COPY ./src ./src
+COPY src src
 RUN ./mvnw package -DskipTests
 
 ENTRYPOINT ["java","-jar", "./target/dataminer-0.0.1-SNAPSHOT.jar"]
