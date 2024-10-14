@@ -13,7 +13,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Gets the value of an issue field according to a given measurement date
+ * Gets the value of an issue field according to a given measurement date.
+ * The value of the field is first searched in the issue changelog,
+ * looking for the last history that is not after the measurement date.
+ * If such a history is found, the value is extracted from it as a String,
+ * and it is mapped to the wanted type using the provided function
+ * {@code mapStringToFieldValue} (Null values are converted to empty strings
+ * before they are passed to such function).
+ * If no history is found, the value is taken from the issue details using
+ * the provided function {@code getValueFromDetails} (Null values must be handled in such function).
+ *  
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -32,6 +41,7 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
     
     @Override
     public F apply(IssueFieldGetterBean bean) {
+        
         if (!checkMeasurementDate(bean.getIssueBean(), bean.getIssueField())) return null;
 
         IssueHistory history = findLastHistory(bean.getIssueBean(), bean.getIssueField());
@@ -111,10 +121,10 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
     private String extractValueFromHistoryItem(IssueHistoryItem item, Timestamp historyCreatedDate, Timestamp measurementDate){
         if (measurementDate.before(historyCreatedDate)){
             // see case 2 in findFirstHistory()
-            return item.getFromString();
+            return item.getFromString() == null? "" : item.getFromString();
         } else {
             // see case 3 in findFirstHistory()
-            return item.getToString();
+            return item.getToString() == null? "" : item.getToString();
         }
     }
 

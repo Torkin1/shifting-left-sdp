@@ -30,7 +30,7 @@ public class IssueController implements IIssueController{
     public String getDescription(IssueBean bean) {
         
         return new IssueFieldGetter<String>(
-            fields -> fields.getDescription(),
+            fields -> fields.getDescription() == null? "" : fields.getDescription(),
             Function.identity()
         ).apply(new IssueFieldGetterBean(bean, IssueField.DESCRIPTION));        
     }
