@@ -11,10 +11,8 @@ import org.springframework.stereotype.Component;
 
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
-import it.torkin.dataminer.control.dataset.stats.ILinkageController;
 import it.torkin.dataminer.control.dataset.stats.IStatsController;
-import it.torkin.dataminer.control.dataset.stats.LinkageBean;
-import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.control.features.IFeatureController;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -22,8 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ApplicationStartup implements ApplicationListener<ApplicationReadyEvent> {
 
     @Autowired private IDatasetController datasetController;
-    @Autowired private ILinkageController linkageController;
     @Autowired private IStatsController statsController;
+    @Autowired private IFeatureController featureController;
 
     @Autowired private Environment env;
 
@@ -36,8 +34,9 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             
             createRawDataset();
             printStats();
+            mineFeatures();
 
-        } catch (UnableToCreateRawDatasetException | IOException e) {
+        } catch (Exception e) {
             log.error("fatal", e);
             throw new RuntimeException(e);
         }
@@ -59,13 +58,12 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         datasetController.createRawDataset();
         log.info("Dataset loaded");
     }
-    
-    private void calcLinkage(Dataset dataset){
-        LinkageBean linkage = new LinkageBean(dataset.getName());
-        LinkageBean buggyLinkage = new LinkageBean(dataset.getName());
-        linkageController.calcTicketLinkage(linkage);
-        linkageController.calcBuggyTicketLinkage(buggyLinkage);
-        log.info(String.format("Linkage for dataset %s: %s", dataset.getName(), linkage));
-        log.info(String.format("Buggy linkage for dataset %s: %s", dataset.getName(), buggyLinkage));
+
+    private void mineFeatures() throws Exception{
+        featureController.initMiners();
+        log.info("Features miners initialized");
+        
+        // TODO: mine features
+
     }
 }
