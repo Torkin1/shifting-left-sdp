@@ -8,8 +8,10 @@ import com.google.gson.annotations.SerializedName;
 
 import it.torkin.dataminer.entities.jira.Developer;
 import it.torkin.dataminer.rest.parsing.Hide;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
@@ -27,7 +29,7 @@ public class IssueHistory {
     @SerializedName("id")
     private String jiraId;
 
-    @ManyToOne
+    @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     private Developer author;
     private Timestamp created;
 
