@@ -21,7 +21,7 @@ import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
-import it.torkin.dataminer.entities.dataset.IssueBean;
+import it.torkin.dataminer.entities.dataset.IssueBugginessBean;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -117,7 +117,7 @@ public class StatsController implements IStatsController{
             // we must first count each project's issues in order to trigger filters
             processedIssuesBean.getProcessedIssues().forEach((issue) -> {
                 String project = issue.getDetails().getFields().getProject().getName();
-                if(issueController.isBuggy(new IssueBean(issue, dataset.getName()))){
+                if(issueController.isBuggy(new IssueBugginessBean(issue, dataset.getName()))){
                     buggyIssuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
                 }
                 issuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);

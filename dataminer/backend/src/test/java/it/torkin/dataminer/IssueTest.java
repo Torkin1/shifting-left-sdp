@@ -31,6 +31,7 @@ import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.IssueBean;
+import it.torkin.dataminer.entities.dataset.IssueBugginessBean;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import it.torkin.dataminer.toolbox.time.TimeTools;
@@ -117,10 +118,10 @@ public class IssueTest {
          * - issue3 to be clean according to the right dataset
          * - issue3 to be buggy according to the wrong dataset
          */
-        assertTrue(issueController.isBuggy(new IssueBean(issue1, dataset.getName())));
-        assertFalse(issueController.isBuggy(new IssueBean(issue2, "dataset_test")));
-        assertFalse(issueController.isBuggy(new IssueBean(issue3, "dataset_test")));
-        assertTrue(issueController.isBuggy(new IssueBean(issue3, "dataset_test2")));
+        assertTrue(issueController.isBuggy(new IssueBugginessBean(issue1, dataset.getName())));
+        assertFalse(issueController.isBuggy(new IssueBugginessBean(issue2, "dataset_test")));
+        assertFalse(issueController.isBuggy(new IssueBugginessBean(issue3, "dataset_test")));
+        assertTrue(issueController.isBuggy(new IssueBugginessBean(issue3, "dataset_test2")));
         
 
     }

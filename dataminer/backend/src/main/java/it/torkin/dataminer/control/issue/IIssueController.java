@@ -1,6 +1,7 @@
 package it.torkin.dataminer.control.issue;
 
 import it.torkin.dataminer.entities.dataset.IssueBean;
+import it.torkin.dataminer.entities.dataset.IssueBugginessBean;
 
 public interface IIssueController {
 
@@ -13,7 +14,7 @@ public interface IIssueController {
      * @param issue non null
      * @param measurementDate nullable (fallback to now)
      */
-    public boolean isBuggy(IssueBean bean);
+    public boolean isBuggy(IssueBugginessBean bean);
 
     /**
      * Returns the description of the issue according to the given
