@@ -19,7 +19,7 @@ public class IssueBean {
         this.dataset = dataset;
         this.issue = issue;
     }
-
+    
     public IssueBean(Issue issue, Timestamp measurementDate) {
         this.issue = issue;
         this.measurementDate = measurementDate;

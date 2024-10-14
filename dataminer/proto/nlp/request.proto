@@ -3,12 +3,12 @@ syntax = "proto3";
 package it.torkin.dataminer.nlp;
 
 message NlpRequest{
-    IssueBean issue = 1;    // Issue to be analyzed
-    repeated IssueBean buggy = 4; // Issues buggy before prediction date of this issue
-    repeated IssueBean clean = 5; // Issues clean before prediction date of this issue
+    NlpIssueBean issue = 1;    // Issue to be analyzed
+    repeated NlpIssueBean buggy = 4; // Issues buggy before prediction date of this issue
+    repeated NlpIssueBean clean = 5; // Issues clean before prediction date of this issue
 }
 
-message IssueBean{
+message NlpIssueBean{
     string key = 1; // identifier of the issue
     string title = 2; // title of the issue
     string description = 3; // description of the issue
