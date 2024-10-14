@@ -12,6 +12,8 @@ services:
       - db
     build:
       context: ./backend
+      additional_contexts:
+        proto: ./proto
       dockerfile: src/main/resources/Dockerfile.backend
     environment:
       - SPRING_PROFILES_ACTIVE=container
