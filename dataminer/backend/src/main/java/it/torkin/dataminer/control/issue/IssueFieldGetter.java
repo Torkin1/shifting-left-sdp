@@ -132,9 +132,9 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
         if (bean.getMeasurementDate() == null){
             throw new NullPointerException(String.format("Cannot get %s of Issue %s without a measurement date. If you want the latest version of data, use TimeTools.now() return value as measurement date.", field.getName(), bean.getIssue().getKey()));
         }
-
-        if (bean.getMeasurementDate().before(bean.getIssue().getDetails().getFields().getCreated())){
-            log.warn(String.format("The measurement date %s is after the creation date of issue %s. The %s field will be null.", bean.getMeasurementDate(), bean.getIssue().getKey(), field.getName()));
+        Timestamp created = bean.getIssue().getDetails().getFields().getCreated();
+        if (bean.getMeasurementDate().before(created)){
+            log.warn(String.format("The measurement date %s is before the creation date of issue %s (%s). The %s field will be null.", bean.getMeasurementDate(), bean.getIssue().getKey(), created, field.getName()));
             return false;
         }
 
