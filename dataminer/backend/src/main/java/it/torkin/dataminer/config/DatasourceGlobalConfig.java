@@ -90,4 +90,11 @@ public class DatasourceGlobalConfig {
      */
     @Min(0)
     private Integer taskSubmitMaxRetries = 3;
+
+    /**
+     * Only top N project-dataset pairs ranked by buggy linkage
+     * are selected for further processing
+     */
+    @Min(0)
+    private Integer topNBuggyLinkage;
 }

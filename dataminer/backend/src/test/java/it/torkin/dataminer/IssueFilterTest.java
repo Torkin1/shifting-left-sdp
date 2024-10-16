@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +24,11 @@ import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilter;
+import it.torkin.dataminer.control.dataset.processed.filters.impl.LinkageFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.NotMostRecentFilter;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
+import it.torkin.dataminer.control.dataset.stats.ILinkageController;
+import it.torkin.dataminer.control.dataset.stats.LinkageBean;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
@@ -48,10 +52,12 @@ public class IssueFilterTest {
     @Autowired private CommitDao commitDao;
     @Autowired private DatasetDao datasetDao;
     @Autowired private ProjectDao projectDao;
-
-    @Autowired private IDatasetController datasetController; 
     
+    @Autowired private LinkageFilter linkageFilter;
     @Autowired private NotMostRecentFilter filter;
+
+    @Autowired private ILinkageController linkageController;
+    @Autowired private IDatasetController datasetController; 
 
     @Autowired private DatasourceGlobalConfig config;
 
@@ -164,6 +170,53 @@ public class IssueFilterTest {
         assertTrue(filter.apply(new IssueFilterBean(issue1, dataset.getName(), false)));
         assertFalse(filter.apply(new IssueFilterBean(issue2, dataset.getName(), false)));
         assertTrue(filter.apply(new IssueFilterBean(issue3, dataset.getName(), false)));
+
+    }
+
+    @Test
+    @Transactional
+    public void testLinkageFilter() throws UnableToCreateRawDatasetException{
+
+        /**
+         * We expect that repositories of processed issues have a
+         * linkage above the top N repositories fetched from 
+         * the datasets.
+        */
+        datasetController.createRawDataset();
+
+        List<Dataset> datasets = datasetDao.findAll();
+        List<Double> buggyLinkages = new ArrayList<>();
+        Map<String, LinkageBean> buggyLinkagesByDataset = new HashMap<>();
+
+        for (Dataset dataset : datasets) {
+            LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
+            linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
+            buggyLinkagesByDataset.put(dataset.getName(), buggyLinkageBean);
+            buggyLinkageBean.getLinkageByRepository().forEach((repository, linkage) -> {
+                if (repository != LinkageBean.ALL_REPOSITORIES){
+                    buggyLinkages.add(linkage);
+                }
+            });
+        }
+        buggyLinkages.sort(Double::compare);
+        log.info("buggyLinkages: {}", buggyLinkages);
+        int selectedIndex = buggyLinkages.size() >= config.getTopNBuggyLinkage() ? buggyLinkages.size() - config.getTopNBuggyLinkage() : 0;
+        log.info("threshold: {}", buggyLinkages.get(selectedIndex));
+
+        Stream<Issue> filteredIssues;
+        linkageFilter.reset();
+        for (Dataset dataset : datasets){
+            Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
+            issues
+             .filter(issue -> linkageFilter.apply(new IssueFilterBean(issue, dataset.getName(), true)))
+             .forEach(issue -> {
+                for(Commit commit : issue.getCommits()){
+                    if (commit.getDataset().getName().equals(dataset.getName())){
+                        assertTrue(buggyLinkagesByDataset.get(dataset.getName()).getLinkageByRepository().get(commit.getRepository()) >= buggyLinkages.get(selectedIndex));
+                    }
+                } 
+             });
+        }
 
     }
     
