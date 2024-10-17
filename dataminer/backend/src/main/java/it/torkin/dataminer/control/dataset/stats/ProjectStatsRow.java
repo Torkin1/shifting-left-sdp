@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.AccessLevel;
 
 @Data
 @JsonPropertyOrder({
@@ -38,6 +40,8 @@ public class ProjectStatsRow {
     private double usableBuggyTicketsPercentage;
     private long excludedTickets;
 
+    @JsonIgnoreProperties
+    @Getter(AccessLevel.NONE)
     private Map<String, Long> filteredTicketsByFilterMap = new HashMap<>();
 
     @JsonProperty("filteredTicketsByFilter")

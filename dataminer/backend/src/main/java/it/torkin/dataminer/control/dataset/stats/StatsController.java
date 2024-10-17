@@ -154,9 +154,10 @@ public class StatsController implements IStatsController{
                     processedIssuesBean.getFilteredByProjectGroupedByFilter().forEach((filter, filteredByProject) -> {
                         long filteredTickets = filteredByProject.getOrDefault(project, 0L);
                         if (filteredTickets > 0){
-                            row.getFilteredTicketsByFilterMap().put(filter, filteredTickets);
+                            filteredTicketsByFilter.put(filter, filteredTickets);
                         }
                     });
+                    row.setFilteredTicketsByFilterMap(filteredTicketsByFilter);
                     
                     try {
                         sequenceWriter.write(row);
