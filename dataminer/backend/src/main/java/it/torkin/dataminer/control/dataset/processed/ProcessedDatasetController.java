@@ -13,6 +13,7 @@ import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Issue;
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,6 +25,11 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     
     @Autowired(required = false)
     private List<IssueFilter> issueFilters = new ArrayList<>();
+
+    @PostConstruct
+    private void init() {
+        log.debug("Issue processing filter list: {}", issueFilters);
+    }
         
     /**
      * We want to return issues only if they pass the filters.

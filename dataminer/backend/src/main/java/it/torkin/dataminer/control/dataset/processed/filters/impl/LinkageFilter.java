@@ -1,24 +1,26 @@
 package it.torkin.dataminer.control.dataset.processed.filters.impl;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
 import it.torkin.dataminer.control.dataset.stats.LinkageBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
-import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.entities.jira.project.Project;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.util.*;
-
 /**
- * #124: accept issues only if at least one of its commits belongs to a repository
- * from the given dataset with a buggy linkage value not below the threshold.
- * 
+ * #124: accept issues only if its main repository has a buggy linkage
+ * greater than a threshold. 
  * The threshold is calculated as the minimun value of the top N
  * different buggy linkages of all projects among all datasets.
  * (This means that the corresponding repositories can be more than N since different
@@ -36,6 +38,7 @@ public class LinkageFilter extends IssueFilter {
     private double buggyLinkageThreshold;
     private Map<String, LinkageBean> buggyLinkagesByDataset = new HashMap<>();
     private boolean initialized = false;
+    private Map<String, Dataset> datasets = new HashMap<>();
 
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
@@ -44,16 +47,12 @@ public class LinkageFilter extends IssueFilter {
         
         LinkageBean linkageBean = buggyLinkagesByDataset.get(bean.getDatasetName());
         Double buggyLinkage;
+        Project project = bean.getIssue().getDetails().getFields().getProject();
+        Dataset dataset = datasets.get(bean.getDatasetName());
+        String guessedRepo = dataset.getGuessedRepoByProjects().get(project.getName());
 
-        for (Commit commit : bean.getIssue().getCommits()){
-            if (commit.getDataset().getName().equals(bean.getDatasetName())){
-                buggyLinkage = linkageBean.getLinkageByRepository().get(commit.getRepository());
-                if (buggyLinkage >= buggyLinkageThreshold){
-                    return true;
-                }
-            }
-        }
-        return false;
+        buggyLinkage = linkageBean.getLinkageByRepository().getOrDefault(guessedRepo, 0.0);
+        return buggyLinkage >= buggyLinkageThreshold;
     }
 
     private Double selectTopNThreshold(List<Double> values, int n){
@@ -69,10 +68,9 @@ public class LinkageFilter extends IssueFilter {
     }
 
     private List<Double> loadLinkages(){
-        List<Dataset> datasets = datasetDao.findAll();
         List<Double> buggyLinkages = new ArrayList<>();
 
-        for (Dataset dataset : datasets) {
+        for (Dataset dataset : datasets.values()) {
             LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
             linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
             buggyLinkagesByDataset.put(dataset.getName(), buggyLinkageBean);
@@ -88,6 +86,8 @@ public class LinkageFilter extends IssueFilter {
     private void init(){
 
         buggyLinkagesByDataset.clear();
+        datasets.clear();
+        datasetDao.findAll().forEach(dataset -> datasets.put(dataset.getName(), dataset));
         List<Double> buggyLinkages = loadLinkages();
         buggyLinkageThreshold = selectTopNThreshold(buggyLinkages, config.getTopNBuggyLinkage());
         initialized = true;
