@@ -44,5 +44,12 @@ public class Dataset {
     private Map<String, Integer> buggyUnlinkedByRepository = new HashMap<>();
 
     private Timestamp lastUpdatedTime;
+
+    /**
+     * #128: Use this map to lookup the guessed main repository for a project
+     * according to this dataset.
+     */
+    @ElementCollection
+    private Map<String, String> guessedRepoByProjects = new HashMap<>();
     
 }

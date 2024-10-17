@@ -2,7 +2,11 @@ package it.torkin.dataminer.control.dataset;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,7 +22,10 @@ import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.control.dataset.raw.UnableToPrepareDatasourceException;
 import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
+import it.torkin.dataminer.dao.local.CommitCount;
+import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
+import it.torkin.dataminer.entities.dataset.Dataset;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
@@ -30,13 +37,12 @@ public class DatasetController implements IDatasetController {
     @Autowired private IRawDatasetController rawDatasetController;
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private DatasetDao datasetDao;
+    @Autowired private CommitDao commitDao;
     @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
 
     private List<Datasource> datasources = new ArrayList<>();
     
-    @Override
-    public void createRawDataset() throws UnableToCreateRawDatasetException {
-
+    private void loadDatasources() throws Exception {
         Datasource datasource;
         DatasourceConfig config;
 
@@ -62,6 +68,90 @@ public class DatasetController implements IDatasetController {
                 progress.step();
 
             }
+        }
+    }
+
+    /**
+     * For each project, selects the corresponding repositories with the most number
+     * of commits linked to issues belonging to that project. The mapping is stored
+     * in the dataset object.
+     */
+    private void populateRepoByProjects(List<Dataset> datasets, List<CommitCount> commitCounts){
+
+        Map<String, Map<String, Map<String, Long>>> countByRepoByProjectByDataset = new HashMap<>();
+        for(CommitCount commitCount : commitCounts){
+            countByRepoByProjectByDataset.putIfAbsent(commitCount.getDataset(), new HashMap<>());
+            countByRepoByProjectByDataset.get(commitCount.getDataset()).putIfAbsent(commitCount.getProject(), new HashMap<>());
+            countByRepoByProjectByDataset.get(commitCount.getDataset()).get(commitCount.getProject()).put(commitCount.getRepository(), commitCount.getTotal());
+        }
+
+        for(Dataset dataset : datasets){
+
+            Map<String, Map<String, Long>> countByRepoByProject = countByRepoByProjectByDataset.get(dataset.getName());
+            countByRepoByProject.forEach((project, countByRepo) -> {
+                Entry<String, Long> maxEntry = countByRepo.entrySet().stream().max((e1, e2) -> e1.getValue().compareTo(e2.getValue())).get();
+                dataset.getGuessedRepoByProjects().put(project, maxEntry.getKey());
+            });
+
+        }
+
+    }
+
+    /**
+     * Commits from a repository could be linked to issues belonging to different projects.
+     * This means that projects with very few loaded issues could have repository features
+     * that are not necessarily representative of the project. To avoid this, we
+     * approximate the relation among repositories and projects by treating it as a 1-1,
+     * retaining only the project with the most issues for each repository value.
+     */
+    private void retainOnlyProjectsWithMostIssuesForSameRepository(List<Dataset> datasets, List<CommitCount> commitCounts){
+    
+        Map<String, Map<String, Map<String, Long>>> countByProjectByRepoByDataset = new HashMap<>();
+        for (CommitCount commitCount : commitCounts){
+            countByProjectByRepoByDataset.putIfAbsent(commitCount.getDataset(), new HashMap<>());
+            countByProjectByRepoByDataset.get(commitCount.getDataset()).putIfAbsent(commitCount.getRepository(), new HashMap<>());
+            countByProjectByRepoByDataset.get(commitCount.getDataset()).get(commitCount.getRepository()).put(commitCount.getProject(), commitCount.getTotal());
+        }
+        
+
+        for (Dataset dataset : datasets){
+            
+            Map<String, Map<String, Long>> countByProjectByRepo = countByProjectByRepoByDataset.get(dataset.getName());
+            Set<String> repositories = countByProjectByRepo.keySet();
+            for (String repository : repositories){
+                Map<String, Long> countByProject = countByProjectByRepo.get(repository);
+                Entry<String, Long> maxEntry = countByProject.entrySet().stream().max((e1, e2) -> e1.getValue().compareTo(e2.getValue())).get();
+                dataset.getGuessedRepoByProjects().entrySet().removeIf(entry -> {
+                    String project = entry.getKey();
+                    String repo = entry.getValue();
+                    return repo.equals(repository) && !project.equals(maxEntry.getKey());
+                });
+            }
+        }
+    }
+    
+    /**
+     * implements #129
+     */
+    private void mapRepositoriesToProjects(){
+
+        List<CommitCount> commitCounts = commitDao.countByDatasetAndRepositoryAndProject();
+        List<Dataset> datasets = datasetDao.findAll();
+
+        populateRepoByProjects(datasets, commitCounts);
+        retainOnlyProjectsWithMostIssuesForSameRepository(datasets, commitCounts);
+        datasetDao.saveAll(datasets);
+        
+    }
+    
+    @Override
+    public void createRawDataset() throws UnableToCreateRawDatasetException {
+
+        try {
+            
+            loadDatasources();
+            mapRepositoriesToProjects();
+            
         } catch (UnableToPrepareDatasourceException | UnableToLoadCommitsException e) {
             throw new UnableToCreateRawDatasetException(e);
         } catch (Exception e) {
