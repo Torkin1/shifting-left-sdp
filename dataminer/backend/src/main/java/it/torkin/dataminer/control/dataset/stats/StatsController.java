@@ -109,21 +109,27 @@ public class StatsController implements IStatsController{
         try (SequenceWriter sequenceWriter = writer.writeValues(output)){
             for (Dataset dataset : datasets){
             
-            Map<String, Integer> issuesByProject = new HashMap<>();
-            Map<String, Integer> buggyIssuesByProject = new HashMap<>();
-            // For stats purpose only, the date of first commit is enough
-            ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), new FirstCommitDate());
-            processedDatasetController.getFilteredIssues(processedIssuesBean);
-            // we must first count each project's issues in order to trigger filters
-            processedIssuesBean.getProcessedIssues().forEach((issue) -> {
-                String project = issue.getDetails().getFields().getProject().getName();
-                if(issueController.isBuggy(new IssueBugginessBean(issue, dataset.getName()))){
-                    buggyIssuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
-                }
-                issuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
-            });
-            // now we have filtered out issue counts by project and can proceed
-            // to write stats to csv
+                LinkageBean linkageBean = new LinkageBean(dataset.getName());
+                LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
+
+                linkageController.calcTicketLinkage(linkageBean);
+                linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
+                
+                Map<String, Integer> issuesByProject = new HashMap<>();
+                Map<String, Integer> buggyIssuesByProject = new HashMap<>();
+                // For stats purpose only, the date of first commit is enough
+                ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), new FirstCommitDate());
+                processedDatasetController.getFilteredIssues(processedIssuesBean);
+                // we must first count each project's issues in order to trigger filters
+                processedIssuesBean.getProcessedIssues().forEach((issue) -> {
+                    String project = issue.getDetails().getFields().getProject().getName();
+                    if(issueController.isBuggy(new IssueBugginessBean(issue, dataset.getName()))){
+                        buggyIssuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
+                    }
+                    issuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
+                });
+                // now we have filtered out issue counts by project and can proceed
+                // to write stats to csv
                 issuesByProject.forEach((project, count) -> {
                     
                     ProjectStatsRow row = new ProjectStatsRow();
@@ -132,9 +138,14 @@ public class StatsController implements IStatsController{
                     long usableBuggyTickets = buggyIssuesByProject.getOrDefault(project, 0);
                     long usableTickets = count;
                     long tickets = usableTickets + excludedTickets;
+                    String guessedRepository = dataset.getGuessedRepoByProjects().get(project);
+                    Map<String, Long> filteredTicketsByFilter = new HashMap<>();
 
                     row.setDataset(dataset.getName());
                     row.setProject(project);
+                    row.setGuessedRepository(guessedRepository);
+                    row.setLinkage(linkageBean.getLinkageByRepository().getOrDefault(guessedRepository, 0.0));
+                    row.setBuggyLinkage(buggyLinkageBean.getLinkageByRepository().getOrDefault(guessedRepository, 0.0));
                     row.setMeasurementDate(measurementDate);
                     row.setTickets(tickets);
                     row.setUsableTickets(count);

@@ -48,6 +48,9 @@ public class Dataset {
     /**
      * #128: Use this map to lookup the guessed main repository for a project
      * according to this dataset.
+     * 
+     * If the project is not in the map, no guess can be taken from the repositories
+     * loaded from this dataset.
      */
     @ElementCollection
     private Map<String, String> guessedRepoByProjects = new HashMap<>();

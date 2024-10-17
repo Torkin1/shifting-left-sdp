@@ -12,7 +12,10 @@ import lombok.Data;
 @Data
 @JsonPropertyOrder({
     "dataset",
-    "project", 
+    "project",
+    "guessedRepository",
+    "linkage",
+    "buggyLinkage", 
     "measurementDate",
     "tickets",
     "usableTickets",
@@ -26,6 +29,9 @@ import lombok.Data;
 public class ProjectStatsRow {
     private String dataset;
     private String project;
+    private String guessedRepository;
+    private double linkage;
+    private double buggyLinkage;
     private String measurementDate;
     private long tickets;
     private long usableTickets;
