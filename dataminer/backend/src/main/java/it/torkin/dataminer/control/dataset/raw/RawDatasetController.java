@@ -221,12 +221,13 @@ public class RawDatasetController implements IRawDatasetController{
                 
         for (Commit commit: commits){
             Set<IssueEntry> commitIssues = issuesByCommit.get(commit.getHash());
+            Issue issue;
             for (IssueEntry entry : commitIssues){
-                Issue issue = issueDao.findByKey(entry.getIssueKey());
-                if (issue == null){
+                // Issue issue = issueDao.findByKey(entry.getIssueKey());
+                // if (issue == null){
                     entityMerger.mergeIssueDetails(entry.getIssue().getDetails());
                     issue = issueDao.save(entry.getIssue());
-                }                
+                // }                
                 linkIssueCommit(issue, commit);
             }  
         }
