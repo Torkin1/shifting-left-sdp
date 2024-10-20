@@ -46,9 +46,9 @@ public class DatasetController implements IDatasetController {
         Datasource datasource;
         DatasourceConfig config;
 
+        prepareDatasources();
+
         try (ProgressBar progress = new ProgressBar("loading datasources", datasources.size())) {
-            
-            prepareDatasources();
             
             for (int i = 0; i < datasources.size(); i++) {
                 
