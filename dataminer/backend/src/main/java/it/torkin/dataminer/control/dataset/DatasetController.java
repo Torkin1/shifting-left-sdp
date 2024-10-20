@@ -76,7 +76,7 @@ public class DatasetController implements IDatasetController {
      * of commits linked to issues belonging to that project. The mapping is stored
      * in the dataset object.
      */
-    private void populateRepoByProjects(List<Dataset> datasets, List<CommitCount> commitCounts){
+    private void guessProjectRepositories(List<Dataset> datasets, List<CommitCount> commitCounts){
 
         Map<String, Map<String, Map<String, Long>>> countByRepoByProjectByDataset = new HashMap<>();
         for(CommitCount commitCount : commitCounts){
@@ -104,7 +104,7 @@ public class DatasetController implements IDatasetController {
      * approximate the relation among repositories and projects by treating it as a 1-1,
      * retaining only the project with the most issues for each repository value.
      */
-    private void retainOnlyProjectsWithMostIssuesForSameRepository(List<Dataset> datasets, List<CommitCount> commitCounts){
+    private void retainOnlyProjectWithMostIssuesForSameRepository(List<Dataset> datasets, List<CommitCount> commitCounts){
     
         Map<String, Map<String, Map<String, Long>>> countByProjectByRepoByDataset = new HashMap<>();
         for (CommitCount commitCount : commitCounts){
@@ -135,16 +135,19 @@ public class DatasetController implements IDatasetController {
      */
     private void mapRepositoriesToProjects(){
 
-        List<CommitCount> commitCounts = commitDao.countByDatasetAndRepositoryAndProject();
         List<Dataset> datasets = datasetDao.findAll();
+        datasets.removeIf(dataset -> !dataset.getGuessedRepoByProjects().isEmpty());
 
-        populateRepoByProjects(datasets, commitCounts);
-        retainOnlyProjectsWithMostIssuesForSameRepository(datasets, commitCounts);
-        datasetDao.saveAll(datasets);
-        
+        if(!datasets.isEmpty()){
+            List<CommitCount> commitCounts = commitDao.countByDatasetAndRepositoryAndProject();
+            guessProjectRepositories(datasets, commitCounts);
+            retainOnlyProjectWithMostIssuesForSameRepository(datasets, commitCounts);
+            datasetDao.saveAll(datasets);
+        }
     }
     
     @Override
+    @Transactional
     public void createRawDataset() throws UnableToCreateRawDatasetException {
 
         try {
