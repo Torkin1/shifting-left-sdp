@@ -75,6 +75,7 @@ public class NLPFeaturesMiner implements FeatureMiner{
         Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
         
         String description = issueController.getDescription(new IssueBean(issue, measurementDateValue));
+        String title = issueController.getTitle(new IssueBean(issue, measurementDateValue));
         
         NlpIssueBean.Builder beanBuilder = NlpIssueBean.newBuilder()
             .setDataset(dataset.getName())
@@ -89,6 +90,9 @@ public class NLPFeaturesMiner implements FeatureMiner{
 
         if (description != null){
             beanBuilder.setDescription(description);
+        }
+        if (title != null){
+            beanBuilder.setTitle(title);
         }
         
         return beanBuilder.build();

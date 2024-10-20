@@ -26,4 +26,5 @@ public interface IIssueController {
      */
     public String getDescription(IssueBean bean);
 
+    String getTitle(IssueBean bean);
 }
