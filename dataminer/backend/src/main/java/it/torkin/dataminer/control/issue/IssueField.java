@@ -6,7 +6,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 enum IssueField {
-    DESCRIPTION("description");
+    DESCRIPTION("description"),
+    SUMMARY("summary"),;
 
     private final String name;
 }

@@ -35,4 +35,12 @@ public class IssueController implements IIssueController{
         ).apply(new IssueFieldGetterBean(bean, IssueField.DESCRIPTION));        
     }
 
+    @Override
+    public String getTitle(IssueBean bean){
+        return new IssueFieldGetter<String>(
+            fields -> fields.getSummary() == null? "" : fields.getSummary(),
+            Function.identity()
+        ).apply(new IssueFieldGetterBean(bean, IssueField.SUMMARY));
+    }
+
 }
