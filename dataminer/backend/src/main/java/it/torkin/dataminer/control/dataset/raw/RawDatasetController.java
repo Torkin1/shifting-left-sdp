@@ -186,7 +186,7 @@ public class RawDatasetController implements IRawDatasetController{
     }
 
     private void collectCommitsFromProcessingResults() throws Exception {
-        log.info("Collecting commits from processing results");
+        log.debug("Collecting commits from processing results");
         for (Future<ProcessCommitTask> result : results){
             ProcessCommitTask task = result.get();
             if (task.getException() != null){
@@ -204,11 +204,11 @@ public class RawDatasetController implements IRawDatasetController{
 
     private void saveCommits() {
 
-        log.info("saving commit batch");
+        log.debug("saving commit batch");
         saveIssues();
         
         commitDao.saveAll(commits);
-        log.info("Commit batch saved");
+        log.debug("Commit batch saved");
         commits.clear();
     }
 
