@@ -28,6 +28,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         
+        init();
+        
         if (isTest()) return;
         
         try {
@@ -40,6 +42,14 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             log.error("fatal", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private void init(){
+        redirectRestletLogging();
+    }
+    
+    private void redirectRestletLogging() {
+        System.getProperties().put("org.restlet.engine.loggerFacadeClass", "org.restlet.ext.slf4j.Slf4jLoggerFacade");
     }
 
     private boolean isTest() {
