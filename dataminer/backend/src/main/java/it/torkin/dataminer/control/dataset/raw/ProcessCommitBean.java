@@ -5,9 +5,8 @@ import it.torkin.dataminer.entities.dataset.Dataset;
 import lombok.Data;
 
 @Data
-public class ProcessCommitTask {
+public class ProcessCommitBean {
     
-    private Exception exception = null;
     private final Commit commit;
     private final Dataset dataset;
 }

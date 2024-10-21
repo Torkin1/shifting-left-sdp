@@ -6,20 +6,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.config.DatasourceConfig;
-import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
+import it.torkin.dataminer.config.WorkersConfig;
 import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
+import it.torkin.dataminer.control.workers.IWorkersPool;
+import it.torkin.dataminer.control.workers.Task;
 import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.git.UnableToGetCommitDetailsException;
 import it.torkin.dataminer.dao.git.UnableToGetLinkedIssueKeyException;
@@ -44,13 +41,14 @@ public class RawDatasetController implements IRawDatasetController{
     
     @Autowired private GitConfig gitConfig;
     @Autowired private JiraConfig jiraConfig;
-    @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
+    @Autowired private WorkersConfig workersConfig;
 
     @Autowired private DatasetDao datasetDao;
     @Autowired private CommitDao commitDao;
     @Autowired private IssueDao issueDao;
 
     @Autowired private EntityMerger entityMerger;
+    @Autowired private IWorkersPool workers;
 
     private JiraDao jiraDao;
 
@@ -58,20 +56,16 @@ public class RawDatasetController implements IRawDatasetController{
 
     private List<Commit> commits;
     private Map<String, Set<IssueEntry>> issuesByCommit = new HashMap<>();
-    private List<Future<ProcessCommitTask>> results = new ArrayList<>();
 
-    private ExecutorService workers;
     private ProgressBar progress;
     
     private void init(){
         jiraDao = new JiraDao(jiraConfig);
-        commits = new ArrayList<>(datasourceGlobalConfig.getCommitBatchSize());
-        workers = Executors.newWorkStealingPool(datasourceGlobalConfig.getParallelismLevel());
+        commits = new ArrayList<>(workersConfig.getTaskBatchSize());
     }
         
     private void cleanup(){
 
-        workers.shutdown();
         for(GitDao dao : gitdaoByProject.values()){
             try {
                 dao.close();
@@ -109,71 +103,18 @@ public class RawDatasetController implements IRawDatasetController{
      */
     private void loadCommits(Datasource datasource, Dataset dataset, DatasourceConfig config) throws UnableToLoadCommitsException {
         
-        long seen = 0;
         progress = new ProgressBar("loading commits", config.getExpectedSize());
         try {
             while(datasource.hasNext()){
                 
                 Commit commit = datasource.next();
-                ProcessCommitTask task = new ProcessCommitTask(commit, dataset);
                 commit.setDataset(dataset);
-
-                // Commit is processed immediately if parallelism level is 0
-                // by the main thread, else it is submitted to the workers pool.
-                // In both cases, the processed commit is stored as a Future
-                // object in the results list.
-                if (datasourceGlobalConfig.getParallelismLevel() == 0){
-                    processCommit(task);
-                    results.add(new Future<ProcessCommitTask>() {
-                        @Override
-                        public boolean cancel(boolean mayInterruptIfRunning) {
-                            return false;
-                        }
-                        @Override
-                        public boolean isCancelled() {
-                            return false;
-                        }
-                        @Override
-                        public boolean isDone() {
-                            return true;
-                        }
-                        @Override
-                        public ProcessCommitTask get() {
-                            return task;
-                        }
-                        @Override
-                        public ProcessCommitTask get(long timeout, TimeUnit unit) {
-                            return task;
-                        }
-                    });
-                } else {
-                    boolean submitted = false;
-                    while(!submitted){
-                        int retry = 0;
-                        try{
-                            results.add(workers.submit(() -> {
-                                processCommit(task);
-                                return task;
-                            }));
-                            submitted = true;
-                        } catch (RejectedExecutionException e) {
-                            if(retry > datasourceGlobalConfig.getTaskSubmitMaxRetries()){
-                                log.error("reached max retry attempts to submit processing commit task {}", task, e);
-                                throw new UnableToLoadCommitsException(e);
-                            }
-                            log.warn("workers may be overloaded, retrying in {} seconds for someone to finish", datasourceGlobalConfig.getTaskSubmitRetryTimeout(), e);
-                            e.printStackTrace();
-                            workers.awaitTermination(datasourceGlobalConfig.getTaskSubmitRetryTimeout(), TimeUnit.SECONDS);
-                            retry ++;
-                        }
-                    }
-                }
+                workers.submit(new Task<>(this::processCommit, new ProcessCommitBean(commit, dataset)));
 
                 // When we loaded enough commits from datasource,
                 // we wait the workers to finish processing the commits
                 // before collecting and saving them.
-                seen ++;
-                if (seen % datasourceGlobalConfig.getCommitBatchSize() == 0 || !datasource.hasNext()){
+                if (workers.isBatchFull() || !datasource.hasNext()){
                     collectCommitsFromProcessingResults();
                     saveCommits();
                 }
@@ -187,19 +128,19 @@ public class RawDatasetController implements IRawDatasetController{
 
     private void collectCommitsFromProcessingResults() throws Exception {
         log.debug("Collecting commits from processing results");
-        for (Future<ProcessCommitTask> result : results){
-            ProcessCommitTask task = result.get();
+        while(!workers.isBatchEmpty()){
+            Task<?> task = workers.collect();
+            ProcessCommitBean processCommitBean = (ProcessCommitBean) task.getTaskBean();
             if (task.getException() != null){
                 if (task.getException() instanceof UnableToFetchIssueException || task.getException() instanceof UnableToGetCommitDetailsException){
-                    handleSkippedCommit(task.getCommit(), task.getDataset(), task.getException());
+                    handleSkippedCommit(processCommitBean.getCommit(), processCommitBean.getDataset(), task.getException());
                 } else {
                     throw task.getException();
                 }
             } else {
-                commits.add(task.getCommit());
+                commits.add(processCommitBean.getCommit());
             }
         }
-        results.clear();
     }
 
     private void saveCommits() {
@@ -254,16 +195,14 @@ public class RawDatasetController implements IRawDatasetController{
         }
     }
 
-    private void processCommit(ProcessCommitTask task) {
+    private ProcessCommitBean processCommit(ProcessCommitBean task) throws UnableToInitRepoException, UnableToGetCommitDetailsException, UnableToFetchIssueException {
         try {
             fillCommitDetails(task.getCommit());
             getCommitIssues(task.getCommit());
-        } catch (UnableToInitRepoException | UnableToGetCommitDetailsException | UnableToFetchIssueException e) {
-            task.setException(e);
         } finally {
             progress.step();
         }
-
+        return task;
     }
 
     private void fillCommitDetails(Commit commit) throws UnableToInitRepoException, UnableToGetCommitDetailsException {

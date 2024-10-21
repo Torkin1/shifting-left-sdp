@@ -21,6 +21,7 @@ import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException
 import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.control.dataset.raw.datasources.Apachejit;
 import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
+import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import jakarta.transaction.Transactional;
@@ -37,6 +38,7 @@ public class DatasetControllerTest {
     @Autowired private IRawDatasetController rawDatasetController;
 
     @Autowired private DatasetDao datasetDao;
+    @Autowired private CommitDao commitDao;
 
     @Test
     @Transactional
@@ -46,6 +48,7 @@ public class DatasetControllerTest {
         datasetController.createRawDataset();
         List<Dataset> datasets = datasetDao.findAll();
         log.info("Datasets : {}", datasets);
+        log.info("loaded {} commits", commitDao.count());
 
         assertNotEquals(0, datasets.size());
     }
