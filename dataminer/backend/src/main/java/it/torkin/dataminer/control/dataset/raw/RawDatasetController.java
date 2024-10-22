@@ -15,7 +15,7 @@ import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.config.WorkersConfig;
 import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
-import it.torkin.dataminer.control.workers.IWorkersPool;
+import it.torkin.dataminer.control.workers.IWorkersController;
 import it.torkin.dataminer.control.workers.Task;
 import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.git.UnableToGetCommitDetailsException;
@@ -48,7 +48,7 @@ public class RawDatasetController implements IRawDatasetController{
     @Autowired private IssueDao issueDao;
 
     @Autowired private EntityMerger entityMerger;
-    @Autowired private IWorkersPool workers;
+    @Autowired private IWorkersController workers;
 
     private JiraDao jiraDao;
 

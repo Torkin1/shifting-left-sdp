@@ -2,7 +2,7 @@ package it.torkin.dataminer.control.workers;
 
 import java.util.concurrent.ExecutionException;
 
-public interface IWorkersPool {
+public interface IWorkersController {
 
     /**
      * Submits a task to the worker pool.

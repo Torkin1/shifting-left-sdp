@@ -16,7 +16,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @Service
-public class WorkersPool implements IWorkersPool{
+public class WorkersController implements IWorkersController{
 
     private ExecutorService workers;
     private Queue<Future<?>> batch = new LinkedList<>();
