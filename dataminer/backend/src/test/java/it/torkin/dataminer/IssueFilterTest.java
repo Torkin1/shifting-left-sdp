@@ -203,7 +203,6 @@ public class IssueFilterTest {
         int selectedIndex = buggyLinkages.size() >= config.getTopNBuggyLinkage() ? buggyLinkages.size() - config.getTopNBuggyLinkage() : 0;
         log.info("threshold: {}", buggyLinkages.get(selectedIndex));
 
-        Stream<Issue> filteredIssues;
         linkageFilter.reset();
         for (Dataset dataset : datasets){
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
