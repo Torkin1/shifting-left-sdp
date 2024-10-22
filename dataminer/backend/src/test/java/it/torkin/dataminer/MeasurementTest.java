@@ -44,11 +44,12 @@ public class MeasurementTest {
         feature.setValue("myValue");
         measurement.getFeatures().add(feature);
         measurement.setMeasurementDate(expected);
+        measurement.setMeasurementDateName("now");
 
         issue.getMeasurements().add(measurement);
         measurement.setIssue(issue);
         issue = issueDao.save(issue);
-        actual = issue.getMeasurements().get(0).getMeasurementDate();
+        actual = issue.getMeasurementByMeasurementDateName("now").getMeasurementDate();
 
         assertEquals(expected, actual);
         log.debug("issue: {}", issue);

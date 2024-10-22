@@ -42,4 +42,11 @@ public class Issue {
     @OrderBy("measurementDate ASC")
     private List<Measurement> measurements = new ArrayList<>();
 
+    public Measurement getMeasurementByMeasurementDateName(String measurementDateName){
+        return measurements.stream()
+            .filter(m -> m.getMeasurementDateName().equals(measurementDateName))
+            .findFirst()
+            .orElse(null);
+    }
+
 }

@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.IssueBean;
 import it.torkin.dataminer.entities.dataset.IssueBugginessBean;
@@ -34,22 +36,16 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class NLPFeaturesMiner implements FeatureMiner{
+public class NLPFeaturesMiner extends FeatureMiner{
 
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private IIssueController issueController;
     @Autowired private NLPFeaturesConfig config;
     @Autowired private DatasetDao datasetDao;
     @Autowired private List<MeasurementDate> measurementDates;
-    
-    @Override
-    public void accept(FeatureMinerBean arg0) {
-        
-        // TODO: ask NLP remote miners to mine features for the given issue
-        
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
 
+    private static final String BUGGY_SIMILARITY = "Buggy similarity";
+    
     private void serializeBean(JsonWriter writer, NlpIssueBean bean) throws IOException{
 
         writer.beginObject();
@@ -151,6 +147,23 @@ public class NLPFeaturesMiner implements FeatureMiner{
         } catch (Exception e) {
             throw new UnableToInitNLPFeaturesMinerException(e);
         }
+    }
+
+    @Override
+    public void mine(FeatureMinerBean bean) {
+        // TODO: stub
+        // mine features from NLP remote miners
+
+        Feature buggySimilarity = new Feature(BUGGY_SIMILARITY);
+        buggySimilarity.setValue("stub");
+
+        bean.getMeasurement().getFeatures().add(buggySimilarity);
+
+    }
+
+    @Override
+    protected Set<String> getFeatureNames() {
+        return Set.of(BUGGY_SIMILARITY);
     }
 
 }

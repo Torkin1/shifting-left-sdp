@@ -212,6 +212,8 @@ public class RawDatasetController implements IRawDatasetController{
         gitDao = getGitdaoByProject(commit.getRepository());
         gitDao.getCommitDetails(commit);
         commit.getMeasurement().setMeasurementDate(commit.getTimestamp());
+        commit.getMeasurement().setMeasurementDateName("CommitDate");
+        commit.getMeasurement().setDataset(commit.getDataset());
     }
 
     private void getCommitIssues(Commit commit) throws UnableToFetchIssueException {

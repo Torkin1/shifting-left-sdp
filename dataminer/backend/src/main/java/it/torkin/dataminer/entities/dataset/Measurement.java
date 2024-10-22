@@ -33,8 +33,8 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"issue_key", "measurement_date"}),
-        @UniqueConstraint(columnNames = {"commit_id", "measurement_date"})
+        @UniqueConstraint(columnNames = {"issue_key", "measurement_date_name", "dataset_id"}),
+        @UniqueConstraint(columnNames = {"commit_id", "measurement_date_name", "dataset_id"})
     }
 )
 @Check(constraints = "(issue_key IS NOT NULL AND commit_id IS NULL) OR (issue_key IS NULL AND commit_id IS NOT NULL)")
@@ -86,6 +86,12 @@ public class Measurement {
      */
     @Column(nullable = false)
     private Timestamp measurementDate;
+
+    @Column(nullable = false)
+    private String measurementDateName;
+
+    @ManyToOne
+    private Dataset dataset;
 
     @ElementCollection
     private Set<Feature> features = new HashSet<>();

@@ -3,6 +3,7 @@ package it.torkin.dataminer.entities.dataset;
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 
@@ -21,6 +22,13 @@ public class Feature {
      * by the database, so we need to store the type as well
      * if we want to manipulate the value.
      */
+    @EqualsAndHashCode.Exclude
     private String value;
+    @EqualsAndHashCode.Exclude
     private Class<?> type;
+
+    public Feature(String name){
+        this.name = name;
+    }
+
 }
