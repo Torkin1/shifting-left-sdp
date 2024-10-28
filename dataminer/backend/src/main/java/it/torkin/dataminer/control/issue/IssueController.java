@@ -4,9 +4,8 @@ import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
 
+import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
-import it.torkin.dataminer.entities.dataset.IssueBean;
-import it.torkin.dataminer.entities.dataset.IssueBugginessBean;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -14,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 public class IssueController implements IIssueController{
 
     @Override
-    public boolean isBuggy(IssueBugginessBean bean){
+    public boolean isBuggy(IssueCommitBean bean){
                 
         Issue issue = bean.getIssue();
         String dataset = bean.getDataset();
@@ -43,4 +42,12 @@ public class IssueController implements IIssueController{
         ).apply(new IssueFieldGetterBean(bean, IssueField.SUMMARY));
     }
 
+    @Override
+    public Commit getFirstCommit(IssueCommitBean bean) {
+        return bean.getIssue().getCommits().stream()
+            .filter(commit -> commit.getDataset().getName().equals(bean.getDataset()))
+            .sorted((c1, c2) -> c1.getTimestamp().compareTo(c2.getTimestamp()))
+            .findFirst()
+            .orElse(null);
+    }
 }

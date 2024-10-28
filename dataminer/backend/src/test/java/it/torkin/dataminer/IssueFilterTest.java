@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +27,7 @@ import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilter;
+import it.torkin.dataminer.control.dataset.processed.filters.impl.FirstCommitAfterOpeningDateFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.LinkageFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.NotMostRecentFilter;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
@@ -36,6 +40,8 @@ import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.jira.issue.IssueDetails;
+import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 import jakarta.transaction.Transactional;
@@ -216,6 +222,32 @@ public class IssueFilterTest {
                 } 
              });
         }
+
+    }
+
+    @Autowired private FirstCommitAfterOpeningDateFilter firstCommitAfterOpeningDate;
+
+    @Test
+    @Transactional
+    public void testFirstCommitAfterOpeningDate(){
+
+        Issue issue = new Issue();
+        Commit commit = new Commit();
+        Dataset dataset = new Dataset();
+
+        Instant openingDate = Instant.now();
+        // opening date is 1 second before the first commit
+        Instant firstCommitDate = openingDate.minus(1, ChronoUnit.SECONDS); 
+
+        dataset.setName("dataset_test");
+        commit.setDataset(dataset);
+        commit.setTimestamp(Timestamp.from(firstCommitDate));
+        issue.getCommits().add(commit);
+        issue.setDetails(new IssueDetails());
+        issue.getDetails().setFields(new IssueFields());
+        issue.getDetails().getFields().setCreated(Timestamp.from(openingDate));
+
+        assertFalse(firstCommitAfterOpeningDate.apply(new IssueFilterBean(issue, dataset.getName(), false)));
 
     }
     

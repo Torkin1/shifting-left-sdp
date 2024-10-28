@@ -16,7 +16,7 @@ import it.torkin.dataminer.entities.dataset.Dataset;
  * main repository.
  */
 @Component
-public class HasGuessedRepository extends IssueFilter{
+public class HasGuessedRepositoryFilter extends IssueFilter{
 
     @Autowired private DatasetDao datasetDao;
     private Map<String, Dataset> datasets = new HashMap<>();

@@ -1,8 +1,9 @@
-package it.torkin.dataminer.entities.dataset;
+package it.torkin.dataminer.control.issue;
 
 import java.sql.Timestamp;
 
 import io.micrometer.common.lang.NonNull;
+import it.torkin.dataminer.entities.dataset.Issue;
 import lombok.Data;
 
 /**

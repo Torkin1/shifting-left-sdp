@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.function.Function;
 
-import it.torkin.dataminer.entities.dataset.IssueBean;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.entities.jira.issue.IssueHistory;
 import it.torkin.dataminer.entities.jira.issue.IssueHistoryItem;
