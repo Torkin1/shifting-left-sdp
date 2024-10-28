@@ -29,6 +29,7 @@ import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.FirstCommitAfterOpeningDateFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.LinkageFilter;
+import it.torkin.dataminer.control.dataset.processed.filters.impl.MeasurementAfterOpeningDateFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.NotMostRecentFilter;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
@@ -91,7 +92,7 @@ public class IssueFilterTest {
                 expectedCountByProject.put(project.getName(), expectedCount);
             }
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
-                .filter((issue) -> filter.apply(new IssueFilterBean(issue, dataset.getName(), false)));
+                .filter((issue) -> filter.apply(new IssueFilterBean(issue, dataset.getName(), null, false)));
             issues.forEach((issue) -> {
                 Project project = issue.getDetails().getFields().getProject();
                 actualCountByProject.compute(project.getName(), (p, count) -> count == null ? 1 : count + 1);
@@ -173,9 +174,9 @@ public class IssueFilterTest {
          * - issue 3 to pass the filter since it has no buggy commits
          */
         IssueFilter filter = new ExclusiveBuggyCommitsOnlyFilter();
-        assertTrue(filter.apply(new IssueFilterBean(issue1, dataset.getName(), false)));
-        assertFalse(filter.apply(new IssueFilterBean(issue2, dataset.getName(), false)));
-        assertTrue(filter.apply(new IssueFilterBean(issue3, dataset.getName(), false)));
+        assertTrue(filter.apply(new IssueFilterBean(issue1, dataset.getName(), null, false)));
+        assertFalse(filter.apply(new IssueFilterBean(issue2, dataset.getName(), null, false)));
+        assertTrue(filter.apply(new IssueFilterBean(issue3, dataset.getName(), null, false)));
 
     }
 
@@ -213,7 +214,7 @@ public class IssueFilterTest {
         for (Dataset dataset : datasets){
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
             issues
-             .filter(issue -> linkageFilter.apply(new IssueFilterBean(issue, dataset.getName(), true)))
+             .filter(issue -> linkageFilter.apply(new IssueFilterBean(issue, dataset.getName(), null, true)))
              .forEach(issue -> {
                 for(Commit commit : issue.getCommits()){
                     if (commit.getDataset().getName().equals(dataset.getName())){
@@ -247,8 +248,25 @@ public class IssueFilterTest {
         issue.getDetails().setFields(new IssueFields());
         issue.getDetails().getFields().setCreated(Timestamp.from(openingDate));
 
-        assertFalse(firstCommitAfterOpeningDate.apply(new IssueFilterBean(issue, dataset.getName(), false)));
+        assertFalse(firstCommitAfterOpeningDate.apply(new IssueFilterBean(issue, dataset.getName(), null, false)));
 
+    }
+
+    @Autowired private MeasurementAfterOpeningDateFilter measurementAfterOpeningDateFilter;
+
+    @Test
+    @Transactional
+    public void testMeasurementAfterOpeningDate(){
+        Issue issue = new Issue();
+
+        Instant openingDate = Instant.now();
+        Instant measurementDate = openingDate.minus(1, ChronoUnit.SECONDS); 
+        
+        issue.setDetails(new IssueDetails());
+        issue.getDetails().setFields(new IssueFields());
+        issue.getDetails().getFields().setCreated(Timestamp.from(openingDate));
+        
+        assertFalse(measurementAfterOpeningDateFilter.apply(new IssueFilterBean(issue, "", Timestamp.from(measurementDate), false)));
     }
     
 }
