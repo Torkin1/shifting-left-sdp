@@ -31,12 +31,12 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
      * The caller knows which issue details attribute corresponds
      * to the wanted field, so it provides a way to get it
      */
-    private final Function<IssueFields, F> getValueFromDetails;
+    private final Function<IssueFields, F> getValueFromDetailsFields;
     /**
      * from|to field values are stored in the changelogs as strings,
      * so the caller needs to provide a way to parse them
      */
-    private final Function<String, F> mapStringToFieldValue;
+    private final Function<HistoryEntry, F> mapEntryToFieldValue;
     
     @Override
     public F apply(IssueFieldGetterBean bean) {
@@ -46,10 +46,10 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
         IssueHistory history = findLastHistory(bean.getIssueBean(), bean.getIssueField());
         if (history == null) {
             // no changes applied to description since the opening of the issue
-            return getValueFromDetails.apply(bean.getIssueBean().getIssue().getDetails().getFields());
+            return getValueFromDetailsFields.apply(bean.getIssueBean().getIssue().getDetails().getFields());
         } else {
             IssueHistoryItem item = getLatestHistoryItem(history, bean.getIssueField());
-            return mapStringToFieldValue.apply(extractValueFromHistoryItem(item, history.getCreated(), bean.getIssueBean().getMeasurementDate()));
+            return mapEntryToFieldValue.apply(extractValueFromHistoryItem(item, history.getCreated(), bean.getIssueBean().getMeasurementDate()));
         }
     }
     
@@ -117,13 +117,18 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
         throw new RuntimeException("Cannot find an item related to " + field.getName() + " in history " + history);
     }
 
-    private String extractValueFromHistoryItem(IssueHistoryItem item, Timestamp historyCreatedDate, Timestamp measurementDate){
+    private HistoryEntry extractValueFromHistoryItem(IssueHistoryItem item, Timestamp historyCreatedDate, Timestamp measurementDate){
+        
         if (measurementDate.before(historyCreatedDate)){
             // see case 2 in findFirstHistory()
-            return item.getFromString() == null? "" : item.getFromString();
+            return new HistoryEntry(
+                item.getFrom() == null? "" : item.getFrom(),
+                item.getFromString() == null? "" : item.getFromString());
         } else {
             // see case 3 in findFirstHistory()
-            return item.getToString() == null? "" : item.getToString();
+            return new HistoryEntry(
+                item.getTo() == null? "" : item.getTo(),
+                item.getToString() == null? "" : item.getToString());
         }
     }
 

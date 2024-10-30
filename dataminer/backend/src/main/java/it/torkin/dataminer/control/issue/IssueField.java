@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-enum IssueField {
+public enum IssueField {
     DESCRIPTION("description"),
-    SUMMARY("summary"),;
+    SUMMARY("summary"),
+    ASSIGNEE("assignee"),
+    ;
 
     private final String name;
 }

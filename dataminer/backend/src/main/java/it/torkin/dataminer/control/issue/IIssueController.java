@@ -1,6 +1,7 @@
 package it.torkin.dataminer.control.issue;
 
 import it.torkin.dataminer.entities.dataset.Commit;
+import it.torkin.dataminer.entities.jira.Developer;
 
 public interface IIssueController {
 
@@ -16,6 +17,14 @@ public interface IIssueController {
     public boolean isBuggy(IssueCommitBean bean);
 
     /**
+     * Returns the first commit of the issue according to the given
+     * dataset, or null if no commits of such dataset are found on this issue.
+     * @param bean
+     * @return
+     */
+    public Commit getFirstCommit(IssueCommitBean bean);
+
+    /**
      * Returns the description of the issue according to the given
      * measurement date.
      * @param dataset nullable (ignored)
@@ -25,7 +34,19 @@ public interface IIssueController {
      */
     public String getDescription(IssueBean bean);
 
-    String getTitle(IssueBean bean);
+    /**
+     * Returns the title of the issue at the given measurement date.
+     * If no title is found, an empty string is returned.
+     * @param bean
+     * @return
+     */
+    public String getTitle(IssueBean bean);
 
-    public Commit getFirstCommit(IssueCommitBean bean);
+    /**
+     * Returns the assignee of the issue at the given measurement date,
+     * or null if no assignee has ever been set for this issue.
+     * @param bean
+     * @return
+     */
+    public Developer getAssignee(IssueBean bean);
 }

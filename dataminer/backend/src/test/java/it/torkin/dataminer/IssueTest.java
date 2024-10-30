@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.JsonReader;
 
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
@@ -37,10 +40,6 @@ import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-
-import com.google.gson.stream.JsonReader;
-import java.time.temporal.ChronoUnit;
-import java.time.Instant;
 
 @SpringBootTest()
 @ActiveProfiles("test")
@@ -178,5 +177,23 @@ public class IssueTest {
                         "", issueController.getDescription(new IssueBean(issue, historyItemTimestampMinusOneSecond)));
         assertNull(issueController.getDescription(new IssueBean(issue, openingDateMinusOneSecond)));
     }
-    
+
+    @Test
+    @Transactional
+    public void testGetAssignee() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+        Gson gson = new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();
+        File issue_sample = new File(ISSUE_EXAMPLES_DIR + "ZOOKEEPER-107.json"); 
+        
+        IssueDetails issueDetails = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
+        Issue issue = new Issue();
+        issue.setDetails(issueDetails);
+        // issue.setKey("ZOOKEEPER-107");
+        // issue = issueDao.save(issue);
+
+        Timestamp historyTimestamp = Timestamp.from(Instant.parse("2009-06-15T22:55:46.519Z"));
+        Timestamp now = TimeTools.now();
+
+        assertEquals("phunt", issueController.getAssignee(new IssueBean(issue, historyTimestamp)).getKey());
+        assertEquals("shralex", issueController.getAssignee(new IssueBean(issue, now)).getKey());
+    }
 }
