@@ -1,7 +1,5 @@
 package it.torkin.dataminer.control.issue;
 
-import java.util.function.Function;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

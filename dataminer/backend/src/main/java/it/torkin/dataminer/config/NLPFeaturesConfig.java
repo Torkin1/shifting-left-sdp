@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Configuration
 @ConfigurationProperties(
-    prefix = "dataminer.nlp",
+    prefix = "dataminer.features.nlp",
     ignoreUnknownFields = false)
 @Data
 public class NLPFeaturesConfig {

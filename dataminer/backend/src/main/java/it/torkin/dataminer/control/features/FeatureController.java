@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
+import it.torkin.dataminer.control.measurementdate.IMeasurementDateController;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.workers.IWorkersController;
@@ -27,7 +28,6 @@ import jakarta.transaction.Transactional;
 public class FeatureController implements IFeatureController{
 
     @Autowired private List<FeatureMiner> miners;
-    @Autowired private List<MeasurementDate> measurementDates;
 
     @Autowired private DatasetDao datasetDao;
     @Autowired private IssueDao issueDao;
@@ -35,6 +35,7 @@ public class FeatureController implements IFeatureController{
     
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private IWorkersController workersController;
+    @Autowired private IMeasurementDateController measurementDateController;
     
     @Override
     @Transactional
@@ -78,6 +79,7 @@ public class FeatureController implements IFeatureController{
         List<Dataset> datasets = datasetDao.findAll();
         ProcessedIssuesBean processedIssuesBean;
         Iterator<Issue> issues;
+        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
 
         for (Dataset dataset : datasets) {
             for (MeasurementDate measurementDate : measurementDates) {
