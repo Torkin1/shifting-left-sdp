@@ -1,21 +1,17 @@
 package it.torkin.dataminer.control.issue;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.sql.Timestamp;
+
 import org.springframework.stereotype.Service;
 
-import it.torkin.dataminer.dao.local.DeveloperDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
-import it.torkin.dataminer.entities.jira.Developer;
-import it.torkin.dataminer.toolbox.string.StringTools;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
 public class IssueController implements IIssueController{
 
-    @Autowired private DeveloperDao developerDao;
-    
     @Override
     public boolean isBuggy(IssueCommitBean bean){
                 
@@ -55,21 +51,38 @@ public class IssueController implements IIssueController{
     }
 
     @Override
-    public Developer getAssignee(IssueBean bean) {
-        return new IssueFieldGetter<Developer>(
-            fields -> fields.getAssignee(),
-            entry -> {
-                String assigneeKey = entry.getValue();
-                String assigneeName = entry.getValueString();
-                if (StringTools.isBlank(assigneeKey)) return null;
-                Developer developer = developerDao.findByKey(assigneeKey);
-                if (developer == null){
-                    developer = new Developer();
-                    developer.setKey(assigneeKey);
-                    developer.setName(assigneeName);
-                }
-                return developer;
-            }
+    public String getAssigneeKey(IssueBean bean) {
+        return new IssueFieldGetter<String>(
+            fields -> fields.getAssignee() == null? "" : fields.getAssignee().getKey(),
+            entry -> entry.getValue()
         ).apply(new IssueFieldGetterBean(bean, IssueField.ASSIGNEE));
+    }
+
+    private boolean changelogContains(Issue issue, HistoryEntry example, Timestamp measurementDate, boolean and){
+        return issue.getDetails().getChangelog().getHistories().stream()
+            .filter(h -> !h.getCreated().after(measurementDate))
+            .anyMatch(h -> h.getItems().stream().anyMatch(i -> {
+                if (and){
+                    return i.getFrom() == example.getValue() && i.getTo() == example.getValue();
+                }
+                else {
+                    return i.getFrom() == example.getValue() || i.getTo() == example.getValue();
+                }
+            }));
+    }
+    
+    @Override
+    public boolean hasBeenAssigned(HasBeenAssignedBean bean) {
+
+        String assigneeKey = getAssigneeKey(new IssueBean(bean.getIssue(), bean.getMeasurementDate()));
+        if (assigneeKey == null) return false;
+        if (assigneeKey.equals(bean.getAssigneeKey())) return true;
+        else return changelogContains(
+            bean.getIssue(),
+            new HistoryEntry(bean.getAssigneeKey(), null), 
+            bean.getMeasurementDate(), 
+            false);
+        
+                
     }
 }

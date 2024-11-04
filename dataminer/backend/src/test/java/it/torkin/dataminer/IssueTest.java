@@ -26,9 +26,12 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 
+import it.torkin.dataminer.control.issue.HasBeenAssignedBean;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
+import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
+import it.torkin.dataminer.control.measurementdate.impl.OpeningDate;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
@@ -193,7 +196,36 @@ public class IssueTest {
         Timestamp historyTimestamp = Timestamp.from(Instant.parse("2009-06-15T22:55:46.519Z"));
         Timestamp now = TimeTools.now();
 
-        assertEquals("phunt", issueController.getAssignee(new IssueBean(issue, historyTimestamp)).getKey());
-        assertEquals("shralex", issueController.getAssignee(new IssueBean(issue, now)).getKey());
+        assertEquals("phunt", issueController.getAssigneeKey(new IssueBean(issue, historyTimestamp)));
+        assertEquals("shralex", issueController.getAssigneeKey(new IssueBean(issue, now)));
+    }
+
+    @Test
+    @Transactional
+    public void testHasAssigned() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+
+        /**
+         * Test the following cases:
+         * - current assignee is shralex
+         * - assignee at 2009-06-15T22:55:46.519Z is phunt
+         * - assignee at 2009-06-15T22:55:46.519Z is not shralex
+         * - assignee before 2009-06-15T22:55:46.519Z is neither shralex nor phunt
+         */
+
+        Gson gson = new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();
+        File issue_sample = new File(ISSUE_EXAMPLES_DIR + "ZOOKEEPER-107.json");
+
+        IssueDetails issueDetails = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
+        Issue issue = new Issue();
+        issue.setDetails(issueDetails);
+
+        Timestamp historyTimestamp = Timestamp.from(Instant.parse("2009-06-15T22:55:46.519Z"));
+        Timestamp now = TimeTools.now();
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+
+        assertTrue(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "shralex", now)));
+        assertTrue(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "phunt", historyTimestamp)));
+        assertFalse(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "shralex", historyTimestamp)));
+        assertFalse(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "shralex", openingDate)));
     }
 }

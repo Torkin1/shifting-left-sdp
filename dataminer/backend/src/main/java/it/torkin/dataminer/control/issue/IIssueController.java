@@ -1,7 +1,6 @@
 package it.torkin.dataminer.control.issue;
 
 import it.torkin.dataminer.entities.dataset.Commit;
-import it.torkin.dataminer.entities.jira.Developer;
 
 public interface IIssueController {
 
@@ -12,7 +11,6 @@ public interface IIssueController {
      * strictly before that date.
      * @param dataset non null
      * @param issue non null
-     * @param measurementDate nullable (fallback to now)
      */
     public boolean isBuggy(IssueCommitBean bean);
 
@@ -27,7 +25,6 @@ public interface IIssueController {
     /**
      * Returns the description of the issue according to the given
      * measurement date.
-     * @param dataset nullable (ignored)
      * @param issue non null
      * @param measurementDate non null
      * @return
@@ -43,10 +40,15 @@ public interface IIssueController {
     public String getTitle(IssueBean bean);
 
     /**
-     * Returns the assignee of the issue at the given measurement date,
+     * Returns the assignee key of the issue at the given measurement date,
      * or null if no assignee has ever been set for this issue.
      * @param bean
      * @return
      */
-    public Developer getAssignee(IssueBean bean);
+    public String getAssigneeKey(IssueBean bean);
+
+    /**
+     * Returns true if the given developer has ever been assigned to the issue.
+     */
+    public boolean hasBeenAssigned(HasBeenAssignedBean bean);
 }
