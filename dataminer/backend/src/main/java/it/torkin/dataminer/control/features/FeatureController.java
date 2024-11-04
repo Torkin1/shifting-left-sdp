@@ -36,7 +36,7 @@ public class FeatureController implements IFeatureController{
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private IWorkersController workersController;
     @Autowired private IMeasurementDateController measurementDateController;
-    
+
     @Override
     @Transactional
     public void initMiners() throws Exception{
@@ -59,6 +59,9 @@ public class FeatureController implements IFeatureController{
         try {
             while (!workersController.isBatchEmpty()) {
                 Task<?> task = workersController.collect();
+                if (task.getException() != null){
+                    throw new RuntimeException(task.getException());
+                }
                 FeatureMinerBean bean = (FeatureMinerBean) task.getTaskBean();
                 Measurement measurement = measurementDao.save(bean.getMeasurement());
                 bean.getIssue().getMeasurements().removeIf(m -> m.getMeasurementDateName().equals(measurement.getMeasurementDateName()));
@@ -70,6 +73,13 @@ public class FeatureController implements IFeatureController{
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void saveMeasurement(FeatureMinerBean bean){
+        Measurement measurement = measurementDao.save(bean.getMeasurement());
+        bean.getIssue().getMeasurements().removeIf(m -> m.getMeasurementDateName().equals(measurement.getMeasurementDateName()));
+        bean.getIssue().getMeasurements().add(measurement);
+        issueDao.save(bean.getIssue());
     }
     
     @Override
@@ -99,16 +109,21 @@ public class FeatureController implements IFeatureController{
                         measurement = new Measurement();
                         measurement.setMeasurementDate(measurementDateValue);
                         measurement.setMeasurementDateName(measurementDate.getName());
+                        measurement.setIssue(issue);
                         measurement.setDataset(dataset);
                     }
-                    workersController.submit(new Task<>(
-                        this::doMeasurements,
-                        new FeatureMinerBean(dataset.getName(), issue, measurement)));
-                    if (workersController.isBatchFull() || !issues.hasNext()){
+                    // FIXME: calling this from a thread different from the main one return empty streams from processed dataset controller
+                    // workersController.submit(new Task<>(
+                    //     this::doMeasurements,
+                    //     new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate)));
+                    FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
+                    doMeasurements(bean);
+                    // if (workersController.isBatchFull() || !issues.hasNext()){
                         // collect issues and store measurements in db
-                        saveMeasurements();
+                        // saveMeasurements();
+                        saveMeasurement(bean);
 
-                    } 
+                    // } 
                 }
             }
         }

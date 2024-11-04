@@ -1,10 +1,9 @@
 package it.torkin.dataminer.control.features;
 
-import java.util.function.Consumer;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 
-import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Measurement;
 
 /**
@@ -28,18 +27,17 @@ public abstract class FeatureMiner implements Consumer<FeatureMinerBean>{
     @Override
     public final void accept(FeatureMinerBean bean) {
         
-        if (bean.getIssue().getMeasurementByMeasurementDateName(bean.getMeasurement().getMeasurementDateName()) == null){
-            Measurement measurement = bean.getMeasurement();
-        
-            Set<String> featureNames = this.getFeatureNames();
-            Set<Feature> features = new HashSet<>();
-            featureNames.forEach(fn -> features.add(new Feature(fn)));
-            if (!measurement.getFeatures().containsAll(features)){
-                measurement.getFeatures().removeAll(features);
-                this.mine(bean);
-            }
+            
+        Measurement measurement = bean.getMeasurement();
+        Set<String> featureNames = this.getFeatureNames();
+        Set<String> measurementFeatureNames = new HashSet<>();
+
+        measurement.getFeatures().forEach(f -> measurementFeatureNames.add(f.getName()));
+        if (!measurementFeatureNames.containsAll(featureNames)){
+            measurement.getFeatures().removeIf(f -> featureNames.contains(f.getName()));
+            this.mine(bean);
         }
-                 
     }
+                 
 
 }

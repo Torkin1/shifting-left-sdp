@@ -39,9 +39,7 @@ public class MeasurementTest {
         Timestamp actual;
 
         Measurement measurement = new Measurement();
-        Feature feature = new Feature();
-        feature.setName("myFeature");
-        feature.setValue("myValue");
+        Feature feature = new Feature("myFeature", "myValue", String.class);
         measurement.getFeatures().add(feature);
         measurement.setMeasurementDate(expected);
         measurement.setMeasurementDateName("now");

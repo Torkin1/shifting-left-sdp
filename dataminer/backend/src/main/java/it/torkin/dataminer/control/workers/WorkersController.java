@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import it.torkin.dataminer.config.WorkersConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.transaction.Transactional;
 
 @Service
 public class WorkersController implements IWorkersController{
@@ -34,6 +35,7 @@ public class WorkersController implements IWorkersController{
     }
 
     @Override
+    @Transactional
     public void submit(Task<?> task) {
         if (isBatchFull())
             throw new RejectedExecutionException("there are already " + batch.size() + " tasks in the batch and the max batch size is " + workersConfig.getTaskBatchSize()); 

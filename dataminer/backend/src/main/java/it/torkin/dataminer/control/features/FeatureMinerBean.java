@@ -1,5 +1,6 @@
 package it.torkin.dataminer.control.features;
 
+import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
 import lombok.Data;
@@ -16,5 +17,6 @@ public class FeatureMinerBean {
      * Feature miners will store the measured features here
      */
     private final Measurement measurement;
-    
+
+    private final MeasurementDate measurementDate;
 }

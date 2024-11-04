@@ -102,6 +102,10 @@ public class Measurement {
                 + ", features=" + features + "]";
     }
 
+    public Feature getFeatureByName(String name){
+        return features.stream().filter(f -> f.getName().equals(name)).findFirst().orElse(null);
+    }
+
     
 
 }

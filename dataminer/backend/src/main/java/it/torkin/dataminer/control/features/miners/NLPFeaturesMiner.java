@@ -44,7 +44,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
     @Autowired private DatasetDao datasetDao;
     @Autowired private List<MeasurementDate> measurementDates;
 
-    private static final String BUGGY_SIMILARITY = "Buggy similarity";
+    public static final String BUGGY_SIMILARITY = "Buggy similarity";
     
     private void serializeBean(JsonWriter writer, NlpIssueBean bean) throws IOException{
 
@@ -154,8 +154,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
         // TODO: stub
         // mine features from NLP remote miners
 
-        Feature buggySimilarity = new Feature(BUGGY_SIMILARITY);
-        buggySimilarity.setValue("stub");
+        Feature buggySimilarity = new Feature(BUGGY_SIMILARITY, "stub", null);
 
         bean.getMeasurement().getFeatures().add(buggySimilarity);
 

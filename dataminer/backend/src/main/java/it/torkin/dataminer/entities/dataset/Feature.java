@@ -26,9 +26,4 @@ public class Feature {
     private String value;
     @EqualsAndHashCode.Exclude
     private Class<?> type;
-
-    public Feature(String name){
-        this.name = name;
-    }
-
 }
