@@ -20,7 +20,6 @@ import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
-import it.torkin.dataminer.control.features.IssueFeatures;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
@@ -30,6 +29,7 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.dataset.IssueFeature;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.nlp.Request.NlpIssueBean;
 import jakarta.transaction.Transactional;
@@ -153,7 +153,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
         // TODO: stub
         // mine features from NLP remote miners
 
-        Feature buggySimilarity = new Feature(IssueFeatures.BUGGY_SIMILARITY.getName(), "stub", null);
+        Feature buggySimilarity = new Feature(IssueFeature.BUGGY_SIMILARITY.getName(), "stub", null);
 
         bean.getMeasurement().getFeatures().add(buggySimilarity);
 
@@ -161,7 +161,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeatures.BUGGY_SIMILARITY.getName());
+        return Set.of(IssueFeature.BUGGY_SIMILARITY.getName());
     }
 
 }

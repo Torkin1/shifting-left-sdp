@@ -9,13 +9,13 @@ import it.torkin.dataminer.control.dataset.processed.ProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
-import it.torkin.dataminer.control.features.IssueFeatures;
 import it.torkin.dataminer.control.issue.HasBeenAssignedBean;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.entities.dataset.Feature;
+import it.torkin.dataminer.entities.dataset.IssueFeature;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.transaction.Transactional;
 import lombok.Data;
@@ -83,11 +83,11 @@ public class AssigneeANFICMiner extends FeatureMiner{
             });
             
         anfic = issueCount.buggyIssues / issueCount.issues;
-        bean.getMeasurement().getFeatures().add(new Feature(IssueFeatures.ANFIC.getName(), anfic.toString(), Double.class));
+        bean.getMeasurement().getFeatures().add(new Feature(IssueFeature.ANFIC.getName(), anfic.toString(), Double.class));
     }
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeatures.ANFIC.getName());
+        return Set.of(IssueFeature.ANFIC.getName());
     }
 }

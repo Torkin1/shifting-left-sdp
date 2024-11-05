@@ -1,11 +1,11 @@
-package it.torkin.dataminer.control.features;
+package it.torkin.dataminer.entities.dataset;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum IssueFeatures {
+public enum IssueFeature {
     
     BUGGY_SIMILARITY("Buggy similarity"),
     ANFIC("Assignee ANFIC")
