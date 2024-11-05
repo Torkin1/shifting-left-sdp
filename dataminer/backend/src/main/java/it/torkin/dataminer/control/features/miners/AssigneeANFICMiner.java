@@ -9,6 +9,7 @@ import it.torkin.dataminer.control.dataset.processed.ProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.control.features.IssueFeatures;
 import it.torkin.dataminer.control.issue.HasBeenAssignedBean;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
@@ -45,8 +46,6 @@ public class AssigneeANFICMiner extends FeatureMiner{
     @Autowired private IIssueController issueController;
     @Autowired private ProcessedDatasetController processedDatasetController;
 
-    public static final String FEATURE_NAME = "Assigneee ANFIC";
-    
     @Override
     @Transactional
     public void mine(FeatureMinerBean bean) {
@@ -84,11 +83,11 @@ public class AssigneeANFICMiner extends FeatureMiner{
             });
             
         anfic = issueCount.buggyIssues / issueCount.issues;
-        bean.getMeasurement().getFeatures().add(new Feature(FEATURE_NAME, anfic.toString(), Double.class));
+        bean.getMeasurement().getFeatures().add(new Feature(IssueFeatures.ANFIC.getName(), anfic.toString(), Double.class));
     }
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(FEATURE_NAME);
+        return Set.of(IssueFeatures.ANFIC.getName());
     }
 }

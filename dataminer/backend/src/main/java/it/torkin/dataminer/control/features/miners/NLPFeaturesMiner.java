@@ -20,6 +20,7 @@ import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.control.features.IssueFeatures;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
@@ -43,8 +44,6 @@ public class NLPFeaturesMiner extends FeatureMiner{
     @Autowired private NLPFeaturesConfig config;
     @Autowired private DatasetDao datasetDao;
     @Autowired private List<MeasurementDate> measurementDates;
-
-    public static final String BUGGY_SIMILARITY = "Buggy similarity";
     
     private void serializeBean(JsonWriter writer, NlpIssueBean bean) throws IOException{
 
@@ -154,7 +153,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
         // TODO: stub
         // mine features from NLP remote miners
 
-        Feature buggySimilarity = new Feature(BUGGY_SIMILARITY, "stub", null);
+        Feature buggySimilarity = new Feature(IssueFeatures.BUGGY_SIMILARITY.getName(), "stub", null);
 
         bean.getMeasurement().getFeatures().add(buggySimilarity);
 
@@ -162,7 +161,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(BUGGY_SIMILARITY);
+        return Set.of(IssueFeatures.BUGGY_SIMILARITY.getName());
     }
 
 }
