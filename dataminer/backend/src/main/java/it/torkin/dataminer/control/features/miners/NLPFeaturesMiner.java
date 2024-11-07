@@ -29,7 +29,7 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Issue;
-import it.torkin.dataminer.entities.dataset.IssueFeature;
+import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.nlp.Request.NlpIssueBean;
 import jakarta.transaction.Transactional;

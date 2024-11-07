@@ -15,7 +15,7 @@ import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.entities.dataset.Feature;
-import it.torkin.dataminer.entities.dataset.IssueFeature;
+import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.transaction.Transactional;
 import lombok.Data;
