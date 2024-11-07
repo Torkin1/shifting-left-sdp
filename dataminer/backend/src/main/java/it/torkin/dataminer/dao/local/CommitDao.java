@@ -22,6 +22,6 @@ public interface CommitDao extends JpaRepository<Commit, Long>{
      * Finds the number of commits that are linked to a
      * project for each pair of dataset and repository.
      */
-    @Query("SELECT c.dataset.name AS dataset, c.repository AS repository, i.details.fields.project.name AS project, COUNT(*) AS total FROM Commit c JOIN c.issues i GROUP BY c.dataset.name, c.repository, i.details.fields.project.name ORDER BY c.dataset.name, i.details.fields.project.name")
+    @Query("SELECT c.dataset.name AS dataset, c.repository AS repository, i.details.fields.project.key AS project, COUNT(*) AS total FROM Commit c JOIN c.issues i GROUP BY c.dataset.name, c.repository, i.details.fields.project.key ORDER BY c.dataset.name, i.details.fields.project.key")
     public List<CommitCount> countByDatasetAndRepositoryAndProject();
 }

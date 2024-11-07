@@ -51,4 +51,20 @@ public interface IIssueController {
      * Returns true if the given developer has ever been assigned to the issue.
      */
     public boolean hasBeenAssigned(HasBeenAssignedBean bean);
+
+    /**
+     * Returns true if issue1 is strictly before issue2 according to
+     * the provided measurement date and dataset.
+     * @param bean
+     * @return
+     */
+    public boolean isBefore(IssueMeasurementDateBean bean);
+    
+    /**
+     * Returns true if issue1 is strictly after issue2 according to
+     * the provided measurement date and dataset.
+     * @param bean
+     * @return
+     */
+    public boolean isAfter(IssueMeasurementDateBean bean);
 }

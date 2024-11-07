@@ -4,6 +4,8 @@ import java.sql.Timestamp;
 
 import org.springframework.stereotype.Service;
 
+import it.torkin.dataminer.control.measurementdate.MeasurementDate;
+import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,29 @@ public class IssueController implements IIssueController{
             return commit.isBuggy()
              && commit.getDataset().getName().equals(dataset);
         });
+    }
+
+    private int compareMeasurementDate(String datasetName, Issue i1, Issue i2, MeasurementDate measurementDate){
+        return measurementDate.apply(new MeasurementDateBean(datasetName, i1))
+            .compareTo(measurementDate.apply(new MeasurementDateBean(datasetName, i2)));
+    }
+
+    @Override
+    public boolean isBefore(IssueMeasurementDateBean bean){
+        return compareMeasurementDate(
+            bean.getDataset(),
+            bean.getI1(),
+            bean.getI2(),
+            bean.getMeasurementDate()) < 0;
+    }
+
+    @Override
+    public boolean isAfter(IssueMeasurementDateBean bean){
+        return compareMeasurementDate(
+            bean.getDataset(),
+            bean.getI1(),
+            bean.getI2(),
+            bean.getMeasurementDate()) > 0;
     }
 
     @Override
