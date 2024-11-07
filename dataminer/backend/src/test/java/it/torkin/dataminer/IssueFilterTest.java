@@ -84,18 +84,18 @@ public class IssueFilterTest {
 
             Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
             for (Project project : projects){
-                long totalCount = issueDao.countByDatasetAndProject(dataset.getName(), project.getName());
+                long totalCount = issueDao.countByDatasetAndProject(dataset.getName(), project.getKey());
                 double percentage = config.getSourcesMap().get(dataset.getName()).getSnoringPercentage();
                 long expectedFilteredCount = SafeMath.ceiledInversePercentage(percentage, totalCount);
                 long expectedCount = totalCount - expectedFilteredCount;
-                log.info("expected count for project {}: {} - {} = {}", project.getName(), totalCount, expectedFilteredCount, expectedCount);
-                expectedCountByProject.put(project.getName(), expectedCount);
+                log.info("expected count for project {}: {} - {} = {}", project.getKey(), totalCount, expectedFilteredCount, expectedCount);
+                expectedCountByProject.put(project.getKey(), expectedCount);
             }
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
                 .filter((issue) -> filter.apply(new IssueFilterBean(issue, dataset.getName(), null, false)));
             issues.forEach((issue) -> {
                 Project project = issue.getDetails().getFields().getProject();
-                actualCountByProject.compute(project.getName(), (p, count) -> count == null ? 1 : count + 1);
+                actualCountByProject.compute(project.getKey(), (p, count) -> count == null ? 1 : count + 1);
             });
     
             log.info("Expected count by project: {}", expectedCountByProject);

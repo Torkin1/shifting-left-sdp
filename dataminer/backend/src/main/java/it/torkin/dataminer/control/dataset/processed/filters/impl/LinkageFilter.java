@@ -49,7 +49,7 @@ public class LinkageFilter extends IssueFilter {
         Double buggyLinkage;
         Project project = bean.getIssue().getDetails().getFields().getProject();
         Dataset dataset = datasets.get(bean.getDatasetName());
-        String guessedRepo = dataset.getGuessedRepoByProjects().get(project.getName());
+        String guessedRepo = dataset.getGuessedRepoByProjects().get(project.getKey());
 
         buggyLinkage = linkageBean.getLinkageByRepository().getOrDefault(guessedRepo, 0.0);
         return buggyLinkage >= buggyLinkageThreshold;

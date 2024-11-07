@@ -52,13 +52,13 @@ public class NotMostRecentFilter extends IssueFilter{
             projects = projectDao.findAllByDataset(dataset.getName());
             for (Project project : projects){
                 long issueCount = issueDao
-                    .countByDatasetAndProject(dataset.getName(), project.getName());
+                    .countByDatasetAndProject(dataset.getName(), project.getKey());
                 issuesCountByProjectGroupedByDataset.get(dataset.getName())
-                    .put(project.getName(), issueCount);
+                    .put(project.getKey(), issueCount);
                 remainingsByProjectGroupedByDataset.get(dataset.getName())
-                    .put(project.getName(), issueCount);
+                    .put(project.getKey(), issueCount);
                 thresholdsByProjectGroupedByDataset.get(dataset.getName())
-                    .put(project.getName(), SafeMath.ceiledInversePercentage(percentage, issueCount));
+                    .put(project.getKey(), SafeMath.ceiledInversePercentage(percentage, issueCount));
             }
         }
         initialized = true;
@@ -68,14 +68,14 @@ public class NotMostRecentFilter extends IssueFilter{
     @Override
     protected void beforeApply(IssueFilterBean bean) {
         String dataset = bean.getDatasetName();
-        String project = bean.getIssue().getDetails().getFields().getProject().getName();
+        String project = bean.getIssue().getDetails().getFields().getProject().getKey();
         remainingsByProjectGroupedByDataset.get(dataset).compute(project, (k, v) -> { return v - 1; } );
     }
     
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
         String dataset = bean.getDatasetName();
-        String project = bean.getIssue().getDetails().getFields().getProject().getName();
+        String project = bean.getIssue().getDetails().getFields().getProject().getKey();
         return remainingsByProjectGroupedByDataset.get(dataset).get(project) >= thresholdsByProjectGroupedByDataset.get(dataset).get(project);
     }
 

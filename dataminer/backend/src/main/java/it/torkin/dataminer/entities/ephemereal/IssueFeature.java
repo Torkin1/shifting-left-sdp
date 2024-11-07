@@ -1,4 +1,4 @@
-package it.torkin.dataminer.entities.dataset;
+package it.torkin.dataminer.entities.ephemereal;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum IssueFeature {
     
     BUGGY_SIMILARITY("Buggy similarity"),
-    ANFIC("Assignee ANFIC")
+    ANFIC("Assignee ANFIC"),
+    TEMPORAL_LOCALITY("Temporal locality")
     ;
 
     private final String name;

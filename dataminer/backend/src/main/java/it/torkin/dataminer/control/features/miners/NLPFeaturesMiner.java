@@ -74,7 +74,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
         
         NlpIssueBean.Builder beanBuilder = NlpIssueBean.newBuilder()
             .setDataset(dataset.getName())
-            .setProject(fields.getProject().getName())
+            .setProject(fields.getProject().getKey())
             .setMeasurementDateName(measurementDate.getName())
             .setKey(issue.getKey())
             .setBuggy(issueController.isBuggy(new IssueCommitBean(issue, dataset.getName())))

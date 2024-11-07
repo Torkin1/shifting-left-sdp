@@ -41,7 +41,7 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
             String filterName = filter.getClass().getSimpleName();
             processedIssuesBean.getFilteredByProjectGroupedByFilter().putIfAbsent(filterName, new HashMap<>());
             if (!filter.apply(issueFilterBean)) {
-                String project = issueFilterBean.getIssue().getDetails().getFields().getProject().getName();
+                String project = issueFilterBean.getIssue().getDetails().getFields().getProject().getKey();
                 if (!issueFilterBean.isFiltered()) {
                     // we update excluded issues count per project
                     processedIssuesBean.getExcludedByProject()

@@ -24,7 +24,7 @@ public class HasGuessedRepositoryFilter extends IssueFilter{
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
         Dataset dataset = datasets.get(bean.getDatasetName());
-        return dataset.getGuessedRepoByProjects().containsKey(bean.getIssue().getDetails().getFields().getProject().getName());
+        return dataset.getGuessedRepoByProjects().containsKey(bean.getIssue().getDetails().getFields().getProject().getKey());
     }
 
     @Override

@@ -122,7 +122,7 @@ public class StatsController implements IStatsController{
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
                 // we must first count each project's issues in order to trigger filters
                 processedIssuesBean.getProcessedIssues().forEach((issue) -> {
-                    String project = issue.getDetails().getFields().getProject().getName();
+                    String project = issue.getDetails().getFields().getProject().getKey();
                     if(issueController.isBuggy(new IssueCommitBean(issue, dataset.getName()))){
                         buggyIssuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
                     }
