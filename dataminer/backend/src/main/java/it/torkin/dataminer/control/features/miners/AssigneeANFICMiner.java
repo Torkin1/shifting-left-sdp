@@ -67,8 +67,9 @@ public class AssigneeANFICMiner extends FeatureMiner{
             // only pick issues with measurement date before or equal the measurement date of this issue
             .filter(i -> !bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDataset(), i)).after(bean.getMeasurement().getMeasurementDate()))
             // only pick issues of same dataset and project
-            .filter(i -> i.getCommits().stream().anyMatch(c -> c.getDataset().getName().equals(bean.getDataset())))
             .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
+            // exclude the issue to be measured
+            .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
             // only pick issues which were assigned to the dev at some point in the past
             .filter(i -> issueController.hasBeenAssigned(new HasBeenAssignedBean(
                 bean.getIssue(),
