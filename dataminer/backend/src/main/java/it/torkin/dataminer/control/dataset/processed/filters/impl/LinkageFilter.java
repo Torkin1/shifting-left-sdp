@@ -8,7 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import it.torkin.dataminer.config.DatasourceGlobalConfig;
+import it.torkin.dataminer.config.filters.LinkageFilterConfig;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
@@ -39,7 +39,7 @@ public class LinkageFilter extends IssueFilter {
         private Map<String, Dataset> datasets = new HashMap<>();
     }
     
-    @Autowired private DatasourceGlobalConfig config;
+    @Autowired private LinkageFilterConfig config;
     @Autowired private DatasetDao datasetDao;
     @Autowired private ILinkageController linkageController;
 

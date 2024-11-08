@@ -23,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.config.DatasourceGlobalConfig;
+import it.torkin.dataminer.config.filters.LinkageFilterConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
@@ -66,7 +67,8 @@ public class IssueFilterTest {
     @Autowired private ILinkageController linkageController;
     @Autowired private IDatasetController datasetController; 
 
-    @Autowired private DatasourceGlobalConfig config;
+    @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
+    @Autowired private LinkageFilterConfig linkageFilterConfig;
 
     @Test
     @Transactional
@@ -83,7 +85,7 @@ public class IssueFilterTest {
             Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
             for (Project project : projects){
                 long totalCount = issueDao.countByDatasetAndProject(dataset.getName(), project.getKey());
-                double percentage = config.getSourcesMap().get(dataset.getName()).getSnoringPercentage();
+                double percentage = datasourceGlobalConfig.getSourcesMap().get(dataset.getName()).getSnoringPercentage();
                 long expectedFilteredCount = SafeMath.ceiledInversePercentage(percentage, totalCount);
                 long expectedCount = totalCount - expectedFilteredCount;
                 log.info("expected count for project {}: {} - {} = {}", project.getKey(), totalCount, expectedFilteredCount, expectedCount);
@@ -212,7 +214,7 @@ public class IssueFilterTest {
         }
         buggyLinkages.sort(Double::compare);
         log.info("buggyLinkages: {}", buggyLinkages);
-        int selectedIndex = buggyLinkages.size() >= config.getTopNBuggyLinkage() ? buggyLinkages.size() - config.getTopNBuggyLinkage() : 0;
+        int selectedIndex = buggyLinkages.size() >= linkageFilterConfig.getTopNBuggyLinkage() ? buggyLinkages.size() - linkageFilterConfig.getTopNBuggyLinkage() : 0;
         log.info("threshold: {}", buggyLinkages.get(selectedIndex));
 
         IssueFilterBean bean = new IssueFilterBean();

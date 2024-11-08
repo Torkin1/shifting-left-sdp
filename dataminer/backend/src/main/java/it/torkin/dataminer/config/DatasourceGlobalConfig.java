@@ -52,11 +52,4 @@ public class DatasourceGlobalConfig {
      */
     @NotBlank
     private String implPackage;
-
-    /**
-     * Only top N project-dataset pairs ranked by buggy linkage
-     * are selected for further processing
-     */
-    @Min(0)
-    private Integer topNBuggyLinkage;
 }
