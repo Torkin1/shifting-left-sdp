@@ -80,8 +80,6 @@ public class IssueFilterTest {
             Map<String, Long> actualCountByProject = new HashMap<>();
             Map<String, Long> expectedCountByProject = new HashMap<>();
 
-            filter.reset();
-
             Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
             for (Project project : projects){
                 long totalCount = issueDao.countByDatasetAndProject(dataset.getName(), project.getKey());
@@ -91,8 +89,15 @@ public class IssueFilterTest {
                 log.info("expected count for project {}: {} - {} = {}", project.getKey(), totalCount, expectedFilteredCount, expectedCount);
                 expectedCountByProject.put(project.getKey(), expectedCount);
             }
+            IssueFilterBean issueFilterBean = new IssueFilterBean();
+            
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
-                .filter((issue) -> filter.apply(new IssueFilterBean(issue, dataset.getName(), null, false)));
+                .filter((issue) -> {
+                    issueFilterBean.setIssue(issue);
+                    issueFilterBean.setDatasetName(dataset.getName());
+                    issueFilterBean.setApplyAnyway(false);
+                    return filter.apply(issueFilterBean);
+                });
             issues.forEach((issue) -> {
                 Project project = issue.getDetails().getFields().getProject();
                 actualCountByProject.compute(project.getKey(), (p, count) -> count == null ? 1 : count + 1);
@@ -210,11 +215,16 @@ public class IssueFilterTest {
         int selectedIndex = buggyLinkages.size() >= config.getTopNBuggyLinkage() ? buggyLinkages.size() - config.getTopNBuggyLinkage() : 0;
         log.info("threshold: {}", buggyLinkages.get(selectedIndex));
 
-        linkageFilter.reset();
+        IssueFilterBean bean = new IssueFilterBean();
         for (Dataset dataset : datasets){
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
             issues
-             .filter(issue -> linkageFilter.apply(new IssueFilterBean(issue, dataset.getName(), null, true)))
+             .filter(issue -> {
+                bean.setIssue(issue);
+                bean.setDatasetName(dataset.getName());
+                bean.setApplyAnyway(true);
+                return linkageFilter.apply(bean);
+             })
              .forEach(issue -> {
                 for(Commit commit : issue.getCommits()){
                     if (commit.getDataset().getName().equals(dataset.getName())){

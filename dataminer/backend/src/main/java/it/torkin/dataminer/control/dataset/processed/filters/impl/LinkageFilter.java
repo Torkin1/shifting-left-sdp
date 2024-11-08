@@ -16,6 +16,7 @@ import it.torkin.dataminer.control.dataset.stats.LinkageBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.jira.project.Project;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -31,28 +32,37 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LinkageFilter extends IssueFilter {
 
+    @Data
+    private class State{
+        private double buggyLinkageThreshold;
+        private Map<String, LinkageBean> buggyLinkagesByDataset = new HashMap<>();
+        private Map<String, Dataset> datasets = new HashMap<>();
+    }
+    
     @Autowired private DatasourceGlobalConfig config;
     @Autowired private DatasetDao datasetDao;
     @Autowired private ILinkageController linkageController;
 
-    private double buggyLinkageThreshold;
-    private Map<String, LinkageBean> buggyLinkagesByDataset = new HashMap<>();
-    private boolean initialized = false;
-    private Map<String, Dataset> datasets = new HashMap<>();
-
+    @Override
+    protected Object createState(IssueFilterBean bean){
+        LinkageFilter.State state = new LinkageFilter.State();
+        init(state);
+        return state;
+    }
+        
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
+                
+        LinkageFilter.State state = (LinkageFilter.State)bean.getFilterStates().get(this.getName());
         
-        if (!initialized) throw new IllegalStateException("Filter not initialized");
-        
-        LinkageBean linkageBean = buggyLinkagesByDataset.get(bean.getDatasetName());
+        LinkageBean linkageBean = state.getBuggyLinkagesByDataset().get(bean.getDatasetName());
         Double buggyLinkage;
         Project project = bean.getIssue().getDetails().getFields().getProject();
-        Dataset dataset = datasets.get(bean.getDatasetName());
+        Dataset dataset = state.getDatasets().get(bean.getDatasetName());
         String guessedRepo = dataset.getGuessedRepoByProjects().get(project.getKey());
 
         buggyLinkage = linkageBean.getLinkageByRepository().getOrDefault(guessedRepo, 0.0);
-        return buggyLinkage >= buggyLinkageThreshold;
+        return buggyLinkage >= state.getBuggyLinkageThreshold();
     }
 
     private Double selectTopNThreshold(List<Double> values, int n){
@@ -67,13 +77,13 @@ public class LinkageFilter extends IssueFilter {
         return values.get(selectedIndex);
     }
 
-    private List<Double> loadLinkages(){
+    private List<Double> loadLinkages(LinkageFilter.State state){
         List<Double> buggyLinkages = new ArrayList<>();
 
-        for (Dataset dataset : datasets.values()) {
+        for (Dataset dataset : state.getDatasets().values()) {
             LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
             linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
-            buggyLinkagesByDataset.put(dataset.getName(), buggyLinkageBean);
+            state.getBuggyLinkagesByDataset().put(dataset.getName(), buggyLinkageBean);
             buggyLinkageBean.getLinkageByRepository().forEach((repository, linkage) -> {
                 if (repository != LinkageBean.ALL_REPOSITORIES){
                     buggyLinkages.add(linkage);
@@ -83,18 +93,11 @@ public class LinkageFilter extends IssueFilter {
         return buggyLinkages;
     }
 
-    private void init(){
+    private void init(LinkageFilter.State state){
 
-        buggyLinkagesByDataset.clear();
-        datasets.clear();
-        datasetDao.findAll().forEach(dataset -> datasets.put(dataset.getName(), dataset));
-        List<Double> buggyLinkages = loadLinkages();
-        buggyLinkageThreshold = selectTopNThreshold(buggyLinkages, config.getTopNBuggyLinkage());
-        initialized = true;
+        datasetDao.findAll().forEach(dataset -> state.getDatasets().put(dataset.getName(), dataset));
+        List<Double> buggyLinkages = loadLinkages(state);
+        state.setBuggyLinkageThreshold(selectTopNThreshold(buggyLinkages, config.getTopNBuggyLinkage()));
     }
 
-    @Override
-    public void reset(){
-        if (!initialized) init();
-    }
 }

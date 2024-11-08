@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,6 @@ import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.IssueDao;
-import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -60,30 +58,22 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     @Transactional
     public void getFilteredIssues(ProcessedIssuesBean bean) {
         
-        issueFilters.forEach((filter) -> filter.reset());
+        // bean object is shared among filter invocations on all issues
+        // for this query
+        IssueFilterBean issueFilterBean = new IssueFilterBean();
+        
         bean.setProcessedIssues(issueDao.findAllByDataset(bean.getDatasetName())
-            // we want to log the progress while traversing the issues
-            .map(new Function<Issue, Issue>() {
-
-                long traversed = 0;
-                
-                @Override
-                public Issue apply(Issue issue) {
-                    
-                    traversed++;
-                    if (traversed % 10000 == 0) {
-                        log.info("traversed {} issues of dataset {}", traversed, bean.getDatasetName());
-                    }
-                    return issue;
-                }   
-            })
             // we order the issues by the MeasurementDate from least to most recent
             .sorted((issue1, issue2) -> bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue1))
                 .compareTo(bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue2))))
             // we filter out issues that do not pass the filters
             .filter((issue) -> {
                 Timestamp measurementDate = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
-                return passesFilters(new IssueFilterBean(issue, bean.getDatasetName(), measurementDate, false), bean);
+                issueFilterBean.setIssue(issue);
+                issueFilterBean.setDatasetName(bean.getDatasetName());
+                issueFilterBean.setMeasurementDate(measurementDate);
+                issueFilterBean.setApplyAnyway(true);
+                return passesFilters(issueFilterBean, bean);
             }));  
     }
 }

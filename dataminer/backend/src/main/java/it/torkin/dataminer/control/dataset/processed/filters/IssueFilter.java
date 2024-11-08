@@ -12,10 +12,24 @@ import jakarta.transaction.Transactional;
  * (e.g. counters).
  */
 public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
-
+    
+    /**
+     * If filter needs to maintain a state, it must override this method to create it.
+     * This is necessary to avoid state sharing among different streams
+     * since the filter instances are singleton.
+     * @param bean
+     * @return
+     */
+    protected Object createState(IssueFilterBean bean){
+        return null;
+    } 
+    
     @Override
     @Transactional
     public final Boolean apply(IssueFilterBean bean){
+        if (bean.getFilterStates().get(this.getName()) == null){
+            bean.getFilterStates().put(this.getName(), createState(bean));
+        }
         beforeApply(bean);
         if (bean.isFiltered() && !bean.isApplyAnyway()) return false;
         return applyFilter(bean);
@@ -28,12 +42,6 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
      */
     protected void beforeApply(IssueFilterBean bean) {};
 
-    /**
-     * Resets internal state of the filter.
-     * Implementations must override this method if they keep a state that
-     * must be reset before processing issues coming from a new dataset.
-     */
-    public void reset() {};
 
     /**
      * Implementations must override this method to apply the filter.
@@ -43,7 +51,7 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
     protected abstract Boolean applyFilter(IssueFilterBean bean);
 
     public final String getName(){
-        return this.getClass().getSimpleName();
+        return this.getClass().getSimpleName().split("\\$\\$")[0];
     }
     
 }
