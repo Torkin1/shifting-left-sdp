@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 import com.google.gson.stream.JsonWriter;
 
-import it.torkin.dataminer.config.NLPFeaturesConfig;
+import it.torkin.dataminer.config.features.NLPFeaturesConfig;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.features.FeatureMiner;

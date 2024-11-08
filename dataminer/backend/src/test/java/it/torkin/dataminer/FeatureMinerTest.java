@@ -17,7 +17,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import it.torkin.dataminer.config.NLPFeaturesConfig;
+import it.torkin.dataminer.config.features.NLPFeaturesConfig;
 import it.torkin.dataminer.control.dataset.DatasetController;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;

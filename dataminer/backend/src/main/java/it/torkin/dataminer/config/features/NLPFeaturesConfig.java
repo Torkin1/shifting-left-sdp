@@ -1,4 +1,4 @@
-package it.torkin.dataminer.config;
+package it.torkin.dataminer.config.features;
 
 import java.io.File;
 
@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import it.torkin.dataminer.config.DataConfig;
 import it.torkin.dataminer.toolbox.string.StringTools;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
