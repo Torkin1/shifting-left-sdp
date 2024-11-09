@@ -1,15 +1,17 @@
 package it.torkin.dataminer.control.dataset.raw.datasources;
 
-import java.time.Year;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Map;
-
-import org.joda.time.Instant;
 
 import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.entities.dataset.Commit;
-import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
+import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
+import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
+import it.torkin.dataminer.entities.dataset.features.TimestampFeature;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;
 import it.torkin.dataminer.toolbox.string.BooleanReader;
@@ -50,20 +52,21 @@ public class Apachejit implements Datasource{
                     commit.setRepository(v);
                     break;
                 case "fix":
-                    measurement.getFeatures().add(new Feature(k, booleanReader.toString(v), Boolean.class));
+                    measurement.getFeatures().add(new BooleanFeature(k, booleanReader.read(v)));
                     break;
                 case "year":
-                    measurement.getFeatures().add(new Feature(k, v, Year.class));
+                    v = String.format("%s-01-01 00:00:00", v);
+                    measurement.getFeatures().add(new TimestampFeature(k, Timestamp.valueOf(v)));
                     break;
                 case "author_date":
-                    measurement.getFeatures().add(new Feature(k, v, Instant.class));
+                    measurement.getFeatures().add(new TimestampFeature(k, Timestamp.from(Instant.ofEpochSecond(Long.parseLong(v)))));
                     break;
                 case "la":
                 case "ld":
                 case "nf":
                 case "nd":
                 case "ns":
-                    measurement.getFeatures().add(new Feature(k, v, Integer.class));
+                    measurement.getFeatures().add(new IntegerFeature(k, Integer.parseInt(v)));
                     break;
                 case "ent":
                 case "ndev":
@@ -72,7 +75,7 @@ public class Apachejit implements Datasource{
                 case "aexp":
                 case "arexp":
                 case "asexp":
-                    measurement.getFeatures().add(new Feature(k, v, Double.class));
+                    measurement.getFeatures().add(new DoubleFeature(k, Double.parseDouble(v)));
                     break;
                 default:
                     log.debug("Unknown feature from apachejit: {}={}", k, v);

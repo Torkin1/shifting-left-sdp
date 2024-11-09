@@ -14,9 +14,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 
 import it.torkin.dataminer.dao.local.IssueDao;
-import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.features.Feature;
+import it.torkin.dataminer.entities.dataset.features.StringFeature;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +40,7 @@ public class MeasurementTest {
         Timestamp actual;
 
         Measurement measurement = new Measurement();
-        Feature feature = new Feature("myFeature", "myValue", String.class);
+        Feature<String> feature = new StringFeature("myFeature", "myValue");
         measurement.getFeatures().add(feature);
         measurement.setMeasurementDate(expected);
         measurement.setMeasurementDateName("now");

@@ -11,8 +11,10 @@ import java.util.stream.Stream;
 import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.entities.dataset.Commit;
-import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
+import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
+import it.torkin.dataminer.entities.dataset.features.StringFeature;
 import it.torkin.dataminer.toolbox.csv.CsvSchemaBean;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.string.BooleanReader;
@@ -86,7 +88,7 @@ public class Jitsdp implements Datasource{
                     commit.setBuggy(booleanReader.read(v));
                     break;
                 case "classification":
-                    measurement.getFeatures().add(new Feature(k, v, String.class));
+                    measurement.getFeatures().add(new StringFeature(k, v));
                     break;
                 case "entrophy":
                 case "ns":
@@ -102,11 +104,11 @@ public class Jitsdp implements Datasource{
                 case "rexp":
                 case "sexp":
                 case "glm_probability":
-                    measurement.getFeatures().add(new Feature(k, v, Double.class));
+                    measurement.getFeatures().add(new DoubleFeature(k, Double.parseDouble(v)));
                     break;
                 case "fix":
                 case "linked":
-                    measurement.getFeatures().add(new Feature(k, booleanReader.toString(v), Boolean.class));
+                    measurement.getFeatures().add(new BooleanFeature(k, booleanReader.read(v)));
                     break;
                 default:
                     break;

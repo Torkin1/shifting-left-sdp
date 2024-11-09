@@ -10,8 +10,11 @@ import java.util.stream.Stream;
 import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.entities.dataset.Commit;
-import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
+import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
+import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
+import it.torkin.dataminer.entities.dataset.features.StringFeature;
 import it.torkin.dataminer.toolbox.csv.CsvSchemaBean;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.string.BooleanReader;
@@ -110,7 +113,7 @@ public class Leveragingjit implements Datasource{
                      * Storing release as a string to allow Ordinal scale operations
                      * only.
                      */
-                    measurement.getFeatures().add(new Feature(k, v, String.class));
+                    measurement.getFeatures().add(new StringFeature(k, v));
                     break;
                 case "NS":
                 case "ND":
@@ -124,14 +127,14 @@ public class Leveragingjit implements Datasource{
                 case "NUC":
                 case "EXP":
                 case "SEXP":
-                    measurement.getFeatures().add(new Feature(k, v, Integer.class));
+                    measurement.getFeatures().add(new IntegerFeature(k, Integer.parseInt(v)));
                     break;
                 case "Entropy":
                 case "REXP":
-                    measurement.getFeatures().add(new Feature(k, v, Double.class));
+                    measurement.getFeatures().add(new DoubleFeature(k, Double.parseDouble(v)));
                     break;
                 case "FIX":
-                    measurement.getFeatures().add(new Feature(k, booleanReader.toString(v), Boolean.class));
+                    measurement.getFeatures().add(new BooleanFeature(k, booleanReader.read(v)));
                     break;
                 default:
                     break;

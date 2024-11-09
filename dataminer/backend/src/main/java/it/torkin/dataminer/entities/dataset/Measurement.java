@@ -4,16 +4,16 @@ import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Set;
 
-import java.lang.Override;
-
 import org.hibernate.annotations.Check;
 
+import it.torkin.dataminer.entities.dataset.features.Feature;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -93,8 +93,8 @@ public class Measurement {
     @ManyToOne
     private Dataset dataset;
 
-    @ElementCollection
-    private Set<Feature> features = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL)
+    private Set<Feature<?>> features = new HashSet<>();
 
     @Override
     public String toString() {
@@ -102,7 +102,7 @@ public class Measurement {
                 + ", features=" + features + "]";
     }
 
-    public Feature getFeatureByName(String name){
+    public Feature<?> getFeatureByName(String name){
         return features.stream().filter(f -> f.getName().equals(name)).findFirst().orElse(null);
     }
 

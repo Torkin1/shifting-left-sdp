@@ -14,7 +14,7 @@ import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
-import it.torkin.dataminer.entities.dataset.Feature;
+import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.transaction.Transactional;
@@ -84,7 +84,7 @@ public class AssigneeANFICMiner extends FeatureMiner{
             });
             
         anfic = issueCount.buggyIssues / issueCount.issues;
-        bean.getMeasurement().getFeatures().add(new Feature(IssueFeature.ANFIC.getName(), anfic.toString(), Double.class));
+        bean.getMeasurement().getFeatures().add(new DoubleFeature(IssueFeature.ANFIC.getName(), anfic));
     }
 
     @Override

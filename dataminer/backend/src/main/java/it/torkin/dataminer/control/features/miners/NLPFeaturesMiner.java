@@ -27,8 +27,9 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
-import it.torkin.dataminer.entities.dataset.Feature;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
+import it.torkin.dataminer.entities.dataset.features.Feature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.nlp.Request.NlpIssueBean;
@@ -153,7 +154,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
         // TODO: stub
         // mine features from NLP remote miners
 
-        Feature buggySimilarity = new Feature(IssueFeature.BUGGY_SIMILARITY.getName(), "stub", null);
+        Feature buggySimilarity = new DoubleFeature(IssueFeature.BUGGY_SIMILARITY.getName(), Double.NaN);
 
         bean.getMeasurement().getFeatures().add(buggySimilarity);
 

@@ -20,7 +20,7 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
-import it.torkin.dataminer.entities.dataset.Feature;
+import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.SafeMath;
@@ -112,10 +112,9 @@ public class TemporalLocalityMiner extends FeatureMiner{
         }
         
         // store temperature in measurement
-        bean.getMeasurement().getFeatures().add(new Feature(
+        bean.getMeasurement().getFeatures().add(new DoubleFeature(
             IssueFeature.TEMPORAL_LOCALITY.getName(),
-            Double.toString(temperature),
-            Double.class));
+            temperature));
 
     }
 
