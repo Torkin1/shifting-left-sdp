@@ -49,19 +49,11 @@ public class LinkageFilter extends IssueFilter {
      * stay read-only afterwards.
      */
     private LinkageFilter.State state = new LinkageFilter.State();
-
-    @Override
-    protected Object createState(IssueFilterBean bean){
-        LinkageFilter.State state = new LinkageFilter.State();
-        init(state);
-        return state;
-    }
         
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
                 
         if (state.getBuggyLinkageThreshold() == null) init(state);
-        LinkageFilter.State state = (LinkageFilter.State)bean.getFilterStates().get(this.getName());
         
         LinkageBean linkageBean = state.getBuggyLinkagesByDataset().get(bean.getDatasetName());
         Double buggyLinkage;
