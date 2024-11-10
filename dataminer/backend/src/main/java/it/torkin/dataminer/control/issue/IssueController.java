@@ -32,6 +32,15 @@ public class IssueController implements IIssueController{
     }
 
     @Override
+    public int compareMeasurementDate(IssueMeasurementDateBean bean){
+        return compareMeasurementDate(
+            bean.getDataset(),
+            bean.getI1(),
+            bean.getI2(),
+            bean.getMeasurementDate());
+    }
+
+    @Override
     public boolean isBefore(IssueMeasurementDateBean bean){
         return compareMeasurementDate(
             bean.getDataset(),

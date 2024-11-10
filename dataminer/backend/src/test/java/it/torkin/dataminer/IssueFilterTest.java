@@ -35,6 +35,7 @@ import it.torkin.dataminer.control.dataset.processed.filters.impl.NotMostRecentF
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
 import it.torkin.dataminer.control.dataset.stats.LinkageBean;
+import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
@@ -98,6 +99,8 @@ public class IssueFilterTest {
                     issueFilterBean.setIssue(issue);
                     issueFilterBean.setDatasetName(dataset.getName());
                     issueFilterBean.setApplyAnyway(false);
+                    issueFilterBean.setFiltered(false);
+                    issueFilterBean.setMeasurementDateName(new OneSecondBeforeFirstCommitDate().getName());
                     return filter.apply(issueFilterBean);
                 });
             issues.forEach((issue) -> {

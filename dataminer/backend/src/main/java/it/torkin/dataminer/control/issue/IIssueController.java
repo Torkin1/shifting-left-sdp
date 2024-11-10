@@ -67,4 +67,6 @@ public interface IIssueController {
      * @return
      */
     public boolean isAfter(IssueMeasurementDateBean bean);
+
+    public int compareMeasurementDate(IssueMeasurementDateBean bean);
 }

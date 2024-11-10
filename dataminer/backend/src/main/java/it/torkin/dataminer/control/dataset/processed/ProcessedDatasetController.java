@@ -79,6 +79,7 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
                 issueFilterBean.setMeasurementDate(measurementDate);
                 issueFilterBean.setApplyAnyway(filterConfig.getApplyAnyway());
                 issueFilterBean.setFiltered(false);
+                issueFilterBean.setMeasurementDateName(bean.getMeasurementDate().getName());
                 return passesFilters(issueFilterBean, bean);
             }));  
     }

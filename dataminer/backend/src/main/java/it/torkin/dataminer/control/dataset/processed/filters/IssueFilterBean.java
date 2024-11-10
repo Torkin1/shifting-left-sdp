@@ -22,6 +22,7 @@ public class IssueFilterBean {
     private Issue issue;
     private String datasetName;
     private Timestamp measurementDate;
+    private String measurementDateName;
 
     /**
      * NOTE: filters must access this field in read-only mode.
