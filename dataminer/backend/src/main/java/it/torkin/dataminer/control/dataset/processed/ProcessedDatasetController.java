@@ -68,9 +68,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
         IssueFilterBean issueFilterBean = new IssueFilterBean();
         
         bean.setProcessedIssues(issueDao.findAllByDataset(bean.getDatasetName())
-            // we order the issues by the MeasurementDate from least to most recent
-            .sorted((issue1, issue2) -> bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue1))
-                .compareTo(bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue2))))
             // we filter out issues that do not pass the filters
             .filter((issue) -> {
                 Timestamp measurementDate = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
@@ -81,6 +78,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
                 issueFilterBean.setFiltered(false);
                 issueFilterBean.setMeasurementDateName(bean.getMeasurementDate().getName());
                 return passesFilters(issueFilterBean, bean);
-            }));  
+            }));
     }
 }

@@ -24,7 +24,6 @@ import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.SafeMath;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -38,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TemporalLocalityMiner extends FeatureMiner{
 
     private Map<String, Map<String, Long>> issuesInWindowByProjectByDataset = new HashMap<>();
+    private Map<String, Map<String, Long>> issuesCountByProjectByDataset = new HashMap<>();
 
     @Autowired private DatasetDao datasetDao;
     @Autowired private ProjectDao projectDao;
@@ -47,21 +47,7 @@ public class TemporalLocalityMiner extends FeatureMiner{
 
     @Autowired private IDatasetController datasetController;
     @Autowired private IIssueController issueController;
-    
-    @Data
-    private class IssueCount{
-        private double count;
-
-        public void add(double count){
-            this.count += count;
-        }
-
-    }
-    
-    private long calcIssuesToSkip(long issuesCount, long issuesInWindow){
-        return issuesCount - issuesInWindow;
-    }
-    
+            
     @Override
     public void mine(FeatureMinerBean bean) {
         
@@ -71,12 +57,7 @@ public class TemporalLocalityMiner extends FeatureMiner{
         String project = bean.getIssue().getDetails().getFields().getProject().getKey();
         
         // calc num of issues to skip before reaching the ones in the window
-        long issuesCount = issueDao.findAllByDatasetAndProject(dataset, project)
-            // accept issues prior to the issue to be measured
-            .filter(i -> !issueController.isAfter(new IssueMeasurementDateBean(dataset, i, bean.getIssue(), bean.getMeasurementDate())))
-            // exclude the issue to be measured
-            .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
-            .count();
+        long issuesCount = issuesCountByProjectByDataset.get(dataset).get(project);
         long issuesInWindow = issuesInWindowByProjectByDataset.get(dataset).get(project);
         
         // if we don't have enough issues to fill the window, we can't be sure that the temperature value
@@ -85,30 +66,28 @@ public class TemporalLocalityMiner extends FeatureMiner{
             temperature = Double.NaN;
         }
         else {
-            long issuesToSkip = calcIssuesToSkip(issuesCount, issuesInWindow);
-            IssueCount buggyCount = new IssueCount();
     
             ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(bean.getDataset(), bean.getMeasurementDate());
             datasetController.getProcessedIssues(processedIssuesBean);
 
-            processedIssuesBean.getProcessedIssues()
+            long buggyCount = processedIssuesBean.getProcessedIssues()
                 // retain only issues of same project
                 .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
                 // retain only issues prior to the issue to be measured
                 .filter(i -> !issueController.isAfter(new IssueMeasurementDateBean(dataset, i, bean.getIssue(), bean.getMeasurementDate())))
                 // exclude issue to be measured
                 .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
-                // skip issues until we reach the temporal locality window
-                .skip(issuesToSkip)
+                // sort issues by measurement date from most to least recent
+                .sorted((i1, i2) -> - issueController.compareMeasurementDate(new IssueMeasurementDateBean(bean.getDataset(), i1, i2, bean.getMeasurementDate())))
+                // limit to issues in window
+                .limit(issuesInWindow)
+                // retain only buggy issues
+                .filter(i -> issueController.isBuggy(new IssueCommitBean(i, bean.getDataset())))
                 // count buggy issues in window
-                .forEach(i -> {
-                    // skip issue to be measured
-                    if ( issueController.isBuggy(new IssueCommitBean(i, bean.getDataset())))
-                        buggyCount.add(1);
-                });
+                .count();
             
             // calculate temperature as the percentage of buggy issues in window
-            temperature = SafeMath.calcPercentage(buggyCount.getCount(), issuesInWindow);
+            temperature = SafeMath.calcPercentage(buggyCount, issuesInWindow);
         }
         
         // store temperature in measurement
@@ -133,14 +112,17 @@ public class TemporalLocalityMiner extends FeatureMiner{
         for (Dataset dataset : datasets){
             
             issuesInWindowByProjectByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
+            issuesCountByProjectByDataset.putIfAbsent(dataset.getName(), new HashMap<>());
             
             Map<String, Long> issuesInWindowByProject = issuesInWindowByProjectByDataset.get(dataset.getName());
+            Map<String, Long> issuesCountByProject = issuesCountByProjectByDataset.get(dataset.getName());
             Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
 
             for (Project project : projects){
                 Long projectIssues = issueDao.countByDatasetAndProject(dataset.getName(), project.getKey());
                 Long issuesInWindow = SafeMath.ceiledInversePercentage(config.getWindowSize(), projectIssues);
                 issuesInWindowByProject.put(project.getKey(), issuesInWindow);
+                issuesCountByProject.put(project.getKey(), projectIssues);
             }
 
         }
