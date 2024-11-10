@@ -25,21 +25,20 @@ public class HasGuessedRepositoryFilter extends IssueFilter{
     }
     
     @Autowired private DatasetDao datasetDao;
-    
-    @Override
-    protected Object createState(IssueFilterBean bean){
-        HasGuessedRepositoryFilter.State state = new HasGuessedRepositoryFilter.State();
-        datasetDao.findAll().forEach(dataset -> state.getDatasets().put(dataset.getName(), dataset));
-        return state;
-    }
-    
+
+    /**
+     * Read-only state, do not modify it unless we are initializing the filter.
+     */
+    private HasGuessedRepositoryFilter.State state = new HasGuessedRepositoryFilter.State();
+        
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
         
-        String name = this.getName();
-        HasGuessedRepositoryFilter.State state = (HasGuessedRepositoryFilter.State)bean.getFilterStates().get(name);
+        if (state.getDatasets().isEmpty()) {
+            datasetDao.findAll().forEach(dataset -> state.getDatasets().put(dataset.getName(), dataset));        
+        }
+        
         Map<String, Dataset> datasets = state.getDatasets();
-        // Map<String, Dataset> datasets = ((HasGuessedRepositoryFilter.State)bean.getFilterStates().get(this.getName())).getDatasets();
 
         Dataset dataset = datasets.get(bean.getDatasetName());
         return dataset.getGuessedRepoByProjects().containsKey(bean.getIssue().getDetails().getFields().getProject().getKey());

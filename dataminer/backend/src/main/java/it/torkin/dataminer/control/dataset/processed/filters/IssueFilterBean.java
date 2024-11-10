@@ -35,8 +35,8 @@ public class IssueFilterBean {
     private boolean applyAnyway;
 
     /**
-     * Filters must be stateless, so if they need state they
-     * must store it here
+     * Filters must be stateless, so if they need state shared among processed issues
+     * they must store it here
      */
     private final Map<String, Object> filterStates = new HashMap<>();
 
