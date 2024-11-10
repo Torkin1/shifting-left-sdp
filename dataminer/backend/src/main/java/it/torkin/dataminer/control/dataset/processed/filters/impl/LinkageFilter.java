@@ -34,7 +34,7 @@ public class LinkageFilter extends IssueFilter {
 
     @Data
     private class State{
-        private double buggyLinkageThreshold;
+        private Double buggyLinkageThreshold = null;
         private Map<String, LinkageBean> buggyLinkagesByDataset = new HashMap<>();
         private Map<String, Dataset> datasets = new HashMap<>();
     }
@@ -42,6 +42,13 @@ public class LinkageFilter extends IssueFilter {
     @Autowired private LinkageFilterConfig config;
     @Autowired private DatasetDao datasetDao;
     @Autowired private ILinkageController linkageController;
+
+    /**
+     * The following attributes are the shared state of the filter.
+     * They must be initialized before the filter is applied and
+     * stay read-only afterwards.
+     */
+    private LinkageFilter.State state = new LinkageFilter.State();
 
     @Override
     protected Object createState(IssueFilterBean bean){
@@ -53,6 +60,7 @@ public class LinkageFilter extends IssueFilter {
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
                 
+        if (state.getBuggyLinkageThreshold() == null) init(state);
         LinkageFilter.State state = (LinkageFilter.State)bean.getFilterStates().get(this.getName());
         
         LinkageBean linkageBean = state.getBuggyLinkagesByDataset().get(bean.getDatasetName());
