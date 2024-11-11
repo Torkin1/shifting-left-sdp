@@ -30,7 +30,6 @@ public class FeatureController implements IFeatureController{
     @Autowired private MeasurementDao measurementDao;
     
     @Autowired private IProcessedDatasetController processedDatasetController;
-    // @Autowired private IWorkersController workersController;
     @Autowired private IMeasurementDateController measurementDateController;
 
     @Override
@@ -48,28 +47,6 @@ public class FeatureController implements IFeatureController{
     private void doMeasurements(FeatureMinerBean bean){
         miners.forEach(miner -> miner.accept(bean));
     }
-
-    // private void saveMeasurements(){
-    //     List<Issue> toSaveIssues = new ArrayList<>();
-
-    //     try {
-    //         while (!workersController.isBatchEmpty()) {
-    //             Task<?> task = workersController.collect();
-    //             if (task.getException() != null){
-    //                 throw new RuntimeException(task.getException());
-    //             }
-    //             FeatureMinerBean bean = (FeatureMinerBean) task.getTaskBean();
-    //             Measurement measurement = measurementDao.save(bean.getMeasurement());
-    //             bean.getIssue().getMeasurements().removeIf(m -> m.getMeasurementDateName().equals(measurement.getMeasurementDateName()));
-    //             bean.getIssue().getMeasurements().add(measurement);
-    //             toSaveIssues.add(bean.getIssue());
-    //         }
-    //         issueDao.saveAll(toSaveIssues);
-            
-    //     } catch (InterruptedException | ExecutionException e) {
-    //         throw new RuntimeException(e);
-    //     }
-    // }
 
     private void saveMeasurement(FeatureMinerBean bean){
         Measurement measurement = measurementDao.save(bean.getMeasurement());
@@ -108,15 +85,7 @@ public class FeatureController implements IFeatureController{
                         measurement.setIssue(issue);
                         measurement.setDataset(dataset);
                     }
-                    // FIXME: calling this from a thread different from the main one return empty streams from processed dataset controller
-                    // for now, we resort to a single thread
-                    // workersController.submit(new Task<>(
-                    //     this::doMeasurements,
-                    //     new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate)));
-                    // if (workersController.isBatchFull() || !issues.hasNext()){
-                        // collect issues and store measurements in db
-                        // saveMeasurements();
-                    // }
+
                     FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
                     doMeasurements(bean);
                     saveMeasurement(bean);
