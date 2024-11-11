@@ -16,11 +16,11 @@ import lombok.Data;
 public class Project{
     @Embedded
     private AvatarUrls avatarUrls;
-    @Id
     @SerializedName("id")
     private String jiraId;
     @Embedded
     private ProjectInsight insight;
+    @Id
     private String key;
     private String name;
     @ManyToOne(cascade = { CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
