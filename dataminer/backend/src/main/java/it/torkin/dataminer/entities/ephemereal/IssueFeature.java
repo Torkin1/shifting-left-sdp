@@ -9,7 +9,8 @@ public enum IssueFeature {
     
     BUGGY_SIMILARITY("Buggy similarity"),
     ANFIC("Assignee ANFIC"),
-    TEMPORAL_LOCALITY("Temporal locality")
+    TEMPORAL_LOCALITY("Temporal locality"),
+    BUGGINESS("Bugginess"),
     ;
 
     private final String name;

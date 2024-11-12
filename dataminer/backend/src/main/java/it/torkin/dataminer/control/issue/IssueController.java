@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 public class IssueController implements IIssueController{
 
     @Override
-    public boolean isBuggy(IssueCommitBean bean){
+    public Boolean isBuggy(IssueCommitBean bean){
                 
         Issue issue = bean.getIssue();
         String dataset = bean.getDataset();

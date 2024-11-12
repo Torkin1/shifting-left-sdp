@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
  * named quantity used by a prediction model to learn relationships among data.
  */
 @Data
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+@Inheritance(strategy = InheritanceType.JOINED)
 @NoArgsConstructor
 @Entity
 public abstract class Feature<T> {

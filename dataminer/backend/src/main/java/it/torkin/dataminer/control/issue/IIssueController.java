@@ -12,7 +12,7 @@ public interface IIssueController {
      * @param dataset non null
      * @param issue non null
      */
-    public boolean isBuggy(IssueCommitBean bean);
+    public Boolean isBuggy(IssueCommitBean bean);
 
     /**
      * Returns the first commit of the issue according to the given
