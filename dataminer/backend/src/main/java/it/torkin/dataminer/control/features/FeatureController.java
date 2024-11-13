@@ -131,30 +131,33 @@ public class FeatureController implements IFeatureController{
             for (MeasurementDate measurementDate : measurementDates) {
                 Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
                 for (Project project : projects) {
-                    File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName()));
-                    Stream<Measurement> measurements = measurementDao
-                        .findAllByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName());
-                    CsvSchema schema = createCsvSchema(featureNames);
-                    CsvMapper mapper = new CsvMapper();
-                    ObjectWriter writer = mapper.writer(schema);
-                    try (SequenceWriter sequenceWriter = writer.writeValues(outputFile)){
-                        measurements.forEach(measurement -> {
-                            Map<String, Object> features = new LinkedHashMap<>();
-                            measurement.getFeatures().forEach(f -> {
-                                // if feature is numeric, normalize it
-                                if (f.getValue() instanceof Number){
-                                    features.put(f.getName(), new LogNormalizer(Math.E).apply((Number)f.getValue()));
-                                } else {
-                                    features.put(f.getName(), f.getValue());
+                    Long measurementCount = measurementDao.countByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName());
+                    if (measurementCount > 0){
+                        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName()));
+                        Stream<Measurement> measurements = measurementDao
+                            .findAllByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName());
+                        CsvSchema schema = createCsvSchema(featureNames);
+                        CsvMapper mapper = new CsvMapper();
+                        ObjectWriter writer = mapper.writer(schema);
+                        try (SequenceWriter sequenceWriter = writer.writeValues(outputFile)){
+                            measurements.forEach(measurement -> {
+                                Map<String, Object> features = new LinkedHashMap<>();
+                                measurement.getFeatures().forEach(f -> {
+                                    // if feature is numeric, normalize it
+                                    if (f.getValue() instanceof Number){
+                                        features.put(f.getName(), new LogNormalizer(Math.E).apply((Number)f.getValue()));
+                                    } else {
+                                        features.put(f.getName(), f.getValue());
+                                    }
+                                });
+                                try {
+                                    sequenceWriter.write(features);
+                                } catch (IOException e) {
+                                    throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
                                 }
                             });
-                            try {
-                                sequenceWriter.write(features);
-                            } catch (IOException e) {
-                                throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
-                            }
-                        });
-                    } 
+                        } 
+                    }
                 }
             }
         }
