@@ -33,6 +33,7 @@ import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
 import it.torkin.dataminer.entities.jira.project.Project;
+import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -138,10 +139,14 @@ public class FeatureController implements IFeatureController{
                     ObjectWriter writer = mapper.writer(schema);
                     try (SequenceWriter sequenceWriter = writer.writeValues(outputFile)){
                         measurements.forEach(measurement -> {
-                            // TODO: if feature is numeric, normalize it
                             Map<String, Object> features = new LinkedHashMap<>();
                             measurement.getFeatures().forEach(f -> {
-                                features.put(f.getName(), f.getValue());
+                                // if feature is numeric, normalize it
+                                if (f.getValue() instanceof Number){
+                                    features.put(f.getName(), new LogNormalizer(Math.E).apply((Number)f.getValue()));
+                                } else {
+                                    features.put(f.getName(), f.getValue());
+                                }
                             });
                             try {
                                 sequenceWriter.write(features);
