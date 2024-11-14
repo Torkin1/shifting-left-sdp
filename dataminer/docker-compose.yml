@@ -3,6 +3,7 @@ version: '3.1'
 volumes:
   db_data:
   backend_data:
+  buggy-similarity_data:
 
 services:
     
@@ -10,6 +11,7 @@ services:
   backend:
     depends_on:
       - db
+      - buggy-similarity
     build:
       context: ./backend
       additional_contexts:
@@ -39,4 +41,18 @@ services:
       POSTGRES_DB: ${DB_NAME}
       
       PGDATA: /var/lib/postgresql/data
+  
+  # Buggy simmilarity miner
+  buggy-similarity:
+    build:
+      context: ./TestRequirementSimilarityLaProvaV8
+      additional_contexts:
+        proto: ./proto
+      dockerfile: src/main/resources/Dockerfile.buggysimilarity
+    environment:
+      - GRPC_PORT=8080
+    expose:
+      - 8080
+    volumes:
+      - buggy-similarity_data:/buggy-similarity/data/
     

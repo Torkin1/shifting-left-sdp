@@ -4,9 +4,6 @@ import "google/protobuf/timestamp.proto";
 
 package it.torkin.dataminer.nlp;
 
-message NlpRequest{
-    repeated NlpIssueBean issues = 1;
-}
 
 message NlpIssueBean{
     // dataset from which commit features are extracted (e.g. bugginess)
@@ -26,6 +23,16 @@ message NlpIssueBean{
     optional string description = 6;
     // True if issue is buggy according to the specified dataset
     bool buggy = 7;
+}
 
+message NlpIssueRequest{
+    // dataset from which commit features are extracted (e.g. bugginess)
+    string dataset = 1;
+    // project which issue belongs to 
+    string project = 2;
+    // Name of the date used to measure issue features (e.g. date of first commit)
+    string measurementDateName = 8;
+    // Issue ID
+    string key = 4;
 }
 

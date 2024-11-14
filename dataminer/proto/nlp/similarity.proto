@@ -4,14 +4,20 @@ package it.torkin.dataminer.nlp;
 
 import "nlp/request.proto";
 
-message BuggyTicketsSimilarityResponse{
-    string issue_key = 1;
+
+message RegisterNlpIssueBeansResponse{
     
-    repeated float similarity_scores = 2;
+}
+
+message NlpIssueSimilarityScores{
+    map<string, double> scoreByName = 1;
+    NlpIssueRequest request = 2;
 }
 
 
 service BuggyTicketsSimilarityMining{
 
-    rpc getBuggyTicketsSimilarity(stream NlpRequest) returns (stream BuggyTicketsSimilarityResponse);    
+    rpc registerIssueBeans(stream NlpIssueBean) returns (RegisterNlpIssueBeansResponse) {}
+
+    rpc getSimilarityScores(stream NlpIssueRequest) returns (stream NlpIssueSimilarityScores) {}
 }

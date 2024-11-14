@@ -1,0 +1,16 @@
+FROM eclipse-temurin:17-jdk
+
+COPY --from=proto . ./proto
+WORKDIR ./buggy-similarity
+
+# preinstall the dependencies
+COPY .mvn .mvn
+COPY mvnw mvnw
+COPY pom.xml pom.xml
+RUN ./mvnw dependency:resolve
+
+# copy sources and compile them in a jar
+COPY src src
+RUN ./mvnw package -DskipTests
+
+ENTRYPOINT ["java","-jar", "./target/TestRequirementSimilarityLaProvaV1.jar"]
