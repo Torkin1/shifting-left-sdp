@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +41,7 @@ import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
 
 @Service
+@Slf4j
 public class FeatureController implements IFeatureController{
 
     @Autowired private List<FeatureMiner> miners;
@@ -95,7 +97,6 @@ public class FeatureController implements IFeatureController{
                 processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
                 issues = processedIssuesBean.getProcessedIssues().iterator();
-
                 while (issues.hasNext()) {
                     Issue issue = issues.next();
                     Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));

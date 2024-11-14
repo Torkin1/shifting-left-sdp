@@ -72,7 +72,11 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     private void mineFeatures() throws Exception{
         featureController.initMiners();
         log.info("Features miners initialized");
-        
+        featureController.mineFeatures();
+        log.info("Features mined");
+        featureController.printMeasurements();
+        log.info("Features printed");
+
         // TODO: mine features
 
     }

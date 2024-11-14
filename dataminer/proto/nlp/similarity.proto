@@ -12,6 +12,7 @@ message RegisterNlpIssueBeansResponse{
 message NlpIssueSimilarityScores{
     map<string, double> scoreByName = 1;
     NlpIssueRequest request = 2;
+    bool found = 3;
 }
 
 

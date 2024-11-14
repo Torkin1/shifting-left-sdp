@@ -162,7 +162,6 @@ public class NLPFeaturesMiner extends FeatureMiner{
 
     @Override
     public void mine(FeatureMinerBean bean) {
-        // TODO: stub
         // mine features from NLP remote miners
 
         NlpIssueRequest request = NlpIssueRequest.newBuilder()
@@ -172,12 +171,17 @@ public class NLPFeaturesMiner extends FeatureMiner{
             .setKey(bean.getIssue().getKey())
             .setMeasurementDateName(bean.getMeasurementDate().getName())
             .build();
-        NlpIssueSimilarityScores buggySimilarityScores = buggySimilarityStub.getSimilarityScores(request);
-        
-        buggySimilarityScores.getScoreByNameMap().forEach((k, v) -> {
-            Feature<?> feature = new DoubleFeature(k, v);
-            bean.getMeasurement().getFeatures().add(feature);
-        });
+        try{
+            NlpIssueSimilarityScores buggySimilarityScores = buggySimilarityStub.getSimilarityScores(request);
+
+            buggySimilarityScores.getScoreByNameMap().forEach((k, v) -> {
+                Feature<?> feature = new DoubleFeature(k, v);
+                bean.getMeasurement().getFeatures().add(feature);
+            });
+        } catch (Exception e){
+            log.error("cannot mine buggy similarity for issue {}", bean.getIssue().getKey(), e);
+        }
+
 
     }
 
