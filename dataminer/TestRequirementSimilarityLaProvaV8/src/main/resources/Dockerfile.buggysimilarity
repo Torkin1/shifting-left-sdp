@@ -13,4 +13,4 @@ RUN ./mvnw dependency:resolve
 COPY src src
 RUN ./mvnw package -DskipTests
 
-ENTRYPOINT ["java","-jar", "./target/TestRequirementSimilarityLaProvaV1.jar"]
+ENTRYPOINT ["java","-jar", "./target/TestRequirementSimilarityLaProvaV1-1.0-SNAPSHOT.jar"]

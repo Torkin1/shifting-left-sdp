@@ -8,9 +8,7 @@ public class BuggySimilarityServer {
     public static void main(String[] args) {
         
         try {
-            // Integer port = Integer.parseInt(System.getenv("GRPC_PORT"));
-            System.out.println(System.getenv("PWD"));
-            Integer port = 50051;
+            Integer port = Integer.parseInt(System.getenv("GRPC_PORT"));
             Server server = ServerBuilder.forPort(port)
                 .addService(new BuggySimilarityService())
                 .build();

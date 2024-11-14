@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 
 import com.google.gson.stream.JsonWriter;
 
+import io.grpc.Channel;
+import io.grpc.ManagedChannelBuilder;
 import it.torkin.dataminer.config.features.NLPFeaturesConfig;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
@@ -32,7 +34,11 @@ import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.dataset.features.Feature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
+import it.torkin.dataminer.nlp.BuggyTicketsSimilarityMiningGrpc;
+import it.torkin.dataminer.nlp.BuggyTicketsSimilarityMiningGrpc.BuggyTicketsSimilarityMiningBlockingStub;
 import it.torkin.dataminer.nlp.Request.NlpIssueBean;
+import it.torkin.dataminer.nlp.Request.NlpIssueRequest;
+import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityScores;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,6 +51,8 @@ public class NLPFeaturesMiner extends FeatureMiner{
     @Autowired private NLPFeaturesConfig config;
     @Autowired private DatasetDao datasetDao;
     @Autowired private List<MeasurementDate> measurementDates;
+
+    private BuggyTicketsSimilarityMiningBlockingStub buggySimilarityStub;
     
     private void serializeBean(JsonWriter writer, NlpIssueBean bean) throws IOException{
 
@@ -141,6 +149,9 @@ public class NLPFeaturesMiner extends FeatureMiner{
             if (!serializedIssueSummariesFile.exists()){
                 serializeIssueBeans(serializedIssueSummariesFile);
         }
+
+        Channel channel = ManagedChannelBuilder.forTarget(config.getBuggySimilarityGrpcTarget()).usePlaintext().build();
+        buggySimilarityStub = BuggyTicketsSimilarityMiningGrpc.newBlockingStub(channel);
          
         // TODO: read beans from JSON and send them to NLP remote miners
         
@@ -154,9 +165,19 @@ public class NLPFeaturesMiner extends FeatureMiner{
         // TODO: stub
         // mine features from NLP remote miners
 
-        Feature buggySimilarity = new DoubleFeature(IssueFeature.BUGGY_SIMILARITY.getName(), Double.NaN);
-
-        bean.getMeasurement().getFeatures().add(buggySimilarity);
+        NlpIssueRequest request = NlpIssueRequest.newBuilder()
+            .setDataset(bean.getDataset())
+            // TODO: use project key instead of name, but regenerate and send json file first
+            .setProject(bean.getIssue().getDetails().getFields().getProject().getName())
+            .setKey(bean.getIssue().getKey())
+            .setMeasurementDateName(bean.getMeasurementDate().getName())
+            .build();
+        NlpIssueSimilarityScores buggySimilarityScores = buggySimilarityStub.getSimilarityScores(request);
+        
+        buggySimilarityScores.getScoreByNameMap().forEach((k, v) -> {
+            Feature<?> feature = new DoubleFeature(k, v);
+            bean.getMeasurement().getFeatures().add(feature);
+        });
 
     }
 

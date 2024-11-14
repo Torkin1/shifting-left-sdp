@@ -19,5 +19,5 @@ service BuggyTicketsSimilarityMining{
 
     rpc registerIssueBeans(stream NlpIssueBean) returns (RegisterNlpIssueBeansResponse) {}
 
-    rpc getSimilarityScores(stream NlpIssueRequest) returns (stream NlpIssueSimilarityScores) {}
+    rpc getSimilarityScores(NlpIssueRequest) returns (NlpIssueSimilarityScores) {}
 }

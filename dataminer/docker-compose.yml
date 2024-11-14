@@ -18,12 +18,13 @@ services:
         proto: ./proto
       dockerfile: src/main/resources/Dockerfile.backend
     environment:
-      - SPRING_PROFILES_ACTIVE=container
+      - SPRING_PROFILES_ACTIVE=container,test
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-    expose:
-      - 8080
+
+      - GRPC_HOSTNAME_BUGGY_SIMILARITY=buggy-similarity
+      - GRPC_PORT_BUGGY_SIMILARITY=8080
     volumes:
       - backend_data:/backend/data/
     

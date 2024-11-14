@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import it.torkin.dataminer.config.DataConfig;
 import it.torkin.dataminer.toolbox.string.StringTools;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Configuration
@@ -38,5 +39,9 @@ public class NLPFeaturesConfig {
      * by the NLP remote miners.
      */
     private String nlpIssueBeans;
+
+    @NotBlank
+    private String buggySimilarityGrpcTarget;
+
     
 }

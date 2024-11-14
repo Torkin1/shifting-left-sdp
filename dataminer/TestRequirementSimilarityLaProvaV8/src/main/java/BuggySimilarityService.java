@@ -5,6 +5,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import it.torkin.dataminer.nlp.BuggyTicketsSimilarityMiningGrpc.BuggyTicketsSimilarityMiningImplBase;
 import it.torkin.dataminer.nlp.Request.NlpIssueBean;
@@ -87,66 +88,55 @@ public class BuggySimilarityService extends BuggyTicketsSimilarityMiningImplBase
     }
 
     @Override
-    public StreamObserver<NlpIssueRequest> getSimilarityScores(
+    public void getSimilarityScores(NlpIssueRequest request,
             StreamObserver<NlpIssueSimilarityScores> responseObserver) {
 
-        return new StreamObserver<NlpIssueRequest>() {
+        responseObserver.onNext(processRequest(request));
+        responseObserver.onCompleted();
 
-            @Override
-            public void onNext(NlpIssueRequest bean) {
-                System.out.println("Received request for " + bean.getDataset() + " " + bean.getProject() + " " + bean.getKey());
-                System.out.println("Reading records from " + BuggyRequirementSimilarity.getOutputFileName(bean.getDataset(), bean.getProject()));
-                try (Resultset<Map<String, String>> records = new Resultset<>(BuggyRequirementSimilarity.getOutputFileName(bean.getDataset(), bean.getProject()), Map.class)) {
-                    while(records.hasNext()){
-                        // System.out.println("Reading record");
-                        Map<String, String> record = records.next();
+    }
 
-                        // TODO: Check measurement date too
-                        String dataset = record.get("ProjectName").split("_")[0];
-                        String project = record.get("ProjectName").split("_")[1];
-                        String key = record.get("RequirementID");
+    private NlpIssueSimilarityScores processRequest(NlpIssueRequest request){
+        System.out.println("Received request for " + request.getDataset() + " " + request.getProject() + " " + request.getKey());
+        System.out.println("Reading records from " + BuggyRequirementSimilarity.getOutputFileName(request.getDataset(), request.getProject()));
+        try (Resultset<Map<String, String>> records = new Resultset<>(BuggyRequirementSimilarity.getOutputFileName(request.getDataset(), request.getProject()), Map.class)) {
+            while(records.hasNext()){
+                // System.out.println("Reading record");
+                Map<String, String> record = records.next();
 
-                        // System.out.println("Checking " + dataset + " " + project + " " + key);
-                        if (bean.getDataset().equals(dataset) && bean.getProject().equals(project) && bean.getKey().equals(key)){
-                            System.out.println("Found " + dataset + " " + project + " " + key);
-                            NlpIssueSimilarityScores.Builder similarityScoresBuilder = NlpIssueSimilarityScores.newBuilder()
-                                .setRequest(
-                                    NlpIssueRequest.newBuilder()
-                                        .setDataset(dataset)
-                                        .setProject(project)
-                                        .setKey(key)
-                                );
-                                record.forEach((k, v) -> {
-                                    if (!k.equals("ProjectName") && !k.equals("RequirementID") && !k.equals("Buggy")){
-                                        similarityScoresBuilder.putScoreByName(k, StringTools.isBlank(v) ? Double.NaN : Double.parseDouble(v));
-                                    }
-                                });
-                            NlpIssueSimilarityScores similarityScores = similarityScoresBuilder.build(); 
-                            responseObserver.onNext(similarityScores);
-                            // System.out.println("Sent " + dataset + " " + project + " " + key);
-                            break;
-                        }
+                // TODO: Check measurement date too
+                String dataset = record.get("ProjectName").split("_")[0];
+                String project = record.get("ProjectName").split("_")[1];
+                String key = record.get("RequirementID");
 
-                    }
-                        
-                } catch (UnableToGetResultsetException | IOException e) {
-                    GrpcTools.internalServerError("error while reading csv scores", e);
+                // System.out.println("Checking " + dataset + " " + project + " " + key);
+                if (request.getDataset().equals(dataset) && request.getProject().equals(project) && request.getKey().equals(key)){
+                    System.out.println("Found " + dataset + " " + project + " " + key);
+                    NlpIssueSimilarityScores.Builder similarityScoresBuilder = NlpIssueSimilarityScores.newBuilder()
+                        .setRequest(
+                            NlpIssueRequest.newBuilder()
+                                .setDataset(dataset)
+                                .setProject(project)
+                                .setKey(key)
+                        );
+                        record.forEach((k, v) -> {
+                            if (!k.equals("ProjectName") && !k.equals("RequirementID") && !k.equals("Buggy")){
+                                similarityScoresBuilder.putScoreByName(k, StringTools.isBlank(v) ? Double.NaN : Double.parseDouble(v));
+                            }
+                        });
+                    NlpIssueSimilarityScores similarityScores = similarityScoresBuilder.build(); 
+                    // System.out.println("Sent " + dataset + " " + project + " " + key);
+                    return similarityScores;
                 }
-            }
 
-            @Override
-            public void onError(Throwable t) {
-                System.out.println("Error while processing similarity scores request");
-                GrpcTools.internalServerError("Fatal", error);
             }
+                
+        } catch (UnableToGetResultsetException | IOException e) {
+            throw GrpcTools.internalServerError("error while reading csv scores", e);
+        }
+        throw Status.NOT_FOUND.withDescription("request has no correspondence in registered nlp beans: " + request.getDataset() + " " + request.getProject() + " " + request.getKey() ).asRuntimeException();
+    }
 
-            @Override
-            public void onCompleted() {
-                System.out.println("similarity scores request Completed");
-                responseObserver.onCompleted();
-            }
-        };
-}
 
     
 }
