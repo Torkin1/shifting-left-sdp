@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
+import me.tongfei.progressbar.ProgressBar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -97,32 +98,38 @@ public class FeatureController implements IFeatureController{
                 processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
                 issues = processedIssuesBean.getProcessedIssues().iterator();
-                while (issues.hasNext()) {
-                    Issue issue = issues.next();
-                    Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+                try(ProgressBar progressBar = new ProgressBar("measuring issues from "+dataset.getName()+" at "+measurementDate.getName(), -1)){
+                    while (issues.hasNext()) {
+                        Issue issue = issues.next();
+                        progressBar.setExtraMessage(issue.getKey()+ " of "+issue.getDetails().getFields().getProject().getKey());
+                        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
 
-                    // TODO: update already existing measurements instead of replacing it with a new one
-                    // Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
-                    // if (measurement == null){
-                    //     measurement = new Measurement();
-                    //     measurement.setMeasurementDate(measurementDateValue);
-                    //     measurement.setMeasurementDateName(measurementDate.getName());
-                    //     measurement.setIssue(issue);
-                    //     measurement.setDataset(dataset);
-                    // }
+                        // TODO: update already existing measurements instead of replacing it with a new one
+                        // Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
+                        // if (measurement == null){
+                        //     measurement = new Measurement();
+                        //     measurement.setMeasurementDate(measurementDateValue);
+                        //     measurement.setMeasurementDateName(measurementDate.getName());
+                        //     measurement.setIssue(issue);
+                        //     measurement.setDataset(dataset);
+                        // }
 
-                    Measurement measurement = new Measurement();
-                    measurement.setMeasurementDate(measurementDateValue);
-                    measurement.setMeasurementDateName(measurementDate.getName());
-                    measurement.setIssue(issue);
-                    measurement.setDataset(dataset);
+                        Measurement measurement = new Measurement();
+                        measurement.setMeasurementDate(measurementDateValue);
+                        measurement.setMeasurementDateName(measurementDate.getName());
+                        measurement.setIssue(issue);
+                        measurement.setDataset(dataset);
 
-                    FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
-                    doMeasurements(bean);
-                    saveMeasurement(bean);
- 
+                        FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
+                        doMeasurements(bean);
+                        saveMeasurement(bean);
+
+                        progressBar.step();
+
+                    }
                 }
             }
+
         }         
     }
 
