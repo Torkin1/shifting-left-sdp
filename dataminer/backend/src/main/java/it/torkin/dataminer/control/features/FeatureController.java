@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema.Column;
 
 import it.torkin.dataminer.config.MeasurementConfig;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
@@ -32,6 +33,8 @@ import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.features.Feature;
+import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
@@ -68,10 +71,9 @@ public class FeatureController implements IFeatureController{
     }
 
     private void saveMeasurement(FeatureMinerBean bean){
+        bean.getIssue().getMeasurements().removeIf(m -> m.getMeasurementDateName().equals(bean.getMeasurement().getMeasurementDateName()));
         bean.getIssue().getMeasurements().add(bean.getMeasurement());
-        // Measurement measurement = measurementDao.save(bean.getMeasurement());
         measurementDao.save(bean.getMeasurement());
-        // bean.getIssue().getMeasurements().removeIf(m -> m.getMeasurementDateName().equals(measurement.getMeasurementDateName()));
         issueDao.save(bean.getIssue());
     }
     
@@ -98,15 +100,21 @@ public class FeatureController implements IFeatureController{
                     Issue issue = issues.next();
                     Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
 
-                    
-                    Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
-                    if (measurement == null){
-                        measurement = new Measurement();
-                        measurement.setMeasurementDate(measurementDateValue);
-                        measurement.setMeasurementDateName(measurementDate.getName());
-                        measurement.setIssue(issue);
-                        measurement.setDataset(dataset);
-                    }
+                    // TODO: update already existing measurements instead of replacing it with a new one
+                    // Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
+                    // if (measurement == null){
+                    //     measurement = new Measurement();
+                    //     measurement.setMeasurementDate(measurementDateValue);
+                    //     measurement.setMeasurementDateName(measurementDate.getName());
+                    //     measurement.setIssue(issue);
+                    //     measurement.setDataset(dataset);
+                    // }
+
+                    Measurement measurement = new Measurement();
+                    measurement.setMeasurementDate(measurementDateValue);
+                    measurement.setMeasurementDateName(measurementDate.getName());
+                    measurement.setIssue(issue);
+                    measurement.setDataset(dataset);
 
                     FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
                     doMeasurements(bean);
@@ -124,7 +132,17 @@ public class FeatureController implements IFeatureController{
     @Override
     @Transactional
     public void printMeasurements() throws IOException{
-        Set<String> featureNames = getFeatureNames();
+        
+        if (measurementPrintExists()) return;
+        
+        // To create csv schema any issue measurement can be eligible
+        // to be a prototype for feature names
+        Set<String> featureNames = getFeatureNames(
+            measurementDao.findAllWithIssue()
+                .findFirst()
+                .get()
+                .getFeatures()
+        );
         List<Dataset> datasets = datasetDao.findAll();
         List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
         for (Dataset dataset : datasets) {
@@ -145,7 +163,7 @@ public class FeatureController implements IFeatureController{
                                 measurement.getFeatures().forEach(f -> {
                                     // if feature is numeric, normalize it
                                     if (f.getValue() instanceof Number){
-                                        features.put(f.getName(), new LogNormalizer(Math.E).apply((Number)f.getValue()));
+                                        features.put(f.getName(), new LogNormalizer(10.0).apply((Number)f.getValue()));
                                     } else {
                                         features.put(f.getName(), f.getValue());
                                     }
@@ -163,20 +181,24 @@ public class FeatureController implements IFeatureController{
         }
     }
     
-    private Set<String> getFeatureNames(){
+    private Set<String> getFeatureNames(Set<Feature<?>> prototype){
         Set<String> featureNames = new HashSet<>();
-        miners.forEach(miner -> featureNames.addAll(miner.getFeatureNames()));
+        prototype.forEach(f -> featureNames.add(f.getName()));
         return featureNames;
     }
 
     private CsvSchema createCsvSchema(Set<String> featureNames){
         CsvSchema.Builder schemaBuilder = new CsvSchema.Builder();
+        int i = 0;
         for (String featureName : featureNames){
-            schemaBuilder = schemaBuilder.addColumn(featureName);
+            if (!featureName.equals(IssueFeature.BUGGINESS.getName())){
+                schemaBuilder = schemaBuilder.addColumn(new Column(i, featureName));
+                i++;
+            }
         }
+        schemaBuilder = schemaBuilder.addColumn(new Column(i, IssueFeature.BUGGINESS.getName()));
         schemaBuilder = schemaBuilder.setUseHeader(true)
-            .setColumnSeparator(',')
-            ;
-        return schemaBuilder.build();
+            .setColumnSeparator(',');
+        return schemaBuilder.build().withHeader();
     }
 }

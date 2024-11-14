@@ -17,4 +17,7 @@ public interface MeasurementDao extends JpaRepository<Measurement, Long> {
     
     @Query("SELECT m FROM Measurement m")
     Stream<Measurement> findAllStreaming();
+
+    @Query("SELECT m FROM Measurement m WHERE m.issue IS NOT NULL ORDER BY m.measurementDate ASC")
+    Stream<Measurement> findAllWithIssue();
 }
