@@ -94,14 +94,18 @@ public class FeatureController implements IFeatureController{
         for (Dataset dataset : datasets) {
             for (MeasurementDate measurementDate : measurementDates) {
                 
+                log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
+                long measured = 0;
+
                 // collect processed issue
                 processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
                 issues = processedIssuesBean.getProcessedIssues().iterator();
-                try(ProgressBar progressBar = new ProgressBar("measuring issues from "+dataset.getName()+" at "+measurementDate.getName(), -1)){
                     while (issues.hasNext()) {
+                        if (measured > 0 && measured % 1000 == 0){
+                            log.info("measured {} issues", measured);
+                        }
                         Issue issue = issues.next();
-                        progressBar.setExtraMessage(issue.getKey()+ " of "+issue.getDetails().getFields().getProject().getKey());
                         Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
 
                         // TODO: update already existing measurements instead of replacing it with a new one
@@ -124,10 +128,11 @@ public class FeatureController implements IFeatureController{
                         doMeasurements(bean);
                         saveMeasurement(bean);
 
-                        progressBar.step();
+                        measured ++;
+
 
                     }
-                }
+                    log.info("measured {} issues", measured);
                 processedIssuesBean.getProcessedIssues().close();
             }
 

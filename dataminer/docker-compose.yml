@@ -55,5 +55,5 @@ services:
     expose:
       - 8080
     volumes:
-      - buggy-similarity_data:/buggy-similarity/data/
+      - ./TestRequirementSimilarityLaProvaV8/data:/buggy-similarity/data/
     
