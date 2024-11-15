@@ -4,14 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import me.tongfei.progressbar.ProgressBar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +38,7 @@ import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import me.tongfei.progressbar.ProgressBar;
 
 @Service
 @Slf4j
@@ -102,6 +101,7 @@ public class FeatureController implements IFeatureController{
                    issues.forEach( issue -> {
 
                         progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
+
                         Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
 
                         // TODO: update already existing measurements instead of replacing it with a new one
@@ -128,7 +128,6 @@ public class FeatureController implements IFeatureController{
 
 
                     });
-                    processedIssuesBean.getProcessedIssues().close();
                 }
 
             }
