@@ -3,7 +3,6 @@ version: '3.1'
 volumes:
   db_data:
   backend_data:
-  buggy-similarity_data:
 
 services:
     
