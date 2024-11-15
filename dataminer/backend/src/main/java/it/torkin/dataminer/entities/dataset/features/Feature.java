@@ -22,7 +22,16 @@ public abstract class Feature<T> {
     @GeneratedValue
     protected Long id;
     
+    /**
+     * Name of feature
+     */
     private String name;
+
+    /**
+     * A feature can present itself in different variants,
+     * according to measurement process, for example.
+     */
+    private String variant;
 
     protected Feature(String name) {
         this.name = name;
