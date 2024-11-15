@@ -7,6 +7,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -40,6 +41,8 @@ import it.torkin.dataminer.nlp.BuggyTicketsSimilarityMiningGrpc.BuggyTicketsSimi
 import it.torkin.dataminer.nlp.Request.NlpIssueBean;
 import it.torkin.dataminer.nlp.Request.NlpIssueRequest;
 import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityScores;
+import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityVariantsRequest;
+import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityVariantsResponse;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,6 +57,8 @@ public class NLPFeaturesMiner extends FeatureMiner{
     @Autowired private List<MeasurementDate> measurementDates;
 
     private BuggyTicketsSimilarityMiningBlockingStub buggySimilarityStub;
+
+    private Set<String> featureNames = new HashSet<>();
     
     private void serializeBean(JsonWriter writer, NlpIssueBean bean) throws IOException{
 
@@ -161,6 +166,12 @@ public class NLPFeaturesMiner extends FeatureMiner{
 
         Channel channel = ManagedChannelBuilder.forTarget(config.getBuggySimilarityGrpcTarget()).usePlaintext().build();
         buggySimilarityStub = BuggyTicketsSimilarityMiningGrpc.newBlockingStub(channel);
+
+        NlpIssueSimilarityVariantsResponse variantsResponse = 
+            buggySimilarityStub.getSimilarityVariants(NlpIssueSimilarityVariantsRequest.newBuilder().build());
+        featureNames.clear();
+        variantsResponse.getVariantList().forEach(
+            (variant) -> featureNames.add(IssueFeature.BUGGY_SIMILARITY.getName() + "_" + variant));
          
         // TODO: read beans from JSON and send them to NLP remote miners
         
@@ -177,7 +188,12 @@ public class NLPFeaturesMiner extends FeatureMiner{
 
         NlpIssueRequest request = NlpIssueRequest.newBuilder()
             .setDataset(bean.getDataset())
-            // TODO: use project key instead of name, but regenerate and send json file first
+            /**
+             * TODO: already generated json uses project names instead of keys.
+             *       As soon as the json sending to the remote miner
+             *       is implemented, this should be changed to use project key since
+             *       names are not guaranteed to be unique.
+             */
             .setProject(bean.getIssue().getDetails().getFields().getProject().getName())
             .setKey(bean.getIssue().getKey())
             .setMeasurementDateName(bean.getMeasurementDate().getName())
@@ -198,7 +214,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.BUGGY_SIMILARITY.getName());
+        return featureNames;
     }
 
 }

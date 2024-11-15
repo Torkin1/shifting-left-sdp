@@ -11,6 +11,8 @@ import it.torkin.dataminer.nlp.BuggyTicketsSimilarityMiningGrpc.BuggyTicketsSimi
 import it.torkin.dataminer.nlp.Request.NlpIssueBean;
 import it.torkin.dataminer.nlp.Request.NlpIssueRequest;
 import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityScores;
+import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityVariantsRequest;
+import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityVariantsResponse;
 import it.torkin.dataminer.nlp.Similarity.RegisterNlpIssueBeansResponse;
 
 public class BuggySimilarityService extends BuggyTicketsSimilarityMiningImplBase{
@@ -137,6 +139,17 @@ public class BuggySimilarityService extends BuggyTicketsSimilarityMiningImplBase
         throw Status.NOT_FOUND.withDescription("request has no correspondence in registered nlp beans: " + request.getDataset() + " " + request.getProject() + " " + request.getKey() ).asRuntimeException();
     }
 
+    @Override
+    public void getSimilarityVariants(NlpIssueSimilarityVariantsRequest request,
+            StreamObserver<NlpIssueSimilarityVariantsResponse> responseObserver) {
+        
+        NlpIssueSimilarityVariantsResponse response = NlpIssueSimilarityVariantsResponse.newBuilder()
+            .addAllVariant(BuggyRequirementSimilarity.getVariantNames())
+            .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+    
 
     
 }

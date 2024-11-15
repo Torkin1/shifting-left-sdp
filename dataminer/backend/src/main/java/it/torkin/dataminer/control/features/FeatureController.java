@@ -83,7 +83,10 @@ public class FeatureController implements IFeatureController{
     @Transactional
     public void mineFeatures(){
         
-        if (measurementPrintExists()) return;
+        if (measurementPrintExists()){
+            log.info("Measurement prints already exists, skipping mining");
+            return;
+        }
         
         List<Dataset> datasets = datasetDao.findAll();
         ProcessedIssuesBean processedIssuesBean;
@@ -105,20 +108,20 @@ public class FeatureController implements IFeatureController{
                         Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
 
                         // TODO: update already existing measurements instead of replacing it with a new one
-                        // Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
-                        // if (measurement == null){
-                        //     measurement = new Measurement();
-                        //     measurement.setMeasurementDate(measurementDateValue);
-                        //     measurement.setMeasurementDateName(measurementDate.getName());
-                        //     measurement.setIssue(issue);
-                        //     measurement.setDataset(dataset);
-                        // }
+                        Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
+                        if (measurement == null){
+                            measurement = new Measurement();
+                            measurement.setMeasurementDate(measurementDateValue);
+                            measurement.setMeasurementDateName(measurementDate.getName());
+                            measurement.setIssue(issue);
+                            measurement.setDataset(dataset);
+                        }
 
-                        Measurement measurement = new Measurement();
-                        measurement.setMeasurementDate(measurementDateValue);
-                        measurement.setMeasurementDateName(measurementDate.getName());
-                        measurement.setIssue(issue);
-                        measurement.setDataset(dataset);
+                        // Measurement measurement = new Measurement();
+                        // measurement.setMeasurementDate(measurementDateValue);
+                        // measurement.setMeasurementDateName(measurementDate.getName());
+                        // measurement.setIssue(issue);
+                        // measurement.setDataset(dataset);
 
                         FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
                         doMeasurements(bean);
@@ -143,7 +146,10 @@ public class FeatureController implements IFeatureController{
     @Transactional
     public void printMeasurements() throws IOException{
         
-        if (measurementPrintExists()) return;
+        if (measurementPrintExists()){
+            log.info("Measurement prints already exists, skipping print");
+            return;
+        }
         
         // To create csv schema any issue measurement can be eligible
         // to be a prototype for feature names

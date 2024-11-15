@@ -13,8 +13,12 @@ import java.util.stream.Collectors;
 public class BuggyRequirementSimilarity {
 
     public static final String JSON_FILE_PATH = "./data/requirements.json";
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    
+    public static final Set<String> METHODS = Set.of("TF-IDF_Cosine", "Jaccard", "EuclideanDistance");
+    public static final Set<String> FIELDS = Set.of("Title", "Text");
+    public static final Set<String> AGGREGATION = Set.of("MaxSimilarity", "AvgSimilarity");
 
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private static final Set<String> CUSTOM_STOP_WORDS = new HashSet<>(Arrays.asList(
             "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "he", "in", "is", "it", "its", "of", "on", "that", "the", "to", "was", "were", "will", "with",
             "about", "above", "across", "after", "again", "against", "all", "also", "am", "among", "amongst", "amount", "another", "any", "anyhow", "anyone", "anything", "anyway", "anywhere",
@@ -30,10 +34,25 @@ public class BuggyRequirementSimilarity {
             "whither", "who", "whoever", "whole", "whom", "whose", "why", "will", "with", "within", "without", "would", "yet", "you", "your", "yours", "yourself", "yourselves"
     ));
 
+    private static String buildVariantName(String method, String field, String aggregation) {
+        return method + "_" + field + "_" + aggregation;
+    }
+
+    public static List<String> getVariantNames(){
+        List<String> variantNames = new ArrayList<>(FIELDS.size() * METHODS.size() * AGGREGATION.size());
+        for (String field : FIELDS) {
+            for (String method : METHODS) {
+                for(String aggregation : AGGREGATION){
+                    variantNames.add(buildVariantName(method, field, aggregation));
+                }
+            }
+        }
+        return variantNames;
+    }
+
     public static void main(String[] args) {
         
         new File("./data").mkdir();
-        final String JSON_FILE_PATH = "./data/requirements.json";
         try {
             List<Requirement> requirements = loadRequirementsFromJSON(JSON_FILE_PATH);
             Set<String> projectDatasetCombinations = requirements.stream()
@@ -71,18 +90,16 @@ public class BuggyRequirementSimilarity {
             // Sort requirements by date
             projectRequirements.sort(Comparator.comparing(Requirement::getDate));
 
-            // Define similarity methods
-            String[] methods = {"TF-IDF_Cosine", "Jaccard", "EuclideanDistance"};
-
             // Initialize CSV for results
             String csvOutputFile = getOutputFileName(dataset, projectName);
             FileWriter csvWriter = new FileWriter(csvOutputFile, false);
             csvWriter.append("RequirementID,ProjectName,Buggy");
 
-            for (String field : new String[]{"Title", "Text"}) {
-                for (String method : methods) {
-                    csvWriter.append(",MaxSimilarity_").append(method).append("_").append(field);
-                    csvWriter.append(",AvgSimilarity_").append(method).append("_").append(field);
+            for (String field : FIELDS) {
+                for (String method : METHODS) {
+                    for(String aggregation : AGGREGATION){
+                        csvWriter.append(",").append(buildVariantName(method, field, aggregation));
+                    }
                 }
             }
             csvWriter.append("\n");
@@ -98,20 +115,20 @@ public class BuggyRequirementSimilarity {
                 csvWriter.append(currentReq.getId()).append(",").append(currentReq.getProjectName()).append(",").append(currentReq.isBuggy() ? "1.0" : "0.0");
 
                 if (buggyRequirements.isEmpty()) {
-                    for (int j = 0; j < methods.length * 2 * 2; j++) csvWriter.append(", ");
+                    for (int j = 0; j < METHODS.size() * 2 * 2; j++) csvWriter.append(", ");
                     csvWriter.append("\n");
                     continue;
                 }
 
-                for (String field : new String[]{"Title", "Text"}) {
+                for (String field : FIELDS) {
                     final String text1 = removeStopWords(getFieldText(currentReq, field));
 
                     if (text1.isEmpty()) {
-                        for (int j = 0; j < methods.length * 2; j++) csvWriter.append(", ");
+                        for (int j = 0; j < METHODS.size() * 2; j++) csvWriter.append(", ");
                         continue;
                     }
 
-                    for (String method : methods) {
+                    for (String method : METHODS) {
                         List<Double> similarities = buggyRequirements.stream()
                                 .map(prevReq -> calculateSimilarity(text1, removeStopWords(getFieldText(prevReq, field)), method))
                                 .collect(Collectors.toList());

@@ -15,10 +15,20 @@ message NlpIssueSimilarityScores{
     bool found = 3;
 }
 
+message NlpIssueSimilarityVariantsRequest{
+    
+}
+
+message NlpIssueSimilarityVariantsResponse{
+    repeated string variant = 1;
+}
+
 
 service BuggyTicketsSimilarityMining{
 
     rpc registerIssueBeans(stream NlpIssueBean) returns (RegisterNlpIssueBeansResponse) {}
 
     rpc getSimilarityScores(NlpIssueRequest) returns (NlpIssueSimilarityScores) {}
+
+    rpc getSimilarityVariants(NlpIssueSimilarityVariantsRequest) returns (NlpIssueSimilarityVariantsResponse) {}
 }
