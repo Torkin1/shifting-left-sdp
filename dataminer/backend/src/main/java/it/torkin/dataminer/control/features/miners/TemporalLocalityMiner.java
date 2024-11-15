@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
@@ -51,7 +53,7 @@ public class TemporalLocalityMiner extends FeatureMiner{
     @Override
     public void mine(FeatureMinerBean bean) {
         
-        double temperature = 0.0;
+        Double temperature = null;
 
         String dataset = bean.getDataset();
         String project = bean.getIssue().getDetails().getFields().getProject().getKey();
@@ -70,24 +72,27 @@ public class TemporalLocalityMiner extends FeatureMiner{
             ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(bean.getDataset(), bean.getMeasurementDate());
             datasetController.getProcessedIssues(processedIssuesBean);
 
-            long buggyCount = processedIssuesBean.getProcessedIssues()
-                // retain only issues of same project
-                .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
-                // retain only issues prior to the issue to be measured
-                .filter(i -> !issueController.isAfter(new IssueMeasurementDateBean(dataset, i, bean.getIssue(), bean.getMeasurementDate())))
-                // exclude issue to be measured
-                .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
-                // sort issues by measurement date from most to least recent
-                .sorted((i1, i2) -> - issueController.compareMeasurementDate(new IssueMeasurementDateBean(bean.getDataset(), i1, i2, bean.getMeasurementDate())))
-                // limit to issues in window
-                .limit(issuesInWindow)
-                // retain only buggy issues
-                .filter(i -> issueController.isBuggy(new IssueCommitBean(i, bean.getDataset())))
-                // count buggy issues in window
-                .count();
+            try(Stream<Issue> issues = processedIssuesBean.getProcessedIssues()){
+                long buggyCount = issues
+                    // retain only issues of same project
+                    .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
+                    // retain only issues prior to the issue to be measured
+                    .filter(i -> !issueController.isAfter(new IssueMeasurementDateBean(dataset, i, bean.getIssue(), bean.getMeasurementDate())))
+                    // exclude issue to be measured
+                    .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
+                    // sort issues by measurement date from most to least recent
+                    .sorted((i1, i2) -> - issueController.compareMeasurementDate(new IssueMeasurementDateBean(bean.getDataset(), i1, i2, bean.getMeasurementDate())))
+                    // limit to issues in window
+                    .limit(issuesInWindow)
+                    // retain only buggy issues
+                    .filter(i -> issueController.isBuggy(new IssueCommitBean(i, bean.getDataset())))
+                    // count buggy issues in window
+                    .count();
+
+                // calculate temperature as the percentage of buggy issues in window
+                temperature = SafeMath.calcPercentage(buggyCount, issuesInWindow);
+            }
             
-            // calculate temperature as the percentage of buggy issues in window
-            temperature = SafeMath.calcPercentage(buggyCount, issuesInWindow);
         }
         
         // store temperature in measurement

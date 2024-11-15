@@ -40,7 +40,6 @@ public class NLPFeaturesConfig {
      */
     private String nlpIssueBeans;
 
-    @NotBlank
     private String buggySimilarityGrpcTarget;
 
     

@@ -1,6 +1,7 @@
 package it.torkin.dataminer.control.features.miners;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
+import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.toolbox.time.TimeTools;
@@ -63,7 +65,8 @@ public class AssigneeANFICMiner extends FeatureMiner{
         ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(bean.getDataset(), bean.getMeasurementDate());
 
         processedDatasetController.getFilteredIssues(processedIssuesBean);
-        processedIssuesBean.getProcessedIssues()
+        try(Stream<Issue> issues =  processedIssuesBean.getProcessedIssues()){
+            issues
             // only pick issues with measurement date before or equal the measurement date of this issue
             .filter(i -> !bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDataset(), i)).after(bean.getMeasurement().getMeasurementDate()))
             // only pick issues of same dataset and project
@@ -82,6 +85,7 @@ public class AssigneeANFICMiner extends FeatureMiner{
                 }
                 issueCount.addIssue();
             });
+        }
             
         anfic = issueCount.buggyIssues / issueCount.issues;
         bean.getMeasurement().getFeatures().add(new DoubleFeature(IssueFeature.ANFIC.getName(), anfic));

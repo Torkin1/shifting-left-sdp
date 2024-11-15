@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -124,14 +125,16 @@ public class NLPFeaturesMiner extends FeatureMiner{
                     processedDatasetController.getFilteredIssues(processedIssuesBean);
 
                     // write summaries to JSON
-                    processedIssuesBean.getProcessedIssues().forEach((issue) -> {
-                        try {
-                            NlpIssueBean bean = prepareBean(issue, dataset, measurementDate);
-                            serializeBean(writer, bean);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+                    try(Stream<Issue> issues = processedIssuesBean.getProcessedIssues()){
+                        issues.forEach((issue) -> {
+                            try {
+                                NlpIssueBean bean = prepareBean(issue, dataset, measurementDate);
+                                serializeBean(writer, bean);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    }
                 }
             }
             writer.endArray();
@@ -142,6 +145,12 @@ public class NLPFeaturesMiner extends FeatureMiner{
     @Override
     @Transactional
     public void init() throws UnableToInitNLPFeaturesMinerException {
+        
+        // disable miner if remote is not available
+        if (config.getBuggySimilarityGrpcTarget() == null){
+            log.warn("no remote nlp target set, the following features will not be mined: {}", this.getFeatureNames());
+            return;
+        }
         
         try{
             File serializedIssueSummariesFile = new File(config.getNlpIssueBeans());
@@ -163,6 +172,8 @@ public class NLPFeaturesMiner extends FeatureMiner{
     @Override
     public void mine(FeatureMinerBean bean) {
         // mine features from NLP remote miners
+
+        if (config.getBuggySimilarityGrpcTarget() == null) return;
 
         NlpIssueRequest request = NlpIssueRequest.newBuilder()
             .setDataset(bean.getDataset())

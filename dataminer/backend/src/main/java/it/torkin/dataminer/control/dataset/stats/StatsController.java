@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import it.torkin.dataminer.control.issue.IssueCommitBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -121,13 +123,15 @@ public class StatsController implements IStatsController{
                 ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), new FirstCommitDate());
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
                 // we must first count each project's issues in order to trigger filters
-                processedIssuesBean.getProcessedIssues().forEach((issue) -> {
-                    String project = issue.getDetails().getFields().getProject().getKey();
-                    if(issueController.isBuggy(new IssueCommitBean(issue, dataset.getName()))){
-                        buggyIssuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
-                    }
-                    issuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
-                });
+                try(Stream<Issue> issues = processedIssuesBean.getProcessedIssues()){
+                    processedIssuesBean.getProcessedIssues().forEach((issue) -> {
+                        String project = issue.getDetails().getFields().getProject().getKey();
+                        if(issueController.isBuggy(new IssueCommitBean(issue, dataset.getName()))){
+                            buggyIssuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
+                        }
+                        issuesByProject.compute(project, (k, v) -> v == null ? 1 : v + 1);
+                    });
+                }
                 // now we have filtered out issue counts by project and can proceed
                 // to write stats to csv
                 issuesByProject.forEach((project, count) -> {

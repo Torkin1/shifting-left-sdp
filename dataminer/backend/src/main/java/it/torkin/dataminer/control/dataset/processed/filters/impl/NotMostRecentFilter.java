@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
+import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 
@@ -77,19 +79,21 @@ public class NotMostRecentFilter extends IssueFilter{
                         
                         Map<String, Set<String>> snoringIssuesByMeasurementDate = 
                             snoringIssuesByMeasurementDateByProject.get(project.getKey());
-                        Set<String> snoringIssueKeys = issueDao.findAllByDatasetAndProject(dataset.getName(), project.getKey())
-                            // sort issues coming from this dataset and project by measurement date from most to least recent
-                            .sorted((i1, i2) -> - issueController.compareMeasurementDate(
-                                new IssueMeasurementDateBean(dataset.getName(), i1, i2, measurementDate)))
-                            // limit searching to the snoring percentage
-                            .limit(snoringIssuesCount)
-                            // collect issue keys in corresponding set
-                            .collect(
-                                HashSet::new,
-                                (s, i) -> s.add(i.getKey()),
-                                HashSet::addAll
-                            );
-                        snoringIssuesByMeasurementDate.put(measurementDate.getName(), snoringIssueKeys);      
+                        try(Stream<Issue> issues = issueDao.findAllByDatasetAndProject(dataset.getName(), project.getKey())){
+                            Set<String> snoringIssueKeys = issues
+                                // sort issues coming from this dataset and project by measurement date from most to least recent
+                                .sorted((i1, i2) -> - issueController.compareMeasurementDate(
+                                    new IssueMeasurementDateBean(dataset.getName(), i1, i2, measurementDate)))
+                                // limit searching to the snoring percentage
+                                .limit(snoringIssuesCount)
+                                // collect issue keys in corresponding set
+                                .collect(
+                                    HashSet::new,
+                                    (s, i) -> s.add(i.getKey()),
+                                    HashSet::addAll
+                                );
+                            snoringIssuesByMeasurementDate.put(measurementDate.getName(), snoringIssueKeys);      
+                        }
                     }
                 }
             }
