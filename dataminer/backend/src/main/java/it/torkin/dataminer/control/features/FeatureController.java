@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import me.tongfei.progressbar.ProgressBar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -87,24 +88,20 @@ public class FeatureController implements IFeatureController{
         
         List<Dataset> datasets = datasetDao.findAll();
         ProcessedIssuesBean processedIssuesBean;
-        Iterator<Issue> issues;
         List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
 
         for (Dataset dataset : datasets) {
             for (MeasurementDate measurementDate : measurementDates) {
                 
                 log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
-                long measured = 0;
 
                 // collect processed issue
                 processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
-                issues = processedIssuesBean.getProcessedIssues().iterator();
-                    while (issues.hasNext()) {
-                        if (measured > 0 && measured % 1000 == 0){
-                            log.info("measured {} issues", measured);
-                        }
-                        Issue issue = issues.next();
+                try( Stream<Issue> issues = processedIssuesBean.getProcessedIssues(); ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
+                   issues.forEach( issue -> {
+
+                        progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
                         Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
 
                         // TODO: update already existing measurements instead of replacing it with a new one
@@ -127,12 +124,13 @@ public class FeatureController implements IFeatureController{
                         doMeasurements(bean);
                         saveMeasurement(bean);
 
-                        measured ++;
+                        progressBar.step();
 
 
-                    }
-                    log.info("measured {} issues", measured);
-                processedIssuesBean.getProcessedIssues().close();
+                    });
+                    processedIssuesBean.getProcessedIssues().close();
+                }
+
             }
 
         }         

@@ -15,4 +15,4 @@ RUN ./mvnw dependency:resolve
 COPY src src
 RUN ./mvnw package -DskipTests
 
-ENTRYPOINT ["java","-jar", "./target/dataminer-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java","-jar", "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=./data/heap.hprof", "./target/dataminer-0.0.1-SNAPSHOT.jar"]
