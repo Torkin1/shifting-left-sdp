@@ -100,7 +100,7 @@ public class FeatureController implements IFeatureController{
                 // collect processed issue
                 processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
-                try( Stream<Issue> issues = processedIssuesBean.getProcessedIssues(); ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
+                try( Stream<Issue> issues = processedIssuesBean.getProcessedIssues(); ProgressBar progressBar = new ProgressBar(String.format("Measuring issues according to %s at %s", dataset.getName(), measurementDate.getName()), -1)){
                    issues.forEach( issue -> {
 
                         progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
