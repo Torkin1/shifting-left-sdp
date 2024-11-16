@@ -37,6 +37,7 @@ import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
@@ -79,6 +80,15 @@ public class FeatureController implements IFeatureController{
         issueDao.save(bean.getIssue());
     }
     
+    @Data
+    private class IssueCount{
+        private Long count = 0L;
+
+        public void add(){
+            count++;
+        }
+    }
+    
     @Override
     @Transactional
     public void mineFeatures(){
@@ -100,8 +110,11 @@ public class FeatureController implements IFeatureController{
                 // collect processed issue
                 processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
-                try( Stream<Issue> issues = processedIssuesBean.getProcessedIssues(); ProgressBar progressBar = new ProgressBar(String.format("Measuring issues according to %s at %s", dataset.getName(), measurementDate.getName()), -1)){
-                   issues.forEach( issue -> {
+                try( Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
+                    ProgressBar progressBar = new ProgressBar(String.format("Measuring issues according to %s at %s", dataset.getName(), measurementDate.getName()), -1)){
+                   
+                    IssueCount issueCount = new IssueCount();
+                    issues.forEach( issue -> {
 
                         progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
 
@@ -128,9 +141,12 @@ public class FeatureController implements IFeatureController{
                         saveMeasurement(bean);
 
                         progressBar.step();
+                        issueCount.add();
 
 
                     });
+                    
+                    log.info("measured {} issues", issueCount.getCount());
                 }
 
             }
