@@ -147,7 +147,6 @@ public class MeasurementTest {
         
         featureController.initMiners();
         featureController.mineFeatures();
-        featureController.printMeasurements();  
     }
 
 }
