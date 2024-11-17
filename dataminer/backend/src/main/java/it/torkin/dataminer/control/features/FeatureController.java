@@ -159,12 +159,13 @@ public class FeatureController implements IFeatureController{
                 }
 
                 // print measurements for the last project
-                try{
-                    printMeasurements(dataset, lastProjectHolder.getProject(), measurementDate);
-                } catch (IOException e){
-                    log.error("Cannot print measurements for {} at {}", dataset.getName(), measurementDate.getName(), e);
+                if (lastProjectHolder.getProject() != null){
+                    try{
+                        printMeasurements(dataset, lastProjectHolder.getProject(), measurementDate);
+                    } catch (IOException e){
+                        log.error("Cannot print measurements for {} at {}", dataset.getName(), measurementDate.getName(), e);
+                    }
                 }
-
             }
 
         }         
