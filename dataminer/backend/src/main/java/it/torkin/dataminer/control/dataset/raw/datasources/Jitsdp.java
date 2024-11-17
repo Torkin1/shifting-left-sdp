@@ -12,6 +12,7 @@ import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.Repository;
 import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.dataset.features.StringFeature;
@@ -75,7 +76,8 @@ public class Jitsdp implements Datasource{
         Measurement measurement = new Measurement();
         BooleanReader booleanReader = new BooleanReader("True", "False");
         
-        commit.setRepository(toRepo(StringTools.stripFilenameExtension(datasourceFiles.peek().getFile().getName())));
+        String reponame = toRepo(StringTools.stripFilenameExtension(datasourceFiles.peek().getFile().getName()));
+        commit.setRepository(new Repository(reponame, reponame.split("/")[1], reponame.split("/")[0]));
 
         record = datasourceFiles.peek().getRecords().next();
         record.forEach((k, v) -> {

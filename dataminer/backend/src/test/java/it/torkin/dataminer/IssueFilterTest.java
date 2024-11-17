@@ -233,7 +233,7 @@ public class IssueFilterTest {
              .forEach(issue -> {
                 for(Commit commit : issue.getCommits()){
                     if (commit.getDataset().getName().equals(dataset.getName())){
-                        assertTrue(buggyLinkagesByDataset.get(dataset.getName()).getLinkageByRepository().get(commit.getRepository()) >= buggyLinkages.get(selectedIndex));
+                        assertTrue(buggyLinkagesByDataset.get(dataset.getName()).getLinkageByRepository().get(commit.getRepository().getId()) >= buggyLinkages.get(selectedIndex));
                     }
                 } 
              });

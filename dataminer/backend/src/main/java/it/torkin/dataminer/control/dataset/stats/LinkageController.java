@@ -43,10 +43,10 @@ public class LinkageController implements ILinkageController {
         for (String project : projects) {
 
             if(buggyOnly){
-                linkedCount = SafeMath.nullAsZero(commitDao.countByDatasetNameAndRepositoryAndBuggy(dataset.getName(), project, true));
+                linkedCount = SafeMath.nullAsZero(commitDao.countByDatasetNameAndRepositoryIdAndBuggy(dataset.getName(), project, true));
                 count = SafeMath.nullAsZero(dataset.getBuggyUnlinkedByRepository().get(project));
             } else {
-                linkedCount =  SafeMath.nullAsZero(commitDao.countByDatasetNameAndRepository(dataset.getName(), project));
+                linkedCount =  SafeMath.nullAsZero(commitDao.countByDatasetNameAndRepositoryId(dataset.getName(), project));
                 count =  SafeMath.nullAsZero(dataset.getUnlinkedByRepository().get(project));
             }
             count += linkedCount;

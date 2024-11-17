@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"hash", "repository", "dataset_id"})
+    @UniqueConstraint(columnNames = {"hash", "repository_id", "dataset_id"})
 })
 public class Commit {
     
@@ -33,8 +33,6 @@ public class Commit {
     
     private boolean buggy;
     private Timestamp timestamp;
-
-    private String repository;
 
     @ManyToMany(fetch = FetchType.EAGER)
     private List<Issue> issues = new ArrayList<>();
@@ -48,5 +46,13 @@ public class Commit {
      */
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "commit")
     private Measurement measurement;
+
+    @ManyToOne(optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private Repository repository;
+
+    @Override
+    public String toString() {
+        return "Commit [id=" + id + ", hash=" + hash + ", buggy=" + buggy + ", timestamp=" + timestamp + "repository="+repository+ "]";
+    }
 
 }

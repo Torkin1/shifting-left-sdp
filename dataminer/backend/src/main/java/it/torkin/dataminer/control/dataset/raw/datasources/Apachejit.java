@@ -8,6 +8,7 @@ import it.torkin.dataminer.config.DatasourceConfig;
 import it.torkin.dataminer.control.dataset.raw.UnableToInitDatasourceException;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.Repository;
 import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
@@ -49,7 +50,7 @@ public class Apachejit implements Datasource{
                     commit.setBuggy(booleanReader.read(v));
                     break;
                 case "project":
-                    commit.setRepository(v);
+                    commit.setRepository(new Repository(v, v.split("/")[1], v.split("/")[0]));
                     break;
                 case "fix":
                     measurement.getFeatures().add(new BooleanFeature(k, booleanReader.read(v)));

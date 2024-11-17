@@ -23,6 +23,7 @@ import it.torkin.dataminer.control.dataset.raw.datasources.Apachejit;
 import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
+import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +50,8 @@ public class DatasetControllerTest {
         List<Dataset> datasets = datasetDao.findAll();
         log.info("Datasets : {}", datasets);
         log.info("loaded {} commits", commitDao.count());
+        Commit commitSample = commitDao.findAll().stream().findAny().get();
+        log.info("commit sample: {}", commitSample);
 
         assertNotEquals(0, datasets.size());
     }

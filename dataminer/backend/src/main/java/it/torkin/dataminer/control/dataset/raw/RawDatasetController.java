@@ -26,9 +26,11 @@ import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
+import it.torkin.dataminer.dao.local.RepositoryDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.dataset.Repository;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.transaction.Transactional;
@@ -46,6 +48,7 @@ public class RawDatasetController implements IRawDatasetController{
     @Autowired private DatasetDao datasetDao;
     @Autowired private CommitDao commitDao;
     @Autowired private IssueDao issueDao;
+    @Autowired private RepositoryDao repositoryDao;
 
     @Autowired private EntityMerger entityMerger;
     @Autowired private IWorkersController workers;
@@ -148,6 +151,10 @@ public class RawDatasetController implements IRawDatasetController{
         log.debug("saving commit batch");
         saveIssues();
         
+        for (Commit commit : commits){
+            Repository repository = commit.getRepository();
+            commit.setRepository(repositoryDao.save(repository));
+        }
         commitDao.saveAll(commits);
         log.debug("Commit batch saved");
         commits.clear();
@@ -181,16 +188,16 @@ public class RawDatasetController implements IRawDatasetController{
         if (cause instanceof UnableToFetchIssueException){
             try {
                 if (log.isDebugEnabled()){
-                    log.debug("No linkable issue found in commit comment: {}", getGitdaoByProject(commit.getRepository()).getCommitMessage(commit.getHash()));
+                    log.debug("No linkable issue found in commit comment: {}", getGitdaoByProject(commit.getRepository().getId()).getCommitMessage(commit.getHash()));
                 }
             } catch (Exception e){
                 e.printStackTrace();
             }
         }
-        dataset.getUnlinkedByRepository().compute(commit.getRepository(),
+        dataset.getUnlinkedByRepository().compute(commit.getRepository().getId(),
             (project, count) -> count == null ? 1 : count + 1);
         if (commit.isBuggy()){
-            dataset.getBuggyUnlinkedByRepository().compute(commit.getRepository(),
+            dataset.getBuggyUnlinkedByRepository().compute(commit.getRepository().getId(),
                 (project, count) -> count == null ? 1 : count + 1);
         }
     }
@@ -209,7 +216,7 @@ public class RawDatasetController implements IRawDatasetController{
 
         GitDao gitDao;
 
-        gitDao = getGitdaoByProject(commit.getRepository());
+        gitDao = getGitdaoByProject(commit.getRepository().getId());
         gitDao.getCommitDetails(commit);
         commit.getMeasurement().setMeasurementDate(commit.getTimestamp());
         commit.getMeasurement().setMeasurementDateName("CommitDate");
@@ -253,7 +260,7 @@ public class RawDatasetController implements IRawDatasetController{
         List<String> issueKeys;
 
         try {
-            gitDao = getGitdaoByProject(commit.getRepository());
+            gitDao = getGitdaoByProject(commit.getRepository().getId());
             issueKeys = gitDao.getLinkedIssueKeysByCommit(commit.getHash());
             for (String issueKey : issueKeys){
                 try{
