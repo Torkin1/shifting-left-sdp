@@ -115,7 +115,7 @@ public class FeatureController implements IFeatureController{
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
                 LastProjectHolder lastProjectHolder = new LastProjectHolder();
                 try( Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
-                    ProgressBar progressBar = new ProgressBar(String.format("Measuring issues according to %s at %s", dataset.getName(), measurementDate.getName()), -1)){
+                    ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
                     
                     IssueCount issueCount = new IssueCount();
                     issues.forEach( issue -> {
