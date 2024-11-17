@@ -74,10 +74,5 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         log.info("Features miners initialized");
         featureController.mineFeatures();
         log.info("Features mined");
-        featureController.printMeasurements();
-        log.info("Features printed");
-
-        // TODO: mine features
-
     }
 }

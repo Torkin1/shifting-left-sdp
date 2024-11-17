@@ -143,6 +143,12 @@ public class FeatureController implements IFeatureController{
                     log.info("measured {} issues", issueCount.getCount());
                 }
 
+                try{
+                    printMeasurements(dataset, measurementDate);
+                } catch (IOException e){
+                    log.error("Cannot print measurements for {} at {}", dataset.getName(), measurementDate.getName(), e);
+                }
+
             }
 
         }         
@@ -152,9 +158,7 @@ public class FeatureController implements IFeatureController{
         return new File(measurementConfig.getDir()).list().length > 0;
     }
     
-    @Override
-    @Transactional
-    public void printMeasurements() throws IOException{
+    private void printMeasurements(Dataset dataset, MeasurementDate measurementDate) throws IOException{
         
         if (measurementPrintExists()){
             log.info("Measurement prints already exists, skipping print");
@@ -169,42 +173,36 @@ public class FeatureController implements IFeatureController{
                 .get()
                 .getFeatures()
         );
-        List<Dataset> datasets = datasetDao.findAll();
-        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
-        for (Dataset dataset : datasets) {
-            for (MeasurementDate measurementDate : measurementDates) {
-                Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
-                for (Project project : projects) {
-                    Long measurementCount = measurementDao.countByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName());
-                    if (measurementCount > 0){
-                        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName()));
-                        try (Stream<Measurement> measurements = measurementDao.findAllByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName())){
-                            CsvSchema schema = createCsvSchema(featureNames);
-                            CsvMapper mapper = new CsvMapper();
-                            ObjectWriter writer = mapper.writer(schema);
-                            try (SequenceWriter sequenceWriter = writer.writeValues(outputFile)){
-                                measurements.forEach(measurement -> {
-                                    Map<String, Object> features = new LinkedHashMap<>();
-                                    measurement.getFeatures().forEach(f -> {
-                                        // if feature is numeric, normalize it
-                                        if (f.getValue() instanceof Number){
-                                            features.put(f.getName(), new LogNormalizer(10.0).apply((Number)f.getValue()));
-                                        } else {
-                                            features.put(f.getName(), f.getValue());
-                                        }
-                                    });
-                                    try {
-                                        sequenceWriter.write(features);
-                                    } catch (IOException e) {
-                                        throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
-                                    }
-                                });
-                            } 
-                        }
-                    }
+        Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
+        for (Project project : projects) {
+            Long measurementCount = measurementDao.countByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName());
+            if (measurementCount > 0){
+                File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName()));
+                try (Stream<Measurement> measurements = measurementDao.findAllByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName())){
+                    CsvSchema schema = createCsvSchema(featureNames);
+                    CsvMapper mapper = new CsvMapper();
+                    ObjectWriter writer = mapper.writer(schema);
+                    try (SequenceWriter sequenceWriter = writer.writeValues(outputFile)){
+                        measurements.forEach(measurement -> {
+                            Map<String, Object> features = new LinkedHashMap<>();
+                            measurement.getFeatures().forEach(f -> {
+                                // if feature is numeric, normalize it
+                                if (f.getValue() instanceof Number){
+                                    features.put(f.getName(), new LogNormalizer(10.0).apply((Number)f.getValue()));
+                                } else {
+                                    features.put(f.getName(), f.getValue());
+                                }
+                            });
+                            try {
+                                sequenceWriter.write(features);
+                            } catch (IOException e) {
+                                throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
+                            }
+                        });
+                    } 
                 }
             }
-        }
+        } 
     }
     
     private Set<String> getFeatureNames(Set<Feature<?>> prototype){
