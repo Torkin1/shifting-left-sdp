@@ -2,20 +2,29 @@ package it.torkin.dataminer.dao.git;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.AndRevFilter;
+import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
+import org.eclipse.jgit.revwalk.filter.MessageRevFilter;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 import it.torkin.dataminer.config.GitConfig;
@@ -23,11 +32,63 @@ import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.toolbox.regex.NoMatchFoundException;
 import it.torkin.dataminer.toolbox.regex.Regex;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
 @Slf4j
 public class GitDao implements AutoCloseable{
+
+    @RequiredArgsConstructor
+    private static class ProgressBarMonitor implements ProgressMonitor{
+        private ProgressBar progress;
+        private ProgressBar subtaskProgress;
+
+        private final String taskName;
+        
+        @Override
+        public void start(int totalTasks) {
+            progress = new ProgressBar(taskName, totalTasks);
+        }
+
+        @Override
+        public void beginTask(String title, int totalWork) {
+            if(subtaskProgress != null) subtaskProgress.close();
+            subtaskProgress = new ProgressBar(title, totalWork);
+        }
+
+        @Override
+        public void update(int completed) {
+            if (subtaskProgress != null)
+            {
+                subtaskProgress.stepBy(completed);
+                if (subtaskProgress.getMax() == subtaskProgress.getCurrent()){
+                    subtaskProgress.close();
+                }
+            }
+        }
+
+        @Override
+        public void endTask() {
+            subtaskProgress.close();
+            if (progress != null){
+                progress.step();
+                if(progress.getMax() == progress.getCurrent()){
+                    progress.close();
+                }
+            }
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public void showDuration(boolean enabled) {
+            // not implemented
+        }
+    }
 
     private String remoteUrl;
     private File localDir;
@@ -36,6 +97,7 @@ public class GitDao implements AutoCloseable{
     private final String projectName;
 
     private Repository repository;
+    private String defaultBranch;
         
     public GitDao(GitConfig config, String projectName) throws UnableToInitRepoException{
                 
@@ -43,7 +105,20 @@ public class GitDao implements AutoCloseable{
         this.localDir = new File(forgeLocal(config.getReposDir(), projectName));
         this.issueKeyRegexp = config.getLinkedIssueKeyRegexp();
         this.projectName = projectName;
-        initRepo();
+        initRepo(config);
+    }
+
+    private String findDefaultBranch(List<String> candidates) throws UnableToDetectMasterException {
+        try {
+            for (String candidate : candidates){
+                if (repository.resolve(candidate) != null){
+                    return candidate;
+                }
+            }
+            throw new UnableToDetectMasterException(String.format("no master candidate branch found in repository %s", projectName));
+        } catch (IOException | RevisionSyntaxException e) {
+            throw new UnableToDetectMasterException(e);
+        }
     }
 
     private String forgeRemote(String hostname, String projectName){
@@ -54,7 +129,7 @@ public class GitDao implements AutoCloseable{
         return String.format("%s/%s", localPath, projectName);
     }
     
-    private void initRepo() throws UnableToInitRepoException{
+    private void initRepo(GitConfig config) throws UnableToInitRepoException{
         
         FileRepositoryBuilder repoBuilder = new FileRepositoryBuilder();
         
@@ -66,6 +141,8 @@ public class GitDao implements AutoCloseable{
              .setWorkTree(localDir)
              .setMustExist(true)
              .build();
+            
+            this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
 
         } catch (Exception e) {
             
@@ -110,53 +187,7 @@ public class GitDao implements AutoCloseable{
             Git git = Git.cloneRepository()
              .setURI(remoteUrl)
              .setDirectory(localDir)
-             .setProgressMonitor(new ProgressMonitor() {
-
-                private ProgressBar progress;
-                private ProgressBar subtaskProgress;
-                
-                @Override
-                public void start(int totalTasks) {
-                    progress = new ProgressBar(String.format("cloning repository %s", projectName), totalTasks);
-                }
-
-                @Override
-                public void beginTask(String title, int totalWork) {
-                    if(subtaskProgress != null) subtaskProgress.close();
-                    subtaskProgress = new ProgressBar(title, totalWork);
-                }
-
-                @Override
-                public void update(int completed) {
-                    if (subtaskProgress != null)
-                    {
-                        subtaskProgress.stepBy(completed);
-                        if (subtaskProgress.getMax() == subtaskProgress.getCurrent()){
-                            subtaskProgress.close();
-                        }
-                    }
-                }
-
-                @Override
-                public void endTask() {
-                    subtaskProgress.close();
-                    progress.step();
-                    if(progress.getMax() == progress.getCurrent()){
-                        progress.close();
-                    }
-                }
-
-                @Override
-                public boolean isCancelled() {
-                    return false;
-                }
-
-                @Override
-                public void showDuration(boolean enabled) {
-                    // not implemented
-                }
-                
-             })
+             .setProgressMonitor(new ProgressBarMonitor(String.format("cloning repository %s", projectName)))
              .call();
             git.close();
         }
@@ -243,6 +274,110 @@ public class GitDao implements AutoCloseable{
     @Override
     public void close() throws Exception {
         repository.close();
+    }
+
+    /**
+     * Checkouts local clone to a specific commit
+     * @param commit
+     * @throws UnableToCheckoutException
+     */
+    public void checkout(Commit commit) throws UnableToCheckoutException{
+        try (Git git = new Git(this.repository)){
+            checkout(commit.getHash());   
+        }
+    }
+        
+    /**checkouts local clone trying "master" and "main" branches
+     * @throws UnableToCheckoutException
+     * */
+    public void checkout() throws UnableToCheckoutException{
+        try (Git git = new Git(this.repository)){
+            checkout(defaultBranch);         
+        }
+    }
+
+    /**
+     * Checkouts local clone to a specific branch
+     * !NOTE: this leaves the repository in a detached HEAD state. This should not be a problem
+     * unless you are going to make changes to the code. 
+     * https://stackoverflow.com/questions/10228760/how-do-i-fix-a-git-detached-head#answer-58142219
+     * @param name can be the branch name or the sha-1 hash of the commit
+     */
+    public void checkout(String name) throws UnableToCheckoutException{
+        try (Git git = new Git(this.repository)){
+            git.checkout()
+                .setName(name)
+                .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
+                .call();
+            
+        } catch (GitAPIException e) {
+            
+            throw new UnableToCheckoutException(e);
+        } 
+    }
+
+    /**
+     * Checkouts local clone to the most recent commit not after {@code date}
+     */
+    public void checkout(Date date) throws UnableToCheckoutException{
+        try {
+            RevCommit commit = getLatestCommit(date, null);
+            if (commit != null){
+                checkout(commit.getName());
+            } else {
+                throw new UnableToCheckoutException(String.format("no commit found before %s in repository %s", date, projectName));
+            }
+        } catch (UnableToGetCommitsException e) {
+            throw new UnableToCheckoutException(e);
+        }
+    }
+
+    /**
+     * gets most recent commit applied not after {@code beforeDate}  containing optional {@code commentContent} string in its comment
+     * Returns null if no such commit is found 
+     * 
+     * @throws UnableToGetCommitsException
+     */
+    private RevCommit getLatestCommit(Date beforeDate, String commentContent) throws UnableToGetCommitsException {
+
+        try (Git git = new Git(repository)) {
+
+            LogCommand logCommand = git.log();
+            RevFilter filter;
+            ObjectId head = repository.resolve(defaultBranch);
+
+            // set filter on commit time and comment content
+            filter = CommitTimeRevFilter.before(beforeDate);
+            if (commentContent != null){
+                filter = AndRevFilter.create(filter, MessageRevFilter.create(commentContent));
+            }
+            logCommand.setRevFilter(filter);
+            logCommand.setMaxCount(1);
+            logCommand.add(head);
+
+            // extracts latest commit which matches filter
+            Iterator<RevCommit> commits = logCommand.call().iterator();
+            if (commits.hasNext()){
+                return commits.next();
+            } else {
+                return null;
+            }
+
+        } catch (GitAPIException | RevisionSyntaxException | IOException e) {
+
+            throw new UnableToGetCommitsException(e);
+        }
+    }
+
+    /**
+     * gets most recent commit hash applied strictly before {@code beforeDate}  containing optional {@code commentContent} string in its comment
+     * Returns null if no such commit is found 
+     * 
+     * @throws UnableToGetCommitsException
+     */
+    public String getLatestCommitHash(Date beforeDate, String commentContent) throws UnableToGetCommitsException{
+        RevCommit commit = getLatestCommit(beforeDate, commentContent);
+        return commit == null ? null : commit.getName();
     }
     
 }

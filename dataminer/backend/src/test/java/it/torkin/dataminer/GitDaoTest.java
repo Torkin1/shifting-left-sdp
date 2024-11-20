@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Date;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,6 +22,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.git.UnableToInitRepoException;
+import it.torkin.dataminer.entities.dataset.Commit;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
@@ -79,6 +82,34 @@ public class GitDaoTest {
             actual = gitDao.getLinkedIssueKeysByCommit(commitMultipleIssuesHash).size();
             assertEquals(expected, actual);
 
+        }
+    }
+
+    @Test
+    public void testCheckout() throws UnableToInitRepoException, Exception{
+
+        Commit commit = new Commit();
+        commit.setHash("d06ae18329eeef15c2e982aa0905832a09bd2508");
+
+        try (GitDao gitDao = new GitDao(gitConfig, projectName)){
+            
+            File reposdir = new File(gitConfig.getReposDir()+"/"+projectName);
+            File[] repos;
+
+            gitDao.checkout();
+            repos = reposdir.listFiles();
+            // when counting files, don't forget the .git folder
+            assertEquals(3, repos.length);
+            
+            gitDao.checkout(commit);
+            repos = reposdir.listFiles();
+            assertEquals(2, repos.length);
+            
+            Date date = Date.from(Instant.now());
+            gitDao.checkout(date);
+            repos = reposdir.listFiles();
+            assertEquals(3, repos.length);
+            
         }
     }
 }
