@@ -108,16 +108,16 @@ public class GitDao implements AutoCloseable{
         initRepo(config);
     }
 
-    private String findDefaultBranch(List<String> candidates) throws UnableToDetectMasterException {
+    private String findDefaultBranch(List<String> candidates) throws UnableToDetectDefaultBranchException {
         try {
             for (String candidate : candidates){
                 if (repository.resolve(candidate) != null){
                     return candidate;
                 }
             }
-            throw new UnableToDetectMasterException(String.format("no master candidate branch found in repository %s", projectName));
+            throw new UnableToDetectDefaultBranchException(String.format("no master candidate branch found in repository %s", projectName));
         } catch (IOException | RevisionSyntaxException e) {
-            throw new UnableToDetectMasterException(e);
+            throw new UnableToDetectDefaultBranchException(e);
         }
     }
 
