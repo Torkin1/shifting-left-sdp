@@ -24,6 +24,9 @@ services:
 
       - GRPC_HOSTNAME_BUGGY_SIMILARITY=buggy-similarity
       - GRPC_PORT_BUGGY_SIMILARITY=8080
+      
+      - GRPC_HOSTNAME_PROJECT_CODE_QUALITY=project-code-quality
+      - GRPC_PORT_PROJECT_CODE_QUALITY=8080
     volumes:
       - backend_data:/backend/data/
     
@@ -42,7 +45,7 @@ services:
       
       PGDATA: /var/lib/postgresql/data
   
-  # Buggy simmilarity miner
+  # Remote miners
   buggy-similarity:
     build:
       context: ./TestRequirementSimilarityLaProvaV8
@@ -55,4 +58,17 @@ services:
       - 8080
     volumes:
       - ./TestRequirementSimilarityLaProvaV8/data:/buggy-similarity/data/
+
+  project-code-quality:
+    build:
+      context: ./codesmells
+      additional_contexts:
+        proto: ./proto
+      dockerfile: src/main/resources/Dockerfile.codesmells
+    environment:
+      - GRPC_PORT=8080
+    expose:
+      - 8080
+    volumes:
+      - ./codesmells/data:/codesmells/data/
     

@@ -11,6 +11,7 @@ public enum IssueFeature {
     ANFIC("Assignee ANFIC"),
     TEMPORAL_LOCALITY("Temporal locality"),
     BUGGINESS("Bugginess"),
+    PROJECT_CODE_QUALITY("Project code quality"),
     ;
 
     private final String name;

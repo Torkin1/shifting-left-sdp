@@ -1,16 +1,13 @@
-package it.torkin.dataminer.dao.git;
+package it.torkin.codesmells.git;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
@@ -27,10 +24,6 @@ import org.eclipse.jgit.revwalk.filter.MessageRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
-import it.torkin.dataminer.config.GitConfig;
-import it.torkin.dataminer.entities.dataset.Commit;
-import it.torkin.dataminer.toolbox.regex.NoMatchFoundException;
-import it.torkin.dataminer.toolbox.regex.Regex;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -92,7 +85,6 @@ public class GitDao implements AutoCloseable{
 
     private String remoteUrl;
     private File localDir;
-    private String issueKeyRegexp;
     @Getter
     private final String projectName;
 
@@ -103,7 +95,6 @@ public class GitDao implements AutoCloseable{
                 
         this.remoteUrl = forgeRemote(config.getHostname(), projectName);
         this.localDir = new File(forgeLocal(config.getReposDir(), projectName));
-        this.issueKeyRegexp = config.getLinkedIssueKeyRegexp();
         this.projectName = projectName;
         initRepo(config);
     }
@@ -198,60 +189,6 @@ public class GitDao implements AutoCloseable{
         
     }
 
-    /** Gets linked issue key from commit message
-     * @throws IssueNotFoundException 
-     * @throws UnableToGetLinkedIssueKeyException */
-    public List<String> getLinkedIssueKeysByCommit(String hash) throws UnableToGetLinkedIssueKeyException {
-        
-        List<String> keys;;
-        String message;
-        RevCommit commit;
-        
-        try {
-            commit = getCommit(hash);
-            message = commit.getFullMessage();
-            keys = extractIssueKeys(message);
-            return keys;
-
-        } catch (NoMatchFoundException | UnableToGetCommitException e) {
-            throw new UnableToGetLinkedIssueKeyException(hash, projectName, e);
-        }
-
-        
-    }
-
-    public void getCommitDetails(Commit commit) throws UnableToGetCommitDetailsException {
-
-        long msCommitTime;
-        
-        try {
-            RevCommit commitDetails = getCommit(commit.getHash());
-            // Timestamp wants milliseconds, while git commit time is in seconds since the epoch.
-            // We must beware of overflow 
-            msCommitTime = commitDetails.getCommitTime();
-            msCommitTime *= 1000;
-            commit.setTimestamp(new Timestamp(msCommitTime));
-        } catch (UnableToGetCommitException e) {
-            throw new UnableToGetCommitDetailsException(commit.getHash(), e);
-        }
-    }
-
-
-    private List<String> extractIssueKeys(String comment) throws NoMatchFoundException {
-        
-        List<String> keys = new ArrayList<>();
-        
-        Regex matches = new Regex(issueKeyRegexp, comment);
-        matches.forEach((key) -> {
-            key = key.toUpperCase(Locale.ROOT);
-            keys.add(key);
-        });
-        
-        if (keys.isEmpty()) throw new NoMatchFoundException(issueKeyRegexp, comment);
-        return keys;
-        
-    }
-
     private RevCommit getCommit(String hash) throws UnableToGetCommitException {
 
         RevCommit commit = null;
@@ -274,17 +211,6 @@ public class GitDao implements AutoCloseable{
     @Override
     public void close() throws Exception {
         repository.close();
-    }
-
-    /**
-     * Checkouts local clone to a specific commit
-     * @param commit
-     * @throws UnableToCheckoutException
-     */
-    public void checkout(Commit commit) throws UnableToCheckoutException{
-        try (Git git = new Git(this.repository)){
-            checkout(commit.getHash());   
-        }
     }
         
     /**checkouts local to the default branch

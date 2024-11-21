@@ -46,7 +46,7 @@ public class Dataset {
     private Timestamp lastUpdatedTime;
 
     /**
-     * #128: Use this map to lookup the guessed main repository for a project
+     * #128: Use this map to lookup the guessed main repository for a project key
      * according to this dataset.
      * 
      * If the project is not in the map, no guess can be taken from the repositories

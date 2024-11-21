@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package it.torkin.dataminer;
+
+import "google/protobuf/timestamp.proto";
+
+message RepoCoordinates {
+    string name = 1;
+}
+
+message CodeSmellsCountRequest{
+    RepoCoordinates repoCoordinates = 1;
+    google.protobuf.Timestamp measurementDate = 2;
+}
+
+message CodeSmellsCountResponse{
+    int32 smellsCount = 1;
+}
+
+service CodeSmellsMining{
+
+    rpc countSmells(CodeSmellsCountRequest) returns (CodeSmellsCountResponse) {}
+}

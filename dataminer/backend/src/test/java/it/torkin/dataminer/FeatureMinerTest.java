@@ -26,6 +26,7 @@ import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IFeatureController;
 import it.torkin.dataminer.control.features.miners.AssigneeANFICMiner;
 import it.torkin.dataminer.control.features.miners.NLPFeaturesMiner;
+import it.torkin.dataminer.control.features.miners.ProjectCodeQualityMiner;
 import it.torkin.dataminer.control.features.miners.TemporalLocalityMiner;
 import it.torkin.dataminer.control.features.miners.UnableToInitNLPFeaturesMinerException;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
@@ -291,4 +292,25 @@ public class FeatureMinerTest {
         assertEquals(100.0, measurement.getFeatureByName(IssueFeature.TEMPORAL_LOCALITY.getName()).getValue());
     }
 
+    @Autowired private ProjectCodeQualityMiner projectCodeQualityMiner;
+    
+    @Transactional
+    @Test
+    public void testCodeSmells() throws Exception{
+        datasetController.createRawDataset();
+        projectCodeQualityMiner.init();
+
+        Dataset dataset = datasetDao.findAll().get(0);
+        Issue issue = issueDao.findAllByDataset(dataset.getName()).findFirst().get();
+
+        MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
+        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+        Measurement measurement = new Measurement();
+        measurement.setMeasurementDate(measurementDateValue);
+        measurement.setMeasurementDateName(measurementDate.getName());
+        measurement.setIssue(issue);
+        
+        projectCodeQualityMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate));
+
+    }
 }
