@@ -8,8 +8,7 @@ import io.grpc.ServerBuilder;
 public class CodeSmellsServer {
     public static void main(String[] args) {
         try {
-            // Integer port = Integer.parseInt(System.getenv("GRPC_PORT"));ù
-            Integer port = 50051;
+            Integer port = Integer.parseInt(System.getenv("GRPC_PORT"));
             Server server = ServerBuilder.forPort(port)
                 .addService(new CodeSmellsService())
                 .build();
