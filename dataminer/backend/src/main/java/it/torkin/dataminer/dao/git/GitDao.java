@@ -144,6 +144,12 @@ public class GitDao implements AutoCloseable{
             
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
 
+            // checkout all paths to be used later
+            // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
+            try (Git git = new Git(this.repository)){
+                git.checkout().setAllPaths(true).call();
+            }
+
         } catch (Exception e) {
             
             throw new UnableToInitRepoException(e);
