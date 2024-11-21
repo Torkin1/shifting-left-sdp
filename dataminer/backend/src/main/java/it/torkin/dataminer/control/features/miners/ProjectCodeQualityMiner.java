@@ -25,6 +25,7 @@ import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * #193: Project Code Quality Miner.
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  * with hibernate.
  */
 @Slf4j
+@Component
 public class ProjectCodeQualityMiner extends FeatureMiner{
 
     private static final String[] featureSubNames = {

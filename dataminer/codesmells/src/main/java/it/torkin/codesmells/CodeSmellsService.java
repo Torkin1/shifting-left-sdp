@@ -43,11 +43,12 @@ public class CodeSmellsService extends CodeSmellsMiningImplBase{
 
         
         try (GitDao gitDao = new GitDao(gitConfig, request.getRepoCoordinates().getName())){
-            
+
             // checkout corresponding repo at measurement date
             Date measurementDate = Date.from(Instant.ofEpochSecond(
                 request.getMeasurementDate().getSeconds(),
                 request.getMeasurementDate().getNanos()));
+            System.out.println("requested to measure code quality of repo "+request.getRepoCoordinates().getName()+ " at " +measurementDate);
             gitDao.checkout(measurementDate);
 
             // run code quality analysis using PMD

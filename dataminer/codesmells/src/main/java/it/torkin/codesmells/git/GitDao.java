@@ -135,6 +135,12 @@ public class GitDao implements AutoCloseable{
             
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
 
+            // checkout all paths to be used later
+            try (Git git = new Git(this.repository)){
+                git.checkout().setAllPaths(true).call();
+            }
+
+
         } catch (Exception e) {
             
             throw new UnableToInitRepoException(e);
@@ -181,6 +187,7 @@ public class GitDao implements AutoCloseable{
              .setProgressMonitor(new ProgressBarMonitor(String.format("cloning repository %s", projectName)))
              .call();
             git.close();
+
         }
         
         catch(Exception e){
