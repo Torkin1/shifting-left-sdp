@@ -198,17 +198,27 @@ public class FeatureController implements IFeatureController{
                 ObjectWriter writer = mapper.writer(schema);
                 try (SequenceWriter sequenceWriter = writer.writeValues(outputFile)){
                     measurements.forEach(measurement -> {
-                        Map<String, Object> features = new LinkedHashMap<>();
+                        Map<String, Object> row = new LinkedHashMap<>();
                         measurement.getFeatures().forEach(f -> {
-                            // if feature is numeric, normalize it
+                            String sValue;
                             if (f.getValue() instanceof Number){
-                                features.put(f.getName(), new LogNormalizer(10.0).apply((Number)f.getValue()));
+                                Double logBase = measurementConfig.getPrintLogBase();
+                                Number value = (Number) f.getValue();
+                                if (value instanceof Double && ((Double)value).isNaN()){
+                                    // replace NaN with value specified in config
+                                    sValue = measurementConfig.getPrintNanReplacement();
+                                } else {
+                                    // normalize numeric values if logBase is specified
+                                    sValue = logBase == null? value.toString() : new LogNormalizer(logBase).apply(value).toString();
+                                }
                             } else {
-                                features.put(f.getName(), f.getValue());
+                                // feature is not numeric, we print it as is
+                                sValue = f.getValue().toString();
                             }
+                            row.put(f.getName(), sValue);
                         });
                         try {
-                            sequenceWriter.write(features);
+                            sequenceWriter.write(row);
                         } catch (IOException e) {
                             throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
                         }

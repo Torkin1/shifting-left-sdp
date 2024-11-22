@@ -50,6 +50,12 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
     @Transactional
     public void init() throws Exception {
         
+        // disable miner if remote is not available
+        if (config.getGrpcTarget() == null){
+            log.warn("no remote target set, the following features will not be mined: {}", this.getFeatureNames());
+            return;
+        }
+        
         // caches all project-repo mappings for every dataset
         List<Dataset> datasets = datasetDao.findAll();
         for (Dataset dataset : datasets) {
@@ -69,6 +75,10 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
     @Override
     @Transactional
     public void mine(FeatureMinerBean bean) {
+        
+        if (config.getGrpcTarget() == null){
+            return;
+        }
         
         Integer smellsCount;
         

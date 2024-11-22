@@ -33,6 +33,11 @@ public class MeasurementConfig {
             dir = dataConfig.getOutputDir() + "/measurements";
         }
         new File(dir).mkdirs();
+
+        if (printLogBase != null && (printLogBase <= 0 || printLogBase == 1)){
+            throw new IllegalArgumentException("Log base cannot be " + printLogBase);
+        }
+            
     }
     
     private String dir;
@@ -41,5 +46,17 @@ public class MeasurementConfig {
         return dir + "/" + dataset + "_" + project + "_" + measurementDate + ".csv";
     }
 
+    /**
+     * If NaN values are a problem, they can be replaced with this value
+     * if one has been specified.
+     */
+    private String printNanReplacement;
+
+    /**
+     * Numeric feature values are log normalized before being written to the output file.
+     * Set this value to specify the base of the logarithm.
+     * If not set, normalization does not take place
+     */
+    private Double printLogBase;
     
 }
