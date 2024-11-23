@@ -144,11 +144,14 @@ public class GitDao implements AutoCloseable{
             
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
 
-            // checkout all paths to be used later
-            // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
-            try (Git git = new Git(this.repository)){
-                git.checkout().setAllPaths(true).call();
-            }
+            // // checkout all paths to be used later
+            // // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
+            // try (Git git = new Git(this.repository)){
+            //     git.checkout().setAllPaths(true).setForced(true).call();
+            // }
+
+            checkout(defaultBranch);
+
 
         } catch (Exception e) {
             
@@ -314,6 +317,7 @@ public class GitDao implements AutoCloseable{
             git.checkout()
                 .setName(name)
                 .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
+                .setForced(true)
                 .call();
             
         } catch (GitAPIException e) {

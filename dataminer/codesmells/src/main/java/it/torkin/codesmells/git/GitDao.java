@@ -137,7 +137,7 @@ public class GitDao implements AutoCloseable{
 
             // checkout all paths to be used later
             try (Git git = new Git(this.repository)){
-                git.checkout().setAllPaths(true).call();
+                git.checkout().setAllPaths(true).setForced(true).call();
             }
 
 
@@ -241,6 +241,7 @@ public class GitDao implements AutoCloseable{
             git.checkout()
                 .setName(name)
                 .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
+                .setForced(true)
                 .call();
             
         } catch (GitAPIException e) {
