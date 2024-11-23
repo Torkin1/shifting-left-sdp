@@ -5,6 +5,9 @@ ENV SPRING_PROFILES_ACTIVE=container
 COPY --from=proto . ./proto
 WORKDIR ./backend
 
+# install git cli
+RUN apt update && apt install -y git && rm -rf /var/lib/apt/lists/*
+
 # preinstall the dependencies
 COPY .mvn .mvn
 COPY mvnw mvnw

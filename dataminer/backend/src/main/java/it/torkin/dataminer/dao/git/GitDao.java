@@ -143,9 +143,6 @@ public class GitDao implements AutoCloseable{
                 .build();
 
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
-            // try (Git git = new Git(repository)){
-            //     git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
-            // }
             checkout(defaultBranch);
 
         } catch (Exception e) {
