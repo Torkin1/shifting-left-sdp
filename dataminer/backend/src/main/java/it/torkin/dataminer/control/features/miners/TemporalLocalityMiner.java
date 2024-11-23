@@ -89,8 +89,8 @@ public class TemporalLocalityMiner extends FeatureMiner{
                     // count buggy issues in window
                     .count();
 
-                // calculate temperature as the percentage of buggy issues in window
-                temperature = SafeMath.calcPercentage(buggyCount, issuesInWindow);
+                // calculate temperature as the proportion of buggy issues in window
+                temperature = buggyCount / (double) issuesInWindow;
             }
             
         }
