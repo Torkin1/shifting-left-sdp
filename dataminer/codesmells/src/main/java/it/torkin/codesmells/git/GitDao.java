@@ -122,25 +122,26 @@ public class GitDao implements AutoCloseable{
     }
     
     private void initRepo(GitConfig config) throws UnableToInitRepoException{
-        
+
         FileRepositoryBuilder repoBuilder = new FileRepositoryBuilder();
-        
+
         // opens local copy of the repository if found, else
         // clones the remote repository
         try {
             cloneRepo(repoBuilder);
             repository = repoBuilder
-             .setWorkTree(localDir)
-             .setMustExist(true)
-             .build();
-            
+                .setWorkTree(localDir)
+                .setMustExist(true)
+                .build();
+
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
-            try (Git git = new Git(repository)){
-                git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
-            }
+            // try (Git git = new Git(repository)){
+            //     git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            // }
+            checkout(defaultBranch);
 
         } catch (Exception e) {
-            
+
             throw new UnableToInitRepoException(e);
         }
 
@@ -237,6 +238,8 @@ public class GitDao implements AutoCloseable{
     public void checkout(String name) throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
 
+            git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            
             // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
             git.checkout().setAllPaths(true).setForced(true).call();
 
@@ -244,13 +247,13 @@ public class GitDao implements AutoCloseable{
                 .setName(name)
                 .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
                 .call();
-            
-        } catch (GitAPIException e) {
-            
-            throw new UnableToCheckoutException(e);
-        } 
-    }
 
+        } catch (GitAPIException e) {
+
+            throw new UnableToCheckoutException(e);
+        }
+    }
+    
     /**
      * Checkouts local clone to the most recent commit not after {@code date}
      */
