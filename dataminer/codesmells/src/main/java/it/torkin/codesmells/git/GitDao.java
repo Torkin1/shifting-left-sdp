@@ -229,8 +229,8 @@ public class GitDao implements AutoCloseable{
 
     /**
      * Checkouts local clone to a specific branch name or commit hash
-     * !NOTE: this leaves the repository in a detached HEAD state. This should not be a problem
-     * unless you are going to make changes to the code.
+     * !NOTE: this leaves the repository in a detached HEAD state!
+     * This should not be a problem unless you are going to make changes to the code.
      * https://stackoverflow.com/questions/10228760/how-do-i-fix-a-git-detached-head#answer-58142219
      * @param name can be the branch name or the sha-1 hash of the commit
      */
