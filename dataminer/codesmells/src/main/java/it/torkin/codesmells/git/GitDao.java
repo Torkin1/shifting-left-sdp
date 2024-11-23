@@ -23,7 +23,6 @@ import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
 import org.eclipse.jgit.revwalk.filter.MessageRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -231,24 +230,31 @@ public class GitDao implements AutoCloseable{
     /**
      * Checkouts local clone to a specific branch name or commit hash
      * !NOTE: this leaves the repository in a detached HEAD state. This should not be a problem
-     * unless you are going to make changes to the code. 
+     * unless you are going to make changes to the code.
      * https://stackoverflow.com/questions/10228760/how-do-i-fix-a-git-detached-head#answer-58142219
      * @param name can be the branch name or the sha-1 hash of the commit
      */
     public void checkout(String name) throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
 
-            git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
-            
-            // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
-            git.checkout().setAllPaths(true).setForced(true).call();
+            // don't kow why, but a git reset is needed before calling a checkout in a containerized env running on windows.
+            // Only the cli git seems to work. Make sure to have it installed.
+            new ProcessBuilder("git", "reset", "--hard").directory(localDir).start().waitFor();
+            // Below you can find all prevoius unsuccessful attempts to fix the same problem as above
+            // 
+            // 1) https://stackoverflow.com/questions/33961511/jgit-checkout-over-the-same-branch
+            // git.clean().setCleanDirectories(true).setForce(true).call();
+            // git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            // 
+            // 2) https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
+            //git.checkout().setAllPaths(true).setForced(true).call();
 
             git.checkout()
                 .setName(name)
                 .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
                 .call();
 
-        } catch (GitAPIException e) {
+        } catch (GitAPIException | InterruptedException | IOException e) {
 
             throw new UnableToCheckoutException(e);
         }
