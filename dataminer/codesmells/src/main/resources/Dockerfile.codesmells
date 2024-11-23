@@ -1,7 +1,10 @@
 FROM eclipse-temurin:17-jdk
 
 COPY --from=proto . ./proto
-WORKDIR ./buggy-similarity
+WORKDIR ./codesmells
+
+# install git cli
+RUN apt update && apt install -y git && rm -rf /var/lib/apt/lists/*
 
 # preinstall the dependencies
 COPY .mvn .mvn

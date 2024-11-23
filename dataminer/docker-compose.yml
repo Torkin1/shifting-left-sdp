@@ -3,6 +3,7 @@ version: '3.1'
 volumes:
   db_data:
   backend_data:
+  codesmells_data:
 
 services:
     
@@ -70,6 +71,6 @@ services:
       - GRPC_PORT=8080
     expose:
       - 8080
-    #volumes:
-    #  - ./codesmells/data:/codesmells/data/
+    volumes:
+      - codesmells_data:/codesmells/data/
     

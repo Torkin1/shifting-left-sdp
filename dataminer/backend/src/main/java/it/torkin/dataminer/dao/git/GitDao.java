@@ -14,7 +14,6 @@ import java.util.Locale;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.ObjectId;
@@ -311,17 +310,24 @@ public class GitDao implements AutoCloseable{
     public void checkout(String name) throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
 
-            git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
-            
-            // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
-            git.checkout().setAllPaths(true).setForced(true).call();
+            // don't kow why, but a git reset is needed before calling a checkout in a containerized env running on windows.
+            // Only the cli git seems to work. Make sure to have it installed.
+            new ProcessBuilder("git", "reset", "--hard").directory(localDir).start().waitFor();
+            // Below you can find all prevoius unsuccessful attempts to fix the same problem as above
+            // 
+            // 1) https://stackoverflow.com/questions/33961511/jgit-checkout-over-the-same-branch
+            // git.clean().setCleanDirectories(true).setForce(true).call();
+            // git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            // 
+            // 2) https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
+            //git.checkout().setAllPaths(true).setForced(true).call();
 
             git.checkout()
                 .setName(name)
                 .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
                 .call();
 
-        } catch (GitAPIException e) {
+        } catch (GitAPIException | InterruptedException | IOException e) {
 
             throw new UnableToCheckoutException(e);
         }
