@@ -14,6 +14,7 @@ import java.util.Locale;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
+import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.ObjectId;
@@ -92,6 +93,7 @@ public class GitDao implements AutoCloseable{
 
     private String remoteUrl;
     private File localDir;
+    private String issueKeyRegexp;
     @Getter
     private final String projectName;
 
@@ -101,6 +103,7 @@ public class GitDao implements AutoCloseable{
     public GitDao(GitConfig config, String projectName) throws UnableToInitRepoException{
 
         this.remoteUrl = forgeRemote(config.getHostname(), projectName);
+        this.issueKeyRegexp = config.getLinkedIssueKeyRegexp();
         this.localDir = new File(forgeLocal(config.getReposDir(), projectName));
         this.projectName = projectName;
         initRepo(config);
@@ -136,14 +139,15 @@ public class GitDao implements AutoCloseable{
         try {
             cloneRepo(repoBuilder);
             repository = repoBuilder
-                    .setWorkTree(localDir)
-                    .setMustExist(true)
-                    .build();
+                .setWorkTree(localDir)
+                .setMustExist(true)
+                .build();
 
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
-            try (Git git = new Git(repository)){
-                git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
-            }
+            // try (Git git = new Git(repository)){
+            //     git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            // }
+            checkout(defaultBranch);
 
         } catch (Exception e) {
 
@@ -200,6 +204,59 @@ public class GitDao implements AutoCloseable{
 
     }
 
+ /** Gets linked issue key from commit message
+     * @throws IssueNotFoundException 
+     * @throws UnableToGetLinkedIssueKeyException */
+    public List<String> getLinkedIssueKeysByCommit(String hash) throws UnableToGetLinkedIssueKeyException {
+        
+        List<String> keys;;
+        String message;
+        RevCommit commit;
+        
+        try {
+            commit = getCommit(hash);
+            message = commit.getFullMessage();
+            keys = extractIssueKeys(message);
+            return keys;
+
+        } catch (NoMatchFoundException | UnableToGetCommitException e) {
+            throw new UnableToGetLinkedIssueKeyException(hash, projectName, e);
+        }
+
+        
+    }
+
+    public void getCommitDetails(Commit commit) throws UnableToGetCommitDetailsException {
+
+        long msCommitTime;
+        
+        try {
+            RevCommit commitDetails = getCommit(commit.getHash());
+            // Timestamp wants milliseconds, while git commit time is in seconds since the epoch.
+            // We must beware of overflow 
+            msCommitTime = commitDetails.getCommitTime();
+            msCommitTime *= 1000;
+            commit.setTimestamp(new Timestamp(msCommitTime));
+        } catch (UnableToGetCommitException e) {
+            throw new UnableToGetCommitDetailsException(commit.getHash(), e);
+        }
+    }
+
+
+    private List<String> extractIssueKeys(String comment) throws NoMatchFoundException {
+        
+        List<String> keys = new ArrayList<>();
+        
+        Regex matches = new Regex(issueKeyRegexp, comment);
+        matches.forEach((key) -> {
+            key = key.toUpperCase(Locale.ROOT);
+            keys.add(key);
+        });
+        
+        if (keys.isEmpty()) throw new NoMatchFoundException(issueKeyRegexp, comment);
+        return keys;
+        
+    }
     private RevCommit getCommit(String hash) throws UnableToGetCommitException {
 
         RevCommit commit = null;
@@ -224,6 +281,17 @@ public class GitDao implements AutoCloseable{
         repository.close();
     }
 
+ /**
+     * Checkouts local clone to a specific commit
+     * @param commit
+     * @throws UnableToCheckoutException
+     */
+    public void checkout(Commit commit) throws UnableToCheckoutException{
+        try (Git git = new Git(this.repository)){
+            checkout(commit.getHash());   
+        }
+    }
+
     /**checkouts local to the default branch
      * @throws UnableToCheckoutException
      * */
@@ -243,13 +311,15 @@ public class GitDao implements AutoCloseable{
     public void checkout(String name) throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
 
+            git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            
             // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
             git.checkout().setAllPaths(true).setForced(true).call();
 
             git.checkout()
-                    .setName(name)
-                    .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
-                    .call();
+                .setName(name)
+                .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
+                .call();
 
         } catch (GitAPIException e) {
 
