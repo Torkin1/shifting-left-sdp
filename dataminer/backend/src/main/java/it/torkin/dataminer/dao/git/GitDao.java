@@ -45,7 +45,7 @@ public class GitDao implements AutoCloseable{
         private ProgressBar subtaskProgress;
 
         private final String taskName;
-        
+
         @Override
         public void start(int totalTasks) {
             progress = new ProgressBar(taskName, totalTasks);
@@ -92,18 +92,16 @@ public class GitDao implements AutoCloseable{
 
     private String remoteUrl;
     private File localDir;
-    private String issueKeyRegexp;
     @Getter
     private final String projectName;
 
     private Repository repository;
     private String defaultBranch;
-        
+
     public GitDao(GitConfig config, String projectName) throws UnableToInitRepoException{
-                
+
         this.remoteUrl = forgeRemote(config.getHostname(), projectName);
         this.localDir = new File(forgeLocal(config.getReposDir(), projectName));
-        this.issueKeyRegexp = config.getLinkedIssueKeyRegexp();
         this.projectName = projectName;
         initRepo(config);
     }
@@ -128,42 +126,36 @@ public class GitDao implements AutoCloseable{
     private String forgeLocal(String localPath, String projectName){
         return String.format("%s/%s", localPath, projectName);
     }
-    
+
     private void initRepo(GitConfig config) throws UnableToInitRepoException{
-        
+
         FileRepositoryBuilder repoBuilder = new FileRepositoryBuilder();
-        
+
         // opens local copy of the repository if found, else
         // clones the remote repository
         try {
             cloneRepo(repoBuilder);
             repository = repoBuilder
-             .setWorkTree(localDir)
-             .setMustExist(true)
-             .build();
-            
+                    .setWorkTree(localDir)
+                    .setMustExist(true)
+                    .build();
+
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
-
-            // // checkout all paths to be used later
-            // // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
-            // try (Git git = new Git(this.repository)){
-            //     git.checkout().setAllPaths(true).setForced(true).call();
-            // }
-
-            checkout(defaultBranch);
-
+            try (Git git = new Git(repository)){
+                git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            }
 
         } catch (Exception e) {
-            
+
             throw new UnableToInitRepoException(e);
         }
 
     }
-    
+
     private boolean gitDirExists(File directory, FileRepositoryBuilder repoBuilder) {
 
         boolean gitDirExists;
-        
+
         repoBuilder.findGitDir(directory);
         gitDirExists = repoBuilder.getGitDir() != null;
 
@@ -178,94 +170,41 @@ public class GitDao implements AutoCloseable{
             return false;
         }
     }
-    
+
     private void cloneRepo(FileRepositoryBuilder repoBuilder) throws UnableToCloneRepoException {
 
         boolean localDirEmpty;
-        boolean gitDirExists;        
+        boolean gitDirExists;
         try{
-            
+
             localDir.mkdirs();
             localDirEmpty = isDirEmpty(localDir);
             gitDirExists = gitDirExists(localDir, repoBuilder);
-            
+
             if(!localDirEmpty && gitDirExists) return;
             if(!localDirEmpty && !gitDirExists)
-                throw new CloneInNonEmptyDirException(localDir); 
+                throw new CloneInNonEmptyDirException(localDir);
 
             Git git = Git.cloneRepository()
-             .setURI(remoteUrl)
-             .setDirectory(localDir)
-             .setProgressMonitor(new ProgressBarMonitor(String.format("cloning repository %s", projectName)))
-             .call();
+                    .setURI(remoteUrl)
+                    .setDirectory(localDir)
+                    .setProgressMonitor(new ProgressBarMonitor(String.format("cloning repository %s", projectName)))
+                    .call();
             git.close();
+
         }
-        
+
         catch(Exception e){
             throw new UnableToCloneRepoException(e, remoteUrl, localDir);
         }
-        
-    }
 
-    /** Gets linked issue key from commit message
-     * @throws IssueNotFoundException 
-     * @throws UnableToGetLinkedIssueKeyException */
-    public List<String> getLinkedIssueKeysByCommit(String hash) throws UnableToGetLinkedIssueKeyException {
-        
-        List<String> keys;;
-        String message;
-        RevCommit commit;
-        
-        try {
-            commit = getCommit(hash);
-            message = commit.getFullMessage();
-            keys = extractIssueKeys(message);
-            return keys;
-
-        } catch (NoMatchFoundException | UnableToGetCommitException e) {
-            throw new UnableToGetLinkedIssueKeyException(hash, projectName, e);
-        }
-
-        
-    }
-
-    public void getCommitDetails(Commit commit) throws UnableToGetCommitDetailsException {
-
-        long msCommitTime;
-        
-        try {
-            RevCommit commitDetails = getCommit(commit.getHash());
-            // Timestamp wants milliseconds, while git commit time is in seconds since the epoch.
-            // We must beware of overflow 
-            msCommitTime = commitDetails.getCommitTime();
-            msCommitTime *= 1000;
-            commit.setTimestamp(new Timestamp(msCommitTime));
-        } catch (UnableToGetCommitException e) {
-            throw new UnableToGetCommitDetailsException(commit.getHash(), e);
-        }
-    }
-
-
-    private List<String> extractIssueKeys(String comment) throws NoMatchFoundException {
-        
-        List<String> keys = new ArrayList<>();
-        
-        Regex matches = new Regex(issueKeyRegexp, comment);
-        matches.forEach((key) -> {
-            key = key.toUpperCase(Locale.ROOT);
-            keys.add(key);
-        });
-        
-        if (keys.isEmpty()) throw new NoMatchFoundException(issueKeyRegexp, comment);
-        return keys;
-        
     }
 
     private RevCommit getCommit(String hash) throws UnableToGetCommitException {
 
         RevCommit commit = null;
         try (RevWalk walk = new RevWalk(repository)) {
-            
+
             commit = walk.parseCommit(repository.resolve(hash));
             return commit;
 
@@ -285,45 +224,37 @@ public class GitDao implements AutoCloseable{
         repository.close();
     }
 
-    /**
-     * Checkouts local clone to a specific commit
-     * @param commit
-     * @throws UnableToCheckoutException
-     */
-    public void checkout(Commit commit) throws UnableToCheckoutException{
-        try (Git git = new Git(this.repository)){
-            checkout(commit.getHash());   
-        }
-    }
-        
     /**checkouts local to the default branch
      * @throws UnableToCheckoutException
      * */
     public void checkout() throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
-            checkout(defaultBranch);         
+            checkout(defaultBranch);
         }
     }
 
     /**
      * Checkouts local clone to a specific branch name or commit hash
      * !NOTE: this leaves the repository in a detached HEAD state. This should not be a problem
-     * unless you are going to make changes to the code. 
+     * unless you are going to make changes to the code.
      * https://stackoverflow.com/questions/10228760/how-do-i-fix-a-git-detached-head#answer-58142219
      * @param name can be the branch name or the sha-1 hash of the commit
      */
     public void checkout(String name) throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
+
+            // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
+            git.checkout().setAllPaths(true).setForced(true).call();
+
             git.checkout()
-                .setName(name)
-                .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
-                .setForced(true)
-                .call();
-            
+                    .setName(name)
+                    .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
+                    .call();
+
         } catch (GitAPIException e) {
-            
+
             throw new UnableToCheckoutException(e);
-        } 
+        }
     }
 
     /**
@@ -345,7 +276,7 @@ public class GitDao implements AutoCloseable{
     /**
      * gets most recent commit applied not after {@code beforeDate}  containing optional {@code commentContent} string in its comment
      * Returns null if no such commit is found 
-     * 
+     *
      * @throws UnableToGetCommitsException
      */
     private RevCommit getLatestCommit(Date beforeDate, String commentContent) throws UnableToGetCommitsException {
@@ -382,12 +313,12 @@ public class GitDao implements AutoCloseable{
     /**
      * gets most recent commit hash applied strictly before {@code beforeDate}  containing optional {@code commentContent} string in its comment
      * Returns null if no such commit is found 
-     * 
+     *
      * @throws UnableToGetCommitsException
      */
     public String getLatestCommitHash(Date beforeDate, String commentContent) throws UnableToGetCommitsException{
         RevCommit commit = getLatestCommit(beforeDate, commentContent);
         return commit == null ? null : commit.getName();
     }
-    
+
 }

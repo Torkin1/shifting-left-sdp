@@ -23,6 +23,7 @@ import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
 import org.eclipse.jgit.revwalk.filter.MessageRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.api.ResetCommand.ResetType;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -134,7 +135,9 @@ public class GitDao implements AutoCloseable{
              .build();
             
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
-            checkout(defaultBranch);
+            try (Git git = new Git(repository)){
+                git.reset().setMode(ResetType.HARD).setRef("refs/heads/"+defaultBranch).call();
+            }
 
         } catch (Exception e) {
             
@@ -233,10 +236,13 @@ public class GitDao implements AutoCloseable{
      */
     public void checkout(String name) throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
+
+            // fixes https://stackoverflow.com/questions/28391052/using-the-jgit-checkout-command-i-get-extra-conflicts
+            git.checkout().setAllPaths(true).setForced(true).call();
+
             git.checkout()
                 .setName(name)
                 .setProgressMonitor(new ProgressBarMonitor(String.format("checking out %s at %s", projectName, name)))
-                .setForced(true)
                 .call();
             
         } catch (GitAPIException e) {
