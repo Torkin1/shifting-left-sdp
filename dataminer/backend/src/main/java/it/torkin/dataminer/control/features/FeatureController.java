@@ -202,15 +202,12 @@ public class FeatureController implements IFeatureController{
                         measurement.getFeatures().forEach(f -> {
                             String sValue;
                             if (f.getValue() instanceof Number){
+                                // feature is numeric, we normalize it if a log base has been provided
                                 Double logBase = measurementConfig.getPrintLogBase();
-                                Number value = (Number) f.getValue();
-                                if (value instanceof Double && ((Double)value).isNaN()){
-                                    // replace NaN with value specified in config
-                                    sValue = measurementConfig.getPrintNanReplacement();
-                                } else {
-                                    // normalize numeric values if logBase is specified
-                                    sValue = logBase == null? value.toString() : new LogNormalizer(logBase).apply(value).toString();
-                                }
+                                Number value = ((Number)f.getValue());
+                                Double dValue = logBase == null? value.doubleValue() : new LogNormalizer(logBase).apply(value);
+                                // print NaNs in a weka compatible way
+                                sValue = Double.isNaN(dValue)? measurementConfig.getPrintNanReplacement() : dValue.toString();                                
                             } else {
                                 // feature is not numeric, we print it as is
                                 sValue = f.getValue().toString();
