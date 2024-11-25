@@ -24,6 +24,8 @@ import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
+import it.torkin.dataminer.entities.jira.issue.IssueStatus;
+import it.torkin.dataminer.rest.UnableToGetResourceException;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -62,5 +64,14 @@ public class JiraDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
             assertEquals(expected.getJiraId(), actual.getJiraId());
         }
         
+    }
+
+    @Test
+    public void testGetIssueStatuses() throws UnableToGetResourceException{
+        JiraDao jiraDao = new JiraDao(jiraConfig);
+        IssueStatus[] statuses = jiraDao.queryIssueStatuses();
+        IssueStatus status = statuses[0];
+        assertEquals("1", status.getJiraId());
+        assertEquals(2, status.getStatusCategory().getJiraId());
     }
 }

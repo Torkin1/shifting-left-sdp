@@ -6,6 +6,7 @@ import java.util.List;
 
 import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
+import it.torkin.dataminer.entities.jira.issue.IssueStatus;
 import it.torkin.dataminer.rest.ClientResourceRequest;
 import it.torkin.dataminer.rest.UnableToGetResourceException;
 import lombok.Getter;
@@ -26,7 +27,7 @@ public class JiraDao {
 
     @Getter
     @Setter
-    private boolean cacheFailedKeys = true;
+    private boolean useCache = true;
 
     public JiraDao(JiraConfig config){
         this.hostname = config.getHostname();
@@ -47,7 +48,7 @@ public class JiraDao {
         IssueDetails issue;
 
         try {
-            if (cacheFailedKeys && failedKeys.contains(key))
+            if (useCache && failedKeys.contains(key))
                 throw new UnableToGetIssueException("key has already showed to be not owned by an available issue", hostname, key);
             query = forgeQuery(QueryFormat.GET_ISSUE_BY_KEY, key);
             issue = new ClientResourceRequest<>(IssueDetails.class, query).getResource();
@@ -58,9 +59,17 @@ public class JiraDao {
             if (!issue.getJiraKey().equals(key)) throw new IssueKeyMismatchException(key, issue.getJiraKey());
             return issue;
         } catch (UnableToGetResourceException | IssueKeyMismatchException e) {
-            if (cacheFailedKeys) failedKeys.add(key);
+            if (useCache) failedKeys.add(key);
             throw new UnableToGetIssueException(e, hostname, key);
         }
+        
+    }
+
+    public IssueStatus[] queryIssueStatuses() throws UnableToGetResourceException{
+        String query = forgeQuery(QueryFormat.GET_ISSUE_STATUSES);
+        IssueStatus[] statuses = new ClientResourceRequest<>(IssueStatus[].class, query).getResource();
+
+        return statuses;
         
     }
 
