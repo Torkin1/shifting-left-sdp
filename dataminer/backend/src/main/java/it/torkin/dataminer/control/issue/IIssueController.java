@@ -69,4 +69,10 @@ public interface IIssueController {
     public boolean isAfter(IssueMeasurementDateBean bean);
 
     public int compareMeasurementDate(IssueMeasurementDateBean bean);
+
+    /**
+     * Returns a list of temporal spans in which the issue was in progress,
+     * sorted from the earliest to the latest.
+     */
+    public void getInProgressTemporalSpans(IssueTemporalSpanBean bean);
 }

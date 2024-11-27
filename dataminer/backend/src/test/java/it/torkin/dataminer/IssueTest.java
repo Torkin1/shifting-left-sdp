@@ -30,6 +30,7 @@ import it.torkin.dataminer.control.issue.HasBeenAssignedBean;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
+import it.torkin.dataminer.control.issue.IssueTemporalSpanBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.OpeningDate;
 import it.torkin.dataminer.dao.local.CommitDao;
@@ -227,5 +228,50 @@ public class IssueTest {
         assertTrue(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "phunt", historyTimestamp)));
         assertFalse(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "shralex", historyTimestamp)));
         assertFalse(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "shralex", openingDate)));
+    }
+
+
+    @Test
+    @Transactional
+    public void testGetInProgressTimespans() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+
+        Gson gson = new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();
+        File issue_sample = new File(ISSUE_EXAMPLES_DIR + "HUDI-8573.json");
+
+        IssueDetails issueDetails = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
+        Issue issue = new Issue();
+        issue.setDetails(issueDetails);
+
+        /**
+         * Test the following cases:
+         * - measurement date is today --> 1 in progress timespan, starting at 
+         * 2024-11-24T14:16:13.824+0000 and ending at 2024-11-25T07:51:20.795+0000
+         * - measurement date at 2024-11-24T14:16:14.824+0000 --> 1 in progress timespan,
+         * starting at 2024-11-24T14:16:13.824+0000 and ending at measurement date
+         * - measurement date at opening date: 0 timespans available.
+         */
+
+        Timestamp now = TimeTools.now();
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+        Timestamp start = Timestamp.from(Instant.parse("2024-11-24T14:16:13.824Z"));
+        Timestamp oneSecondAfterStart = Timestamp.from(start.toInstant().plus(1, ChronoUnit.SECONDS));
+        Timestamp end = Timestamp.from(Instant.parse("2024-11-25T07:51:20.795Z"));
+
+        IssueTemporalSpanBean bean = new IssueTemporalSpanBean(issue, now);
+        issueController.getInProgressTemporalSpans(bean);
+        assertEquals(1, bean.getTemporalSpans().size());
+        assertEquals(start, bean.getTemporalSpans().get(0).getStart());
+        assertEquals(end, bean.getTemporalSpans().get(0).getEnd());
+
+        bean = new IssueTemporalSpanBean(issue, oneSecondAfterStart);
+        issueController.getInProgressTemporalSpans(bean);
+        assertEquals(1, bean.getTemporalSpans().size());
+        assertEquals(start, bean.getTemporalSpans().get(0).getStart());
+        assertEquals(oneSecondAfterStart, bean.getTemporalSpans().get(0).getEnd());
+
+        bean = new IssueTemporalSpanBean(issue, openingDate);
+        issueController.getInProgressTemporalSpans(bean);
+        assertEquals(0, bean.getTemporalSpans().size());
+
     }
 }

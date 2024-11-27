@@ -9,6 +9,7 @@ public enum IssueField {
     DESCRIPTION("description"),
     SUMMARY("summary"),
     ASSIGNEE("assignee"),
+    STATUS("status"),
     ;
 
     private final String name;
