@@ -15,8 +15,13 @@ import java.util.Locale;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.Edit;
+import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -24,8 +29,13 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.AndRevFilter;
 import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
 import org.eclipse.jgit.revwalk.filter.MessageRevFilter;
+import org.eclipse.jgit.revwalk.filter.NotRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
+import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.entities.dataset.Commit;
@@ -307,7 +317,7 @@ public class GitDao implements AutoCloseable{
     public void checkout(String name) throws UnableToCheckoutException{
         try (Git git = new Git(this.repository)){
 
-            // don't kow why, but a git reset is needed before calling a checkout in a containerized env running on windows.
+            // FIXME: don't kow why, but a git reset is needed before calling a checkout in a containerized env running on windows.
             // Only the cli git seems to work. Make sure to have it installed.
             new ProcessBuilder("git", "reset", "--hard").directory(localDir).start().waitFor();
             // Below you can find all prevoius unsuccessful attempts to fix the same problem as above
@@ -347,40 +357,15 @@ public class GitDao implements AutoCloseable{
     }
 
     /**
-     * gets most recent commit applied not after {@code beforeDate}  containing optional {@code commentContent} string in its comment
+     * gets most recent commit applied strictly before {@code beforeDate}  containing optional {@code commentContent} string in its comment
      * Returns null if no such commit is found 
      *
      * @throws UnableToGetCommitsException
      */
     private RevCommit getLatestCommit(Date beforeDate, String commentContent) throws UnableToGetCommitsException {
-
-        try (Git git = new Git(repository)) {
-
-            LogCommand logCommand = git.log();
-            RevFilter filter;
-            ObjectId head = repository.resolve(defaultBranch);
-
-            // set filter on commit time and comment content
-            filter = CommitTimeRevFilter.before(beforeDate);
-            if (commentContent != null){
-                filter = AndRevFilter.create(filter, MessageRevFilter.create(commentContent));
-            }
-            logCommand.setRevFilter(filter);
-            logCommand.setMaxCount(1);
-            logCommand.add(head);
-
-            // extracts latest commit which matches filter
-            Iterator<RevCommit> commits = logCommand.call().iterator();
-            if (commits.hasNext()){
-                return commits.next();
-            } else {
-                return null;
-            }
-
-        } catch (GitAPIException | RevisionSyntaxException | IOException e) {
-
-            throw new UnableToGetCommitsException(e);
-        }
+        List<RevCommit> commits = getCommits(new Date(0), beforeDate, 1, commentContent);
+        if (commits.isEmpty()) return null;
+        return commits.get(0);
     }
 
     /**
@@ -393,5 +378,160 @@ public class GitDao implements AutoCloseable{
         RevCommit commit = getLatestCommit(beforeDate, commentContent);
         return commit == null ? null : commit.getName();
     }
+
+    /**
+     * Gets all commits applied in given time frame (inclusive bounds).
+          * @throws UnableToGetCommitsException 
+          */
+    private List<RevCommit> getCommits(Date start, Date end, Integer maxCount, String commentContent) throws UnableToGetCommitsException{
+        List<RevCommit> commitList = new ArrayList<>();
+        try (Git git = new Git(repository)){
+            LogCommand logCommand = git.log();
+            RevFilter filter;
+            ObjectId head = repository.resolve(defaultBranch);
+
+            // set filter on commit time
+            filter = CommitTimeRevFilter.between(start, end);
+            if (commentContent != null){
+                filter = AndRevFilter.create(filter, MessageRevFilter.create(commentContent));
+            }
+            
+            logCommand.setRevFilter(filter);
+            logCommand.add(head);
+            if (maxCount != null){
+                logCommand.setMaxCount(maxCount);
+            }
+            
+            Iterator<RevCommit> commits = logCommand.call().iterator();
+            while(commits.hasNext()){
+                commitList.add(commits.next());
+            }
+
+            return commitList;
+        } catch (GitAPIException | RevisionSyntaxException | IOException e) {
+
+            throw new UnableToGetCommitsException(e);
+        }
+    }
+    private List<RevCommit> getCommits(Date start, Date end) throws UnableToGetCommitsException{
+        return getCommits(start, end, null, null);
+    }
+
+    // TODO: TEST
+    /**
+     * Gets count of all commits applied in given time frame (include start, exclude end).
+     * @param start
+     * @param end
+     * @return
+     * @throws UnableToGetCommitsException
+     */
+    public long getCommitCount(Date start, Date end) throws UnableToGetCommitsException{
+        return getCommits(start, end).size();
+    }
+
+    /**
+     * gets diff for every file changed between oldCommit and newCommit
+     * @param oldCommit
+     * @param newCommit
+     * @return
+     * @throws UnableToDoDiffException
+     */
+    private List<DiffEntry> getDiffs(RevCommit oldCommit, RevCommit newCommit) throws UnableToDoDiffException{
+        List<DiffEntry> diffEntries;
+        try (   
+            DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE);
+            ObjectReader reader = repository.newObjectReader();
+        ){
+            // if the commit is the first one in the repository, we compare it to an empty tree
+            // else we compare it to oldCommit's tree
+            AbstractTreeIterator oldTreeIterator = (oldCommit != null)? new CanonicalTreeParser(null, reader, oldCommit.getTree()) : new EmptyTreeIterator();
+            AbstractTreeIterator newTreeIterator = new CanonicalTreeParser(null, reader, newCommit.getTree());
+            df.setRepository(repository);
+            df.setDiffComparator(RawTextComparator.DEFAULT);
+            diffEntries = df.scan(oldTreeIterator, newTreeIterator);
+            return diffEntries;
+            
+        } catch (IOException e) {
+            throw new UnableToDoDiffException(e);
+        }
+    }
+    /**
+     * gets diff for all changes introduced by newCommit as if it were the first commit in the repository
+     * @param oldCommit
+     * @param newCommit
+     * @return
+     * @throws UnableToDoDiffException
+     */
+    private List<DiffEntry> getDiffs(RevCommit newCommit) throws UnableToDoDiffException{
+        return getDiffs(null, newCommit);
+    }
+        
+    private Churn calculateChurn(DiffFormatter df, DiffEntry diff) throws UnableToCalculateChurnException{
+        try {
+            List<Edit> edits = df.toFileHeader(diff).toEditList();
+            Churn churn = new Churn();
+
+            for (Edit edit : edits){
+                switch (edit.getType()) {
+                    case INSERT:
+                        churn.addAdded(edit.getLengthB());
+                        break;
+                    case DELETE:
+                        churn.addDeleted(edit.getLengthA());
+                        break;
+                    case REPLACE:
+                        churn.addDeleted(edit.getLengthA());
+                        churn.addAdded(edit.getLengthB());
+                        break;
+                    case EMPTY:
+                    default:
+                        break;
+                }
+            }
+            return churn;
+        } catch (IOException e) {
+            throw new UnableToCalculateChurnException(e);
+        }
+    }
+    
+    // TODO: TEST
+    /**
+     * Gets sum of all lines added, modified and deleted in given time frame (include start, exclude end).
+    */
+    public long getChurn(Date start, Date end) throws UnableToCalculateChurnException{
+
+        List<RevCommit> commits;
+        long churn = 0;
+        RevCommit[] parents;
+        List<DiffEntry> diffs;
+    
+        try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)){
+            df.setRepository(repository);
+            commits = getCommits(start, end);
+            for (RevCommit commit : commits){
+                parents = commit.getParents();
+                if (parents.length == 0){
+                    // commit is the first one commited ever in the repository
+                    diffs = getDiffs(commit);
+                } else {
+                    // get diffs for each commit parent
+                    diffs = new ArrayList<>();
+                    for (RevCommit parent : parents){
+                        diffs.addAll(getDiffs(parent, commit));
+                    }
+                }
+                // cumulate churn from each diff
+                for (DiffEntry diff : diffs){
+                    churn += calculateChurn(df, diff).getTotal();
+                }
+            }
+
+            return churn;
+
+        } catch (UnableToGetCommitsException | UnableToDoDiffException e) {
+            throw new UnableToCalculateChurnException(e);
+        }
+    }
+    
 
 }

@@ -2,12 +2,14 @@ package it.torkin.dataminer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -30,6 +32,7 @@ import it.torkin.dataminer.dao.git.UnableToInitRepoException;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.toolbox.time.TimeTools;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
@@ -146,6 +149,19 @@ public class GitDaoTest {
             try (GitDao gitDao = new GitDao(gitConfig, projectName)){
                 gitDao.checkout(issueController.getFirstCommit(new IssueCommitBean(issue, "apachejit")));
             }
+        }
+    }
+
+    @Test
+    public void testCommitCount() throws Exception{
+        try(GitDao gitDao = new GitDao(gitConfig, projectName)){
+            Timestamp start = TimeTools.dawnOfTime();
+            Timestamp end = TimeTools.now();
+            long commitCount = gitDao.getCommitCount(start, end);
+            assertEquals(4, commitCount);
+            long churn = gitDao.getChurn(start, end);
+            log.debug("Churn: {}", churn);
+            assertNotEquals(0, churn);
         }
     }
 

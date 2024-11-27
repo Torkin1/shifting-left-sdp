@@ -12,4 +12,8 @@ public class TimeTools {
         return new Timestamp(Calendar.getInstance().getTimeInMillis());
     }
 
+    public Timestamp dawnOfTime(){
+        return new Timestamp(0);
+    }
+
 }
