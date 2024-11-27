@@ -12,6 +12,7 @@ public enum IssueFeature {
     TEMPORAL_LOCALITY("Temporal locality"),
     BUGGINESS("Bugginess"),
     PROJECT_CODE_QUALITY("Project code quality"),
+    COMMITS_WHILE_IN_PROGRESS("Commits while in progress"),
     ;
 
     private final String name;
