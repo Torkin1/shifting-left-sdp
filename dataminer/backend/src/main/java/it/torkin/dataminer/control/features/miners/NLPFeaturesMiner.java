@@ -46,6 +46,9 @@ import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityVariantsResponse;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * #46 and its subtasks
+ */
 @Component
 @Slf4j
 public class NLPFeaturesMiner extends FeatureMiner{
