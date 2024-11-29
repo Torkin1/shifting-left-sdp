@@ -417,7 +417,6 @@ public class GitDao implements AutoCloseable{
         return getCommits(start, end, null, null);
     }
 
-    // TODO: TEST
     /**
      * Gets count of all commits applied in given time frame (include start, exclude end).
      * @param start
@@ -494,7 +493,6 @@ public class GitDao implements AutoCloseable{
         }
     }
     
-    // TODO: TEST
     /**
      * Gets sum of all lines added, modified and deleted in given time frame (include start, exclude end).
     */
