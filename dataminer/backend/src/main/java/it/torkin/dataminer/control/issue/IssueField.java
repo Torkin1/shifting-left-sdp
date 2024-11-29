@@ -10,6 +10,7 @@ public enum IssueField {
     SUMMARY("summary"),
     ASSIGNEE("assignee"),
     STATUS("status"),
+    COMPONENT("Component"),
     ;
 
     private final String name;

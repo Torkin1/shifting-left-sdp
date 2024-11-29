@@ -1,7 +1,14 @@
 package it.torkin.dataminer.control.issue;
 
+import java.util.Set;
+
 import it.torkin.dataminer.entities.dataset.Commit;
 
+/**
+ * Expose methods to get information about issues
+ * taking in consideration dataset informations, measurement date,
+ * related commits, etc.
+ */
 public interface IIssueController {
 
     /**
@@ -75,4 +82,9 @@ public interface IIssueController {
      * sorted from the earliest to the latest.
      */
     public void getInProgressTemporalSpans(IssueTemporalSpanBean bean);
+
+    /**
+     * Gets list of issue components ids at measurement date 
+     */
+    public Set<String> getComponentsIds(IssueBean bean);
 }

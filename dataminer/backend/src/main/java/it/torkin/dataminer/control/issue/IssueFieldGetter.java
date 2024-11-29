@@ -1,8 +1,8 @@
 package it.torkin.dataminer.control.issue;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.function.Function;
 
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
@@ -36,7 +36,7 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
      * from|to field values are stored in the changelogs as strings,
      * so the caller needs to provide a way to parse them
      */
-    private final Function<HistoryEntry, F> mapEntryToFieldValue;
+    private final Function<List<HistoryEntry>, F> mapEntryToFieldValue;
     
     @Override
     public F apply(IssueFieldGetterBean bean) {
@@ -48,8 +48,8 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
             // no changes applied to description since the opening of the issue
             return getValueFromDetailsFields.apply(bean.getIssueBean().getIssue().getDetails().getFields());
         } else {
-            IssueHistoryItem item = getLatestHistoryItem(history, bean.getIssueField());
-            return mapEntryToFieldValue.apply(extractValueFromHistoryItem(item, history.getCreated(), bean.getIssueBean().getMeasurementDate()));
+            List<IssueHistoryItem> items = getHistoryItems(history, bean.getIssueField());
+            return mapEntryToFieldValue.apply(extractValueFromHistoryItems(items, history.getCreated(), bean.getIssueBean().getMeasurementDate()));
         }
     }
     
@@ -62,7 +62,7 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
             .toList();
     }
 
-    private boolean changesField(IssueHistory history, IssueField field){
+    private static boolean changesField(IssueHistory history, IssueField field){
         return history.getItems().stream().anyMatch(item -> item.getField().equals(field.getName()));
     }
     
@@ -103,18 +103,10 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
         
     }
 
-    private IssueHistoryItem getLatestHistoryItem(IssueHistory history, IssueField field){
-                
-        // Since the history items are not ordered by creation date, we search for the last one
-        // that is related to the given field 
-        ListIterator<IssueHistoryItem> reversedItems = history.getItems().listIterator(history.getItems().size());
-        while (reversedItems.hasPrevious()){
-            IssueHistoryItem item = reversedItems.previous();
-            if (item.getField().equals(field.getName())){
-                return item;
-            }
-        }
-        throw new RuntimeException("Cannot find an item related to " + field.getName() + " in history " + history);
+    private List<IssueHistoryItem> getHistoryItems(IssueHistory history, IssueField field){
+        return history.getItems().stream()
+            .filter(item -> item.getField().equals(field.getName()))
+            .toList();
     }
 
     private HistoryEntry extractValueFromHistoryItem(IssueHistoryItem item, Timestamp historyCreatedDate, Timestamp measurementDate){
@@ -130,6 +122,14 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
                 item.getTo() == null? "" : item.getTo(),
                 item.getToString() == null? "" : item.getToString());
         }
+    }
+
+    private List<HistoryEntry> extractValueFromHistoryItems(List<IssueHistoryItem> items, Timestamp historyCreatedDate, Timestamp measurementDate){
+        List<HistoryEntry> entries = new ArrayList<>();
+        for (IssueHistoryItem item : items){
+            entries.add(extractValueFromHistoryItem(item, historyCreatedDate, measurementDate));
+        }
+        return entries;
     }
 
     private boolean checkMeasurementDate(IssueBean bean, IssueField field){

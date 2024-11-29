@@ -11,6 +11,7 @@ import java.io.FileReader;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,9 +37,11 @@ import it.torkin.dataminer.control.measurementdate.impl.OpeningDate;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
+import it.torkin.dataminer.dao.local.RepositoryDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.dataset.Repository;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import it.torkin.dataminer.toolbox.time.TimeTools;
@@ -56,9 +59,15 @@ public class IssueTest {
     @Autowired private CommitDao commitDao;
     @Autowired private DatasetDao datasetDao;
     @Autowired private IIssueController issueController;
+    @Autowired private RepositoryDao repositoryDao;
 
     @Test
+    @Transactional
     public void testIsBuggy(){
+        
+        Repository repository = new Repository();
+        repository.setId("repository/test");
+        repository = repositoryDao.save(repository);
         
         Dataset dataset = new Dataset();
         dataset.setName("dataset_test");
@@ -80,18 +89,21 @@ public class IssueTest {
         buggyCommit.setDataset(dataset);
         buggyCommit.setHash("buggyCommit");
         buggyCommit.setTimestamp(TimeTools.now());
+        buggyCommit.setRepository(repository);
 
         Commit cleanCommit = new Commit();
         cleanCommit.setBuggy(false);
         cleanCommit.setDataset(dataset);
         cleanCommit.setHash("cleanCommit");
         cleanCommit.setTimestamp(TimeTools.now());
+        cleanCommit.setRepository(repository);
 
         Commit buggyCommitWrongDataset = new Commit();
         buggyCommitWrongDataset.setBuggy(true);
         buggyCommitWrongDataset.setDataset(wrongDataset);
         buggyCommitWrongDataset.setHash("buggyCommitWrongDataset");
         buggyCommitWrongDataset.setTimestamp(TimeTools.now());
+        buggyCommitWrongDataset.setRepository(repository);
 
         issue1.getCommits().add(buggyCommit);
         buggyCommit.getIssues().add(issue1);
@@ -102,13 +114,13 @@ public class IssueTest {
         issue3.getCommits().add(buggyCommitWrongDataset);
         buggyCommitWrongDataset.getIssues().add(issue3);
 
-        issueDao.save(issue1);
-        issueDao.save(issue2);
-        issueDao.save(issue3);
-
         commitDao.save(buggyCommit);
         commitDao.save(cleanCommit);
         commitDao.save(buggyCommitWrongDataset);
+        
+        issueDao.save(issue1);
+        issueDao.save(issue2);
+        issueDao.save(issue3);
 
         issue1 = issueDao.findByKey("ISSUE-1");
         issue2 = issueDao.findByKey("ISSUE-2");
@@ -273,5 +285,33 @@ public class IssueTest {
         issueController.getInProgressTemporalSpans(bean);
         assertEquals(0, bean.getTemporalSpans().size());
 
+    }
+
+    @Test
+    @Transactional
+    public void testGetComponents() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+        Gson gson = new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();
+        File issue_sample = new File(ISSUE_EXAMPLES_DIR + "AVRO-1124.json");
+
+        IssueDetails issueDetails = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
+        Issue issue = new Issue();
+        issue.setDetails(issueDetails);
+
+        /**
+         * Test the following cases:
+         * - measurement date is today --> 1 component, id:"12312780"
+         * - measurement date is opening date --> 0 components
+         */
+
+        Timestamp now = TimeTools.now();
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+        Set<String> components;
+
+        components = issueController.getComponentsIds(new IssueBean(issue, now));
+        assertEquals(1, components.size());
+        assertEquals("12312780", components.iterator().next());
+
+        components = issueController.getComponentsIds(new IssueBean(issue, openingDate));
+        assertEquals(0, components.size());
     }
 }
