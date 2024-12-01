@@ -13,6 +13,7 @@ public enum IssueFeature {
     BUGGINESS("Bugginess"),
     PROJECT_CODE_QUALITY("Project code quality"),
     COMMITS_WHILE_IN_PROGRESS("Commits while in progress"),
+    COMPONENTS("Components"),
     ;
 
     private final String name;
