@@ -174,7 +174,7 @@ public class NLPFeaturesMiner extends FeatureMiner{
             buggySimilarityStub.getSimilarityVariants(NlpIssueSimilarityVariantsRequest.newBuilder().build());
         featureNames.clear();
         variantsResponse.getVariantList().forEach(
-            (variant) -> featureNames.add(IssueFeature.BUGGY_SIMILARITY.getName() + ": " + variant));
+            (variant) -> featureNames.add(IssueFeature.BUGGY_SIMILARITY.getFullName() + ": " + variant));
          
         // TODO: read beans from JSON and send them to NLP remote miners
         

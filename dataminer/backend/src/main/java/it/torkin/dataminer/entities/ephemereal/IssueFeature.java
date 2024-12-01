@@ -3,23 +3,56 @@ package it.torkin.dataminer.entities.ephemereal;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Issue features are metrics that can be informative about the issue's bugginess.
+ * Each feature is responsibility of a FeatureMiner, which can measure several variants 
+ * of the feature.
+ */
 @Getter
 @RequiredArgsConstructor
 public enum IssueFeature {
     
-    BUGGY_SIMILARITY("Buggy similarity"),
-    ANFIC("Assignee ANFIC"),
-    TEMPORAL_LOCALITY("Temporal locality"),
-    BUGGINESS("Bugginess"),
-    PROJECT_CODE_QUALITY("Project code quality"),
-    COMMITS_WHILE_IN_PROGRESS("Commits while in progress"),
-    COMPONENTS("Components"),
+    /**
+     * similarity score of this ticket among other tickets known as buggy before the measurement date
+     */
+    BUGGY_SIMILARITY("Buggy similarity", IssueFeatureFamily.R2R),
+    /**
+     * Buggy tickets each dev has been historically assigned.
+     */
+    ANFIC("Assignee ANFIC", IssueFeatureFamily.DEVELOPER),
+    /**
+     * buggy tickets introduced in the last x% of tickets.
+     */
+    TEMPORAL_LOCALITY("Temporal locality", IssueFeatureFamily.TEMPERATURE_ENVIRONMENTAL),
+    /**
+     * If the issue has at least one buggy commit linked to it. Target label to predict
+     */
+    BUGGINESS("Bugginess", null),
+    /**
+     * Technical debt accumulated in the estimated set of classes impacted by the ticket (worst case: the entire project)
+     */
+    PROJECT_CODE_QUALITY("Project code quality", IssueFeatureFamily.CODE),
+    /**
+     * Changes to the codebase introduced while the ticket was in progress
+     */
+    COMMITS_WHILE_IN_PROGRESS("Commits while in progress", IssueFeatureFamily.TEMPERATURE_ENVIRONMENTAL),
+    /**
+     * The components the issue is related to.
+     * In jira, components are a way to group issues within a project.
+     */
+    COMPONENTS("Components", IssueFeatureFamily.INTRINSIC),
     ;
 
     private final String name;
+    private final IssueFeatureFamily family;
 
     @Override
     public String toString(){
-        return this.name;
+        return this.getFullName();
+    }
+
+    public String getFullName(){
+        
+        return this.family == null? this.name : this.family.getName() + "-" + this.name;
     }
 }

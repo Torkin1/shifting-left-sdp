@@ -88,11 +88,11 @@ public class AssigneeANFICMiner extends FeatureMiner{
         }
             
         anfic = issueCount.buggyIssues / issueCount.issues;
-        bean.getMeasurement().getFeatures().add(new DoubleFeature(IssueFeature.ANFIC.getName(), anfic));
+        bean.getMeasurement().getFeatures().add(new DoubleFeature(IssueFeature.ANFIC.getFullName(), anfic));
     }
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.ANFIC.getName());
+        return Set.of(IssueFeature.ANFIC.getFullName());
     }
 }

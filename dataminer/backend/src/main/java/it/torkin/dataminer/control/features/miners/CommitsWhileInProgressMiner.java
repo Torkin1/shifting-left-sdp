@@ -30,8 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CommitsWhileInProgressMiner extends FeatureMiner{
 
-    private static final String COUNT = IssueFeature.COMMITS_WHILE_IN_PROGRESS.getName() + ": " + "Count";
-    private static final String CHURN = IssueFeature.COMMITS_WHILE_IN_PROGRESS.getName() + ": " + "Churn";
+    private static final String COUNT = IssueFeature.COMMITS_WHILE_IN_PROGRESS.getFullName() + ": " + "Count";
+    private static final String CHURN = IssueFeature.COMMITS_WHILE_IN_PROGRESS.getFullName() + ": " + "Churn";
 
     @Autowired private IIssueController issueController;
     @Autowired private GitConfig gitConfig;

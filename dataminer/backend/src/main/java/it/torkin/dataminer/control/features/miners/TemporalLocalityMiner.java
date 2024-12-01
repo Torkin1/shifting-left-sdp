@@ -97,14 +97,14 @@ public class TemporalLocalityMiner extends FeatureMiner{
         
         // store temperature in measurement
         bean.getMeasurement().getFeatures().add(new DoubleFeature(
-            IssueFeature.TEMPORAL_LOCALITY.getName(),
+            IssueFeature.TEMPORAL_LOCALITY.getFullName(),
             temperature));
 
     }
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.TEMPORAL_LOCALITY.getName());
+        return Set.of(IssueFeature.TEMPORAL_LOCALITY.getFullName());
     }
 
     @Override

@@ -236,12 +236,12 @@ public class FeatureController implements IFeatureController{
         CsvSchema.Builder schemaBuilder = new CsvSchema.Builder();
         int i = 0;
         for (String featureName : featureNames){
-            if (!featureName.equals(IssueFeature.BUGGINESS.getName())){
+            if (!featureName.equals(IssueFeature.BUGGINESS.getFullName())){
                 schemaBuilder = schemaBuilder.addColumn(new Column(i, featureName));
                 i++;
             }
         }
-        schemaBuilder = schemaBuilder.addColumn(new Column(i, IssueFeature.BUGGINESS.getName()));
+        schemaBuilder = schemaBuilder.addColumn(new Column(i, IssueFeature.BUGGINESS.getFullName()));
         schemaBuilder = schemaBuilder.setUseHeader(true)
             .setColumnSeparator(',');
         return schemaBuilder.build().withHeader();

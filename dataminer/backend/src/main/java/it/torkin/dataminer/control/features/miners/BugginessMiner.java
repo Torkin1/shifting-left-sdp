@@ -20,11 +20,11 @@ public class BugginessMiner extends FeatureMiner{
     @Override
     public void mine(FeatureMinerBean bean) {
         Boolean isBuggy = issueController.isBuggy(new IssueCommitBean(bean.getIssue(), bean.getDataset()));
-        bean.getMeasurement().getFeatures().add(new BooleanFeature(IssueFeature.BUGGINESS.getName(), isBuggy));
+        bean.getMeasurement().getFeatures().add(new BooleanFeature(IssueFeature.BUGGINESS.getFullName(), isBuggy));
     }
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.BUGGINESS.getName());
+        return Set.of(IssueFeature.BUGGINESS.getFullName());
     }
 }
