@@ -27,7 +27,6 @@ import it.torkin.dataminer.toolbox.math.SafeMath;
 /**
  * #87: Discard % of most recent issues to account for Snoring
  * effects.
- * This filter expects the issues to be temporally sorted.
  */
 @Component
 public class NotMostRecentFilter extends IssueFilter{
