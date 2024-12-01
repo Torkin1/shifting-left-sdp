@@ -24,7 +24,6 @@ import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 /**
  * #207
  */
-// TODO: test
 @Component
 public class ComponentsMiner extends FeatureMiner{
 
@@ -57,6 +56,7 @@ public class ComponentsMiner extends FeatureMiner{
         Issue issue = bean.getIssue();
         Timestamp measurementDate = bean.getMeasurement().getMeasurementDate();
 
+        // gets components at measurement date and count them
         Set<String> componentsIds
          = issueController.getComponentsIds(new IssueBean(issue, measurementDate));
         count = componentsIds.size();
@@ -78,10 +78,11 @@ public class ComponentsMiner extends FeatureMiner{
             .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
             // count occurrences of component in issues
             .forEach(i -> {
-                // calculate intersection of components sets
+                // calculate intersection of current and past issue components sets
                 Set<String> iComponentsIds = issueController.getComponentsIds(new IssueBean(i, measurementDate));
                 iComponentsIds.retainAll(componentsIds);
                 for (String componentId : iComponentsIds){
+                    // count issues and buggy issues for each component
                     issuesByComponentId.put(componentId, issuesByComponentId.get(componentId) + 1);
                     if (issueController.isBuggy(new IssueCommitBean(i, bean.getDataset()))){
                         buggyByComponentId.put(componentId, buggyByComponentId.get(componentId) + 1);
@@ -94,7 +95,7 @@ public class ComponentsMiner extends FeatureMiner{
         for (String componentId : componentsIds) {
             double issueCount = issuesByComponentId.get(componentId);
             double buggyCount = buggyByComponentId.get(componentId);
-            double bugginess = buggyCount / issueCount;
+            double bugginess = issueCount > 0? buggyCount / issueCount : 0;
             if (Double.isFinite(count) && bugginess > maxBugginess) {
                 maxBugginess = bugginess;
             }
