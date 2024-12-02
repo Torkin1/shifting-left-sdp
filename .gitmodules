@@ -1,3 +1,6 @@
 [submodule "6690e6de08775241f5c02450"]
 	path = 6690e6de08775241f5c02450
 	url = https://git@git.overleaf.com/6690e6de08775241f5c02450
+[submodule "dataminer/NLP4RE-LaProva"]
+	path = dataminer/NLP4RE-LaProva
+	url = https://github.com/emanuelegentili/NLP4RE-LaProva
