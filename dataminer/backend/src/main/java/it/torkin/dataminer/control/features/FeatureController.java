@@ -206,8 +206,16 @@ public class FeatureController implements IFeatureController{
                                 Double logBase = measurementConfig.getPrintLogBase();
                                 Number value = ((Number)f.getValue());
                                 Double dValue = logBase == null? value.doubleValue() : new LogNormalizer(logBase).apply(value);
+                                // Truncate value to fit in bounds
+                                if (!Double.isNaN(dValue) && dValue < measurementConfig.getPrintLowerBound()){
+                                    dValue = measurementConfig.getPrintLowerBound();
+                                }
+                                if (!Double.isNaN(dValue) && dValue > measurementConfig.getPrintUpperBound()){
+                                    dValue = measurementConfig.getPrintUpperBound();
+                                }
                                 // print NaNs in a weka compatible way
-                                sValue = Double.isNaN(dValue)? measurementConfig.getPrintNanReplacement() : dValue.toString();                                
+                                sValue = Double.isNaN(dValue)? measurementConfig.getPrintNanReplacement() : dValue.toString();
+                                                                
                             } else {
                                 // feature is not numeric, we print it as is
                                 sValue = f.getValue().toString();

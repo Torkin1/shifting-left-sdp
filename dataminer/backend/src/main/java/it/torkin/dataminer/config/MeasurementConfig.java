@@ -58,5 +58,15 @@ public class MeasurementConfig {
      * If not set, normalization does not take place
      */
     private Double printLogBase;
+
+    /**
+     * Optional Lower bound for normalized values.
+     */
+    private Double printLowerBound = Double.NEGATIVE_INFINITY;
+
+    /**
+     * Optional Upper bound for normalized values.
+     */
+    private Double printUpperBound = Double.POSITIVE_INFINITY;
     
 }
