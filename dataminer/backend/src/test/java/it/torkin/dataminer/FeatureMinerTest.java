@@ -25,7 +25,7 @@ import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException
 import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IFeatureController;
 import it.torkin.dataminer.control.features.miners.AssigneeANFICMiner;
-import it.torkin.dataminer.control.features.miners.NLPFeaturesMiner;
+import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
 import it.torkin.dataminer.control.features.miners.ProjectCodeQualityMiner;
 import it.torkin.dataminer.control.features.miners.TemporalLocalityMiner;
 import it.torkin.dataminer.control.features.miners.UnableToInitNLPFeaturesMinerException;
@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FeatureMinerTest {
 
-    @Autowired private NLPFeaturesMiner nlpFeaturesMiner;
+    @Autowired private BuggySimilarityMiner nlpFeaturesMiner;
     @Autowired private NLPFeaturesConfig config;
 
     @Autowired private IFeatureController featureController;

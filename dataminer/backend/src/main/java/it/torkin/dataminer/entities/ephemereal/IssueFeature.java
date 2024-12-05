@@ -41,6 +41,14 @@ public enum IssueFeature {
      * In jira, components are a way to group issues within a project.
      */
     COMPONENTS("Components", IssueFeatureFamily.INTRINSIC),
+    /**
+     * Features that analyze the issue's description and summary using nlp techniques.
+     */
+    NLP_DESCRIPTION("NLP Description", IssueFeatureFamily.INTRINSIC),
+    /**
+     * Features that analyze the issue's sentiment using nlp techniques. 
+     */
+    NLP_SENTIMENT("NLP Sentiment", IssueFeatureFamily.TEMPERATURE_INTERNAL),
     ;
 
     private final String name;
