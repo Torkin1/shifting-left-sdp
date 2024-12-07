@@ -38,7 +38,7 @@ public class IssueFields{
     })
     @Embedded private IssueWatcher watcher;
     @Embedded private IssueCommentLog comment;  // make sure to iterate over all pages
-    @Embedded private IssueWorkLog worklog; // make sure to iterate over all pages
+    @Embedded private IssueWorklog worklog; // make sure to iterate over all pages
     @Embedded private IssueTimeTracking timetracking;
     @AttributeOverrides({
         @AttributeOverride(name = "progress", column = @Column(name="issue_progress_aggregate_progress")),

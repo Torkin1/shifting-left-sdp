@@ -25,6 +25,7 @@ import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.dao.jira.UnableToGetIssueException;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.entities.jira.issue.IssueStatus;
+import it.torkin.dataminer.entities.jira.issue.IssueWorklog;
 import it.torkin.dataminer.rest.UnableToGetResourceException;
 import it.torkin.dataminer.rest.parsing.AnnotationExclusionStrategy;
 import jakarta.transaction.Transactional;
@@ -73,5 +74,16 @@ public class JiraDaoTest extends AbstractTransactionalJUnit4SpringContextTests{
         IssueStatus status = statuses[0];
         assertEquals("1", status.getJiraId());
         assertEquals(2, status.getStatusCategory().getJiraId());
+    }
+
+    @Test
+    public void testExpandedWorklog() throws UnableToGetIssueException{
+        JiraDao jiraDao = new JiraDao(jiraConfig);
+        final String issueKey = "ZOOKEEPER-2184";
+        IssueDetails issueDetails = jiraDao.queryIssueDetails(issueKey);
+        IssueWorklog worklog = issueDetails.getFields().getWorklog();
+        assertEquals(66, worklog.getTotal());
+        assertEquals(worklog.getTotal(), worklog.getMaxResults());
+        assertEquals(worklog.getTotal(), worklog.getWorklogs().size());
     }
 }

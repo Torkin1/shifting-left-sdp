@@ -13,7 +13,7 @@ import lombok.Data;
  */
 @Data
 @Embeddable
-public class IssueWorkLog{
+public class IssueWorklog{
     @Transient
     private int start;
     @Transient
