@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor
 @Slf4j
-class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
+class IssueFieldGetter<F> implements Function<IssueFieldBean, F> {
     
     /**
      * The caller knows which issue details attribute corresponds
@@ -39,7 +39,7 @@ class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
     private final Function<List<HistoryEntry>, F> mapEntryToFieldValue;
     
     @Override
-    public F apply(IssueFieldGetterBean bean) {
+    public F apply(IssueFieldBean bean) {
         
         if (!checkMeasurementDate(bean.getIssueBean(), bean.getIssueField())) return null;
 

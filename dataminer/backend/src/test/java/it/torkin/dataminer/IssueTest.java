@@ -314,4 +314,27 @@ public class IssueTest {
         components = issueController.getComponentsIds(new IssueBean(issue, openingDate));
         assertEquals(0, components.size());
     }
+
+    @Test
+    @Transactional
+    public void TestGetAssigneeChangeset() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+        Gson gson = new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();
+        File issue_sample = new File(ISSUE_EXAMPLES_DIR + "ZOOKEEPER-107.json"); 
+        
+        IssueDetails issueDetails = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
+        Issue issue = new Issue();
+        issue.setDetails(issueDetails);
+
+        Timestamp historyTimestamp = Timestamp.from(Instant.parse("2009-06-15T22:55:46.519Z"));
+        Timestamp now = TimeTools.now();
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+
+        Set<String> assigneeChangSet= issueController.getAssigneeChangeset(new IssueBean(issue, now));
+        Set<String> reporterChangeSet = issueController.getReporterChangeset(new IssueBean(issue, now));
+        log.debug("Assignee changeset at now: {}", assigneeChangSet);
+        log.debug("Reporter changeset at now: {}", reporterChangeSet);
+        assertEquals(4, assigneeChangSet.size());
+
+
+    }
 }

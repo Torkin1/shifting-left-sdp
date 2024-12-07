@@ -87,4 +87,21 @@ public interface IIssueController {
      * Gets list of issue components ids at measurement date 
      */
     public Set<String> getComponentsIds(IssueBean bean);
-}
+
+    /**
+     * Gets set of values the reporter field has taken during the issue lifecycle
+     * until the specified measurement date.
+     * 
+     * @param bean
+     * @return
+     */
+    public Set<String> getReporterChangeset(IssueBean bean);
+
+        /**
+     * Gets set of values the assignee field has taken during the issue lifecycle
+     * until the specified measurement date.
+     * @param bean
+     * @return
+     */
+    public Set<String> getAssigneeChangeset(IssueBean bean);
+    }

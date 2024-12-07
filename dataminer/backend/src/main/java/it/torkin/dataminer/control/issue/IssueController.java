@@ -44,7 +44,7 @@ public class IssueController implements IIssueController{
      *  
      */
     @RequiredArgsConstructor
-    private class IssueFieldGetter<F> implements Function<IssueFieldGetterBean, F> {
+    private class IssueFieldGetter<F> implements Function<IssueFieldBean, F> {
         
         /**
          * The caller knows which issue details attribute corresponds
@@ -58,21 +58,49 @@ public class IssueController implements IIssueController{
         private final Function<List<HistoryEntry>, F> mapEntryToFieldValue;
         
         @Override
-        public F apply(IssueFieldGetterBean bean) {
+        public F apply(IssueFieldBean bean) {
             
             if (!checkMeasurementDate(bean.getIssueBean(), bean.getIssueField())) return null;
     
-            IssueHistory history = findLastHistory(bean.getIssueBean(), bean.getIssueField());
-            if (history == null) {
-                // no changes applied to description since the opening of the issue
+            List<IssueHistory> histories = findHistories(bean.getIssueBean(), bean.getIssueField());
+            if (histories.isEmpty()) {
+                // no changes applied to wanted field since the opening of the issue
                 return getValueFromDetailsFields.apply(bean.getIssueBean().getIssue().getDetails().getFields());
             } else {
+                IssueHistory history = histories.get(histories.size() - 1);
                 List<IssueHistoryItem> items = getHistoryItems(history, bean.getIssueField());
                 return mapEntryToFieldValue.apply(extractValueFromHistoryItems(items, history.getCreated(), bean.getIssueBean().getMeasurementDate()));
             }
         }
                 
     }
+
+    /**
+     * Searches all value a field had until the measurement date.
+     * See {@link IssueFieldGetter} for more details.
+     */
+    @RequiredArgsConstructor
+    private class IssueFieldChangesGetter<F> implements Function<IssueFieldBean, Set<F>> {
+        private final Function<IssueFields, F> getValueFromDetailsFields;
+        private final Function<List<HistoryEntry>, F> mapEntryToFieldValue;
+        
+        @Override
+        public Set<F> apply(IssueFieldBean bean) {
+            List<IssueHistory> histories = findHistories(bean.getIssueBean(), bean.getIssueField());
+            Set<F> changeset = new HashSet<>();
+
+            for (IssueHistory history : histories){
+                List<IssueHistoryItem> items = getHistoryItems(history, bean.getIssueField());
+                List<HistoryEntry> entries = extractValueFromHistoryItems(items, history.getCreated(), bean.getIssueBean().getMeasurementDate());
+                changeset.add(mapEntryToFieldValue.apply(entries));
+            }
+
+            F valueFromDetails = getValueFromDetailsFields.apply(bean.getIssueBean().getIssue().getDetails().getFields());
+            changeset.add(valueFromDetails);
+            return changeset;
+        }
+    }
+
         
     @Autowired private JiraConfig jiraConfig;
     
@@ -143,7 +171,7 @@ public class IssueController implements IIssueController{
         return new IssueFieldGetter<String>(
             fields -> fields.getDescription() == null? "" : fields.getDescription(),
             entries -> entries.get(0).getValueString()
-        ).apply(new IssueFieldGetterBean(bean, IssueField.DESCRIPTION));        
+        ).apply(new IssueFieldBean(bean, IssueField.DESCRIPTION));        
     }
 
     @Override
@@ -151,7 +179,7 @@ public class IssueController implements IIssueController{
         return new IssueFieldGetter<String>(
             fields -> fields.getSummary() == null? "" : fields.getSummary(),
             entries -> entries.get(0).getValueString()
-        ).apply(new IssueFieldGetterBean(bean, IssueField.SUMMARY));
+        ).apply(new IssueFieldBean(bean, IssueField.SUMMARY));
     }
 
     @Override
@@ -159,7 +187,7 @@ public class IssueController implements IIssueController{
         return new IssueFieldGetter<String>(
             fields -> fields.getAssignee() == null? "" : fields.getAssignee().getKey(),
             entries -> entries.get(0).getValue()
-        ).apply(new IssueFieldGetterBean(bean, IssueField.ASSIGNEE));
+        ).apply(new IssueFieldBean(bean, IssueField.ASSIGNEE));
     }
 
     private boolean changelogContains(Issue issue, HistoryEntry example, Timestamp measurementDate, boolean and){
@@ -203,21 +231,23 @@ public class IssueController implements IIssueController{
 
     }
 
-    private IssueHistory findLastHistory(IssueBean bean, IssueField field){
-    
-        // we cannot filter away histories after measurement date yet since we need to check
-        // in which case we are (see below)
-        List<IssueHistory> histories = getHistories(new IssueBean(bean.getIssue(), TimeTools.now()), field);
+    /**
+     * A smarter version of getHistories() that searches for changes in the given field
+     * (see method comments for more details)
+     */
+    private List<IssueHistory> findHistories(IssueBean bean, IssueField field){
         
+        // get list of histories until now that have at least one item related to the given field
+        // ordered by creation date
+        List<IssueHistory> histories = getHistories(new IssueBean(bean.getIssue(), TimeTools.now()), field);
+
         /**
-         * At this point we have a list of histories that have at least one item
-         * related to the given field, ordered by creation date.
-         * 
          * We can be in one among the following situations:
          * 
          * 1. The list is empty: there is no history related to the given field
          *      => the field never changed since the opening of the issue
-         *      => we return null, the wanted value is not present in the changelog
+         *      => we return an empty list, the wanted value is not present
+         *         in the changelog
          * 
          * 2. The list is not empty, but the first history is after the measurement date
          *     => the field did change, but after the measurement date.
@@ -225,23 +255,25 @@ public class IssueController implements IIssueController{
          *        and can be accessed using the from|fromString IssueHistoryItem fields
          * 
          * 3. The list is not empty, and the first history is before the measurement date
-         *    => the field did change in a time following the measurement date
+         *    => the field did change in a time before the measurement date
          *    => we return the last history that is not after the measurement date
          *       since it contains the wanted value in the to|toString IssueHistoryItem fields
          */
 
-        if (histories.isEmpty()) return null;   // case 1
-        else {
-            return histories.stream()
-                // accept only histories that are not after the measurement date
-                .filter(history -> !history.getCreated().after(bean.getMeasurementDate()))
-                // if some history survives we are in case 3, otherwise in case 2
-                .reduce((h1, h2) -> h2)
-                .orElse(histories.get(0));
+        List<IssueHistory> result = new ArrayList<>();
+        if (!histories.isEmpty()){
+            result.addAll(histories.stream()
+            // accept only histories that are not after the measurement date
+            .filter(history -> !history.getCreated().after(bean.getMeasurementDate()))
+            .toList());
+            // if some history survives we are in case 3, otherwise in case 2
+            if (result.isEmpty()){
+                result.add(histories.get(0));
+            }
         }
-        
+        return result;
     }
-
+    
     private List<IssueHistoryItem> getHistoryItems(IssueHistory history, IssueField field){
         return history.getItems().stream()
             .filter(item -> item.getField().equals(field.getName()))
@@ -382,5 +414,23 @@ public class IssueController implements IIssueController{
             }
         }
         return components;
+    }
+
+    @Override
+    public Set<String> getReporterChangeset(IssueBean bean){
+
+        return new IssueFieldChangesGetter<String>(
+            fields -> fields.getReporter() == null? "" : fields.getReporter().getKey(),
+            entries -> entries.get(0).getValue()
+        ).apply(new IssueFieldBean(bean, IssueField.REPORTER));
+    }
+
+    @Override
+    public Set<String> getAssigneeChangeset(IssueBean bean){
+
+        return new IssueFieldChangesGetter<String>(
+            fields -> fields.getAssignee() == null? "" : fields.getAssignee().getKey(),
+            entries -> entries.get(0).getValue()
+        ).apply(new IssueFieldBean(bean, IssueField.ASSIGNEE));
     }
 }
