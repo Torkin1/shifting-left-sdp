@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import it.torkin.dataminer.config.ForkConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -58,11 +59,13 @@ public class BuggySimilarityMiner extends FeatureMiner{
     @Autowired private NLPFeaturesConfig config;
     @Autowired private DatasetDao datasetDao;
     @Autowired private List<MeasurementDate> measurementDates;
+    // TODO: find a more elegant way than leaking fork constructs here
+    @Autowired private ForkConfig forkConfig;
 
     private BuggyTicketsSimilarityMiningBlockingStub buggySimilarityStub;
 
     private Set<String> featureNames = new HashSet<>();
-    
+
     private void serializeBean(JsonWriter writer, NlpIssueBean bean) throws IOException{
 
         writer.beginObject();
@@ -77,19 +80,19 @@ public class BuggySimilarityMiner extends FeatureMiner{
         writer.name("date").value(
             new SimpleDateFormat("yyyy-MM-dd").format(Date.from(
                 Instant.ofEpochSecond(bean.getMeasurementDate().getSeconds(),
-                 bean.getMeasurementDate().getNanos()))));        
+                 bean.getMeasurementDate().getNanos()))));
 
         writer.endObject();
     }
 
     private NlpIssueBean prepareBean(Issue issue, Dataset dataset, MeasurementDate measurementDate){
-        
+
         IssueFields fields = issue.getDetails().getFields();
         Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
-        
+
         String description = issueController.getDescription(new IssueBean(issue, measurementDateValue));
         String title = issueController.getTitle(new IssueBean(issue, measurementDateValue));
-        
+
         NlpIssueBean.Builder beanBuilder = NlpIssueBean.newBuilder()
             .setDataset(dataset.getName())
             .setProject(fields.getProject().getKey())
@@ -107,11 +110,11 @@ public class BuggySimilarityMiner extends FeatureMiner{
         if (title != null){
             beanBuilder.setTitle(title);
         }
-        
+
         return beanBuilder.build();
 
     }
-    
+
     /**
      * Dumps issue beans to a JSON file
      */
@@ -121,13 +124,13 @@ public class BuggySimilarityMiner extends FeatureMiner{
         ProcessedIssuesBean processedIssuesBean;
 
         try (JsonWriter writer = new JsonWriter(new FileWriter(outputFile))) {
-            
+
             writer.beginArray();
 
             datasets = datasetDao.findAll();
             for (Dataset dataset : datasets) {
                 for (MeasurementDate measurementDate : measurementDates) {
-                    
+
                     // query db for processed issues
                     processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                     processedDatasetController.getFilteredIssues(processedIssuesBean);
@@ -149,21 +152,21 @@ public class BuggySimilarityMiner extends FeatureMiner{
         }
 
     }
-    
+
     @Override
     @Transactional
     public void init() throws UnableToInitNLPFeaturesMinerException {
-        
+
         // disable miner if remote is not available
         if (config.getBuggySimilarityGrpcTarget() == null){
             log.warn("no remote nlp target set, the following features will not be mined: {}", this.getFeatureNames());
             return;
         }
-        
+
         try{
             File serializedIssueSummariesFile = new File(config.getNlpIssueBeans());
-        
-            if (!serializedIssueSummariesFile.exists()){
+
+            if (!serializedIssueSummariesFile.exists() && !forkConfig.isChild()){
                 serializeIssueBeans(serializedIssueSummariesFile);
         }
 

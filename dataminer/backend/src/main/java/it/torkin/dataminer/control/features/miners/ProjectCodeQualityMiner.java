@@ -49,10 +49,8 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
     };
 
     @Autowired private DatasetDao datasetDao;
-    @Autowired private ProjectCodeQualityConfig config;
 
     private Map<String, Map<String, String>> repoByProjectByDataset = new HashMap<>();
-    private CodeSmellsMiningBlockingStub codeSmellsStub;
 
     @Autowired private GitConfig gitConfig;
     @Autowired private DataConfig dataConfig;
@@ -60,12 +58,6 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
     @Override
     @Transactional
     public void init() throws Exception {
-        
-        // // disable miner if remote is not available
-        // if (config.getGrpcTarget() == null){
-        //     log.warn("no remote target set, the following features will not be mined: {}", this.getFeatureNames());
-        //     return;
-        // }
         
         // caches all project-repo mappings for every dataset
         List<Dataset> datasets = datasetDao.findAll();
@@ -76,20 +68,11 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
             repoByProject.putAll(dataset.getGuessedRepoByProjects());
         }
 
-        // Channel channel = ManagedChannelBuilder.forTarget(config.getGrpcTarget())
-        //     .usePlaintext()
-        //     .build();
-        // codeSmellsStub = CodeSmellsMiningGrpc.newBlockingStub(channel);
-        
     }
 
     @Override
     @Transactional
     public void mine(FeatureMinerBean bean) {
-        
-        // if (config.getGrpcTarget() == null){
-        //     return;
-        // }
         
         Integer smellsCount;
         
@@ -109,7 +92,6 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
                 .build())
             .build();
         try{
-            // CodeSmellsCountResponse response = codeSmellsStub.countSmells(request);
             CodeSmellsCountResponse response = processRequest(request);
             smellsCount = response.getSmellsCount();
         } catch (Exception e){
@@ -122,6 +104,11 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
         
     }
 
+    /**
+     * Once a remote miner, now refactored to be launched from parallel forks
+     * @param request
+     * @return
+     */
     private CodeSmellsCountResponse processRequest(CodeSmellsCountRequest request) {
         
         Integer smellsCount;
@@ -136,7 +123,6 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
             System.out.println("requested to measure code quality of repo "+request.getRepoCoordinates().getName()+ " at " +measurementDate);
             gitDao.checkout(measurementDate);
 
-            //pmd check -d . -R rulesets/java/quickstart.xml -f csv -r /violations.csv
             File repository = new File(gitConfig.getReposDir() + "/" + request.getRepoCoordinates().getName());
             File violationsFile = new File(dataDirName+"/violations.csv");
             (new ProcessBuilder("/pmd/bin/pmd", "check", "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))

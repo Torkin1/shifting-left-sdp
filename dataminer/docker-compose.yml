@@ -3,7 +3,6 @@ version: '3.1'
 volumes:
   db_data:
   backend_data:
-  codesmells_data:
 
 services:
     
@@ -12,7 +11,6 @@ services:
     depends_on:
       - db
       - buggy-similarity
-      - project-code-quality
     build:
       context: ./backend
       additional_contexts:
@@ -61,17 +59,3 @@ services:
       - 8080
     volumes:
       - ./TestRequirementSimilarityLaProvaV8/data:/buggy-similarity/data/
-
-  project-code-quality:
-    build:
-      context: ./codesmells
-      additional_contexts:
-        proto: ./proto
-      dockerfile: src/main/resources/Dockerfile.codesmells
-    environment:
-      - GRPC_PORT=8080
-    expose:
-      - 8080
-    volumes:
-      - codesmells_data:/codesmells/data/
-    

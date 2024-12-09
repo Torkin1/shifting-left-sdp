@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import it.torkin.dataminer.dao.local.IssueStatusDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -103,6 +104,7 @@ public class IssueController implements IIssueController{
 
         
     @Autowired private JiraConfig jiraConfig;
+    @Autowired private IssueStatusDao issueStatusDao;
     
     private Set<String> inProgressIssueStatuses = new HashSet<>();
     private JiraDao jiraDao;
@@ -219,7 +221,7 @@ public class IssueController implements IIssueController{
     }
 
     private void initInProgressIssueStatusCategoryIds() throws UnableToGetResourceException{
-        IssueStatus[] issueStatuses = jiraDao.queryIssueStatuses();
+        List<IssueStatus> issueStatuses = issueStatusDao.findAll();
         final String inProgress = "In Progress";
 
         // All statuses with a status category named "In Progress" are considered in progress
