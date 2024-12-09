@@ -1,8 +1,12 @@
 package it.torkin.dataminer.control.issue;
 
+import java.util.List;
 import java.util.Set;
 
 import it.torkin.dataminer.entities.dataset.Commit;
+import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
+import it.torkin.dataminer.entities.jira.issue.IssueComment;
+import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 
 /**
  * Expose methods to get information about issues
@@ -104,4 +108,25 @@ public interface IIssueController {
      * @return
      */
     public Set<String> getAssigneeChangeset(IssueBean bean);
-    }
+
+    /**
+     * Gets comments before the specified measurement date
+     */
+    public List<IssueComment> getComments(IssueBean bean);
+
+    /**
+     * Gets worklog items before the specified measurement date
+     */
+    public List<IssueWorkItem> getWorkItems(IssueBean bean);
+
+    /**
+     * Gets attachments before the specified measurement date
+     */
+    public List<IssueAttachment> getAttachments(IssueBean bean);
+
+    /**
+     * Gets sets of developer ids that have authored changes on the issue
+     * before the specified measurement date.
+     */
+    public Set<String> getHistoryAuthors(IssueBean bean);
+}

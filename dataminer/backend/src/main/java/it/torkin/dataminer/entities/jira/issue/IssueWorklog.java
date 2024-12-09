@@ -5,12 +5,10 @@ import java.util.List;
 
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Transient;
 import lombok.Data;
 
-/**
- * TODO: iterate over all pages of worklog to fetch all worklog items
- */
 @Data
 @Embeddable
 public class IssueWorklog{
@@ -21,5 +19,6 @@ public class IssueWorklog{
     @Transient
     private int total;
     @ElementCollection
+    @OrderBy("created ASC")
     private List<IssueWorkItem> worklogs = new ArrayList<>();
 }

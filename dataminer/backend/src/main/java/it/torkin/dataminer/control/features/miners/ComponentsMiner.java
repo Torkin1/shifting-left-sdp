@@ -13,6 +13,7 @@ import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
@@ -20,7 +21,6 @@ import it.torkin.dataminer.control.issue.IssueMeasurementDateBean;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
-import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 /**
  * #207
  */

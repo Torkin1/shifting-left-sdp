@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueTemporalSpanBean;
 import it.torkin.dataminer.control.issue.TemporalSpan;
@@ -20,7 +21,6 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.LongFeature;
-import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import lombok.extern.slf4j.Slf4j;
 
 /**

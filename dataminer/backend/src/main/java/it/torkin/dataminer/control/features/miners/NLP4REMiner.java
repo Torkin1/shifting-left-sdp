@@ -9,11 +9,11 @@ import java.util.HashSet;
 import java.util.Map;
 
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
-import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.control.features.IssueFeature;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

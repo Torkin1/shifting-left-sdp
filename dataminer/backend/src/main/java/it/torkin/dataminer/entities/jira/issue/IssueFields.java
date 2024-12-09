@@ -18,6 +18,7 @@ import jakarta.persistence.Embedded;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OrderBy;
 import lombok.Data;
 
 @Embeddable
@@ -53,6 +54,7 @@ public class IssueFields{
 
     @SerializedName("attachment")
     @ElementCollection
+    @OrderBy("created ASC")
     private List<IssueAttachment> attachments = new ArrayList<>();
     
     @ElementCollection

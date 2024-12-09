@@ -337,4 +337,41 @@ public class IssueTest {
 
 
     }
+
+    @Test
+    @Transactional
+    public void testGetHistoryAuthors() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+        Gson gson = new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();
+        File issue_sample = new File(ISSUE_EXAMPLES_DIR + "AVRO-1582.json"); 
+        
+        IssueDetails issueDetails = gson.fromJson(new JsonReader(new FileReader(issue_sample.getAbsolutePath())), IssueDetails.class);
+        Issue issue = new Issue();
+        issue.setDetails(issueDetails);
+
+        /**
+         * now: author keys are zolyfarkas, busbey, ipv6guru, ryanskraba, JIRAUSER280391, JIRAUSER290540
+         * 2014-09-08T19:49:05.770Z: author keys are zolyfarkas
+         * 2014-09-08T19:49:00.000Z: no authors
+         */
+        Timestamp now = TimeTools.now();
+        Timestamp firstHistoryTimestamp = Timestamp.from(Instant.parse("2014-09-08T19:49:05.770Z"));
+        Timestamp beforeFirstHistoryTimestamp = Timestamp.from(Instant.parse("2014-09-08T19:49:00.000Z"));
+
+        Set<String> authorsNow = issueController.getHistoryAuthors(new IssueBean(issue, now));
+        Set<String> authorsAtHistoryTimestamp = issueController.getHistoryAuthors(new IssueBean(issue, firstHistoryTimestamp));
+        Set<String> authorsBeforeHistoryTimestamp = issueController.getHistoryAuthors(new IssueBean(issue, beforeFirstHistoryTimestamp));
+
+        assertEquals(6, authorsNow.size());
+        assertTrue(authorsNow.contains("zolyfarkas"));
+        assertTrue(authorsNow.contains("busbey"));
+        assertTrue(authorsNow.contains("ipv6guru"));
+        assertTrue(authorsNow.contains("ryanskraba"));
+        assertTrue(authorsNow.contains("JIRAUSER280391"));
+        assertTrue(authorsNow.contains("JIRAUSER290540"));
+
+        assertEquals(1, authorsAtHistoryTimestamp.size());
+        assertTrue(authorsAtHistoryTimestamp.contains("zolyfarkas"));
+
+        assertEquals(0, authorsBeforeHistoryTimestamp.size());
+    }
 }

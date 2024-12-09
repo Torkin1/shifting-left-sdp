@@ -30,7 +30,6 @@ import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
-import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
