@@ -1,6 +1,11 @@
 package it.torkin.dataminer.control.features.miners;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +21,12 @@ import it.torkin.dataminer.CodeSmellsMiningGrpc.CodeSmellsMiningBlockingStub;
 import it.torkin.dataminer.Smells.CodeSmellsCountRequest;
 import it.torkin.dataminer.Smells.CodeSmellsCountResponse;
 import it.torkin.dataminer.Smells.RepoCoordinates;
+import it.torkin.dataminer.config.DataConfig;
+import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.features.ProjectCodeQualityConfig;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
@@ -45,16 +53,19 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
 
     private Map<String, Map<String, String>> repoByProjectByDataset = new HashMap<>();
     private CodeSmellsMiningBlockingStub codeSmellsStub;
+
+    @Autowired private GitConfig gitConfig;
+    @Autowired private DataConfig dataConfig;
     
     @Override
     @Transactional
     public void init() throws Exception {
         
-        // disable miner if remote is not available
-        if (config.getGrpcTarget() == null){
-            log.warn("no remote target set, the following features will not be mined: {}", this.getFeatureNames());
-            return;
-        }
+        // // disable miner if remote is not available
+        // if (config.getGrpcTarget() == null){
+        //     log.warn("no remote target set, the following features will not be mined: {}", this.getFeatureNames());
+        //     return;
+        // }
         
         // caches all project-repo mappings for every dataset
         List<Dataset> datasets = datasetDao.findAll();
@@ -65,10 +76,10 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
             repoByProject.putAll(dataset.getGuessedRepoByProjects());
         }
 
-        Channel channel = ManagedChannelBuilder.forTarget(config.getGrpcTarget())
-            .usePlaintext()
-            .build();
-        codeSmellsStub = CodeSmellsMiningGrpc.newBlockingStub(channel);
+        // Channel channel = ManagedChannelBuilder.forTarget(config.getGrpcTarget())
+        //     .usePlaintext()
+        //     .build();
+        // codeSmellsStub = CodeSmellsMiningGrpc.newBlockingStub(channel);
         
     }
 
@@ -76,9 +87,9 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
     @Transactional
     public void mine(FeatureMinerBean bean) {
         
-        if (config.getGrpcTarget() == null){
-            return;
-        }
+        // if (config.getGrpcTarget() == null){
+        //     return;
+        // }
         
         Integer smellsCount;
         
@@ -98,7 +109,8 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
                 .build())
             .build();
         try{
-            CodeSmellsCountResponse response = codeSmellsStub.countSmells(request);
+            // CodeSmellsCountResponse response = codeSmellsStub.countSmells(request);
+            CodeSmellsCountResponse response = processRequest(request);
             smellsCount = response.getSmellsCount();
         } catch (Exception e){
             Log.error("unable to mine smells for repo {} using issue {} at {}", repository, bean.getIssue().getKey(), bean.getMeasurement().getMeasurementDateName(), e);
@@ -108,6 +120,47 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
         // store results in the measurement object
         bean.getMeasurement().getFeatures().add(new IntegerFeature(featureSubNames[0], smellsCount));
         
+    }
+
+    private CodeSmellsCountResponse processRequest(CodeSmellsCountRequest request) {
+        
+        Integer smellsCount;
+        String dataDirName = dataConfig.getDir();
+        
+        try (GitDao gitDao = new GitDao(gitConfig, request.getRepoCoordinates().getName())){
+
+            // checkout corresponding repo at measurement date
+            Date measurementDate = Date.from(Instant.ofEpochSecond(
+                request.getMeasurementDate().getSeconds(),
+                request.getMeasurementDate().getNanos()));
+            System.out.println("requested to measure code quality of repo "+request.getRepoCoordinates().getName()+ " at " +measurementDate);
+            gitDao.checkout(measurementDate);
+
+            //pmd check -d . -R rulesets/java/quickstart.xml -f csv -r /violations.csv
+            File repository = new File(gitConfig.getReposDir() + "/" + request.getRepoCoordinates().getName());
+            File violationsFile = new File(dataDirName+"/violations.csv");
+            (new ProcessBuilder("/pmd/bin/pmd", "check", "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
+                    .directory(repository)
+                    .inheritIO()
+                    .start();
+
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(violationsFile))) {
+                smellsCount = 0;
+                reader.skip(1);
+                while (reader.readLine() != null) smellsCount ++;
+            }
+
+
+        } catch (Exception e) {
+            Log.error("unable to mine smells for repo {} ", request.getRepoCoordinates().getName(), e);
+            smellsCount = -1;
+        }
+
+        System.out.println("smellscount: "+smellsCount);
+        return CodeSmellsCountResponse.newBuilder()
+            .setSmellsCount(smellsCount)
+            .build();
     }
 
     @Override

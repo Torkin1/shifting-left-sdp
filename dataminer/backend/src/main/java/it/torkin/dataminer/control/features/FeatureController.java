@@ -1,8 +1,13 @@
 package it.torkin.dataminer.control.features;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.file.Files;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,6 +17,7 @@ import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
@@ -19,6 +25,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema.Column;
 
+import it.torkin.dataminer.config.ForkConfig;
 import it.torkin.dataminer.config.MeasurementConfig;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
@@ -28,12 +35,14 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.dao.local.MeasurementDao;
+import it.torkin.dataminer.dao.local.ProjectDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
 import it.torkin.dataminer.entities.dataset.features.Feature;
 import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
+import it.torkin.dataminer.toolbox.Holder;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
 import lombok.Data;
@@ -49,11 +58,15 @@ public class FeatureController implements IFeatureController{
     @Autowired private DatasetDao datasetDao;
     @Autowired private IssueDao issueDao;
     @Autowired private MeasurementDao measurementDao;
+    @Autowired private ProjectDao projectDao;
     
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private IMeasurementDateController measurementDateController;
 
     @Autowired private MeasurementConfig measurementConfig;
+    @Autowired private ForkConfig forkConfig;
+
+    @Autowired TransactionTemplate transaction;
 
     @Override
     @Transactional
@@ -86,94 +99,189 @@ public class FeatureController implements IFeatureController{
             count++;
         }
     }
-
-    @Data
-    private class LastProjectHolder{
-        private Project project = null;
-    }
     
     @Override
-    @Transactional
     public void mineFeatures(){
                 
         if (measurementPrintExists()){
             log.info("Measurement prints already exists, skipping mining");
             return;
         }
+
+        /**
+         * Childs mine their part of the dataset and die
+         */
+        if (forkConfig.isChild()){
+            transaction.executeWithoutResult(status -> {
+                try {
+                    mineFeaturesAsFork();
+                } catch (IOException e) {
+                    status.setRollbackOnly();
+                    throw new RuntimeException("Cannot mine features as fork "+forkConfig.getIndex(), e);
+                }
+            });
+            return;
+        }
         
+        /**
+         * Main process divides issues among forks
+         */
         List<Dataset> datasets = datasetDao.findAll();
-        ProcessedIssuesBean processedIssuesBean;
         List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
 
-        for (Dataset dataset : datasets) {
-            for (MeasurementDate measurementDate : measurementDates) {
-                
-                log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
-
-                // collect processed issue
-                processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
-                processedDatasetController.getFilteredIssues(processedIssuesBean);
-                LastProjectHolder lastProjectHolder = new LastProjectHolder();
-                try( Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
-                    ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
+        transaction.executeWithoutResult(status -> {
+            ProcessedIssuesBean processedIssuesBean;
+    
+            // prepare inputs for forks
+            for (Dataset dataset : datasets) {
+                for (MeasurementDate measurementDate : measurementDates) {
                     
-                    IssueCount issueCount = new IssueCount();
-                    issues.forEach( issue -> {
-                        
-                        progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
-
-                        // issues are ordered by project, so we can print measurements for a project
-                        // when we reach the next project
-                        if (lastProjectHolder.getProject() != null && !lastProjectHolder.getProject().getKey().equals(issue.getDetails().getFields().getProject().getKey())){
-                            try{
-                                printMeasurements(dataset, lastProjectHolder.getProject(), measurementDate);
-                            } catch (IOException e){
-                                log.error("Cannot print measurements for {} at {}", dataset.getName(), measurementDate.getName(), e);
+                    log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
+    
+                    // collect processed issue
+                    processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
+                    processedDatasetController.getFilteredIssues(processedIssuesBean);
+                    Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
+                    
+                    try(issues){
+                        List<BufferedWriter> writers = new ArrayList<>();
+                        for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
+                            File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
+                            BufferedWriter writer = new BufferedWriter(new FileWriter(minerInputFile));
+                            writers.add(writer);
+                        }
+    
+                        Holder<Integer> fork = new Holder<>(0);
+                        issues.forEach(issue -> {
+                            BufferedWriter writer = writers.get(fork.getValue());
+                            try {
+                                writer.write(issue.getKey());
+                                writer.newLine();
+                                fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
+                            } catch (IOException e) {
+                                throw new RuntimeException("Cannot write issue to miner input file", e);
                             }
+                        });
+                        for (Writer writer : writers){
+                            writer.close();
                         }
-                        lastProjectHolder.setProject(issue.getDetails().getFields().getProject());
-
-                        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
-
-                        // update already existing measurements instead of replacing it with a new one
-                        Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
-                        if (measurement == null){
-                            measurement = new Measurement();
-                            measurement.setMeasurementDate(measurementDateValue);
-                            measurement.setMeasurementDateName(measurementDate.getName());
-                            measurement.setIssue(issue);
-                            measurement.setDataset(dataset);
-                        }
-
-                        FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
-                        doMeasurements(bean);
-                        saveMeasurement(bean);
-
-                        progressBar.step();
-                        issueCount.add();
-
-
-                    });
-                    
-                    log.info("measured {} issues", issueCount.getCount());
-                }
-
-                // print measurements for the last project
-                if (lastProjectHolder.getProject() != null){
-                    try{
-                        printMeasurements(dataset, lastProjectHolder.getProject(), measurementDate);
-                    } catch (IOException e){
-                        log.error("Cannot print measurements for {} at {}", dataset.getName(), measurementDate.getName(), e);
+                        
+                    } catch (IOException e) {
+                        status.setRollbackOnly();
+                        throw new RuntimeException("Cannot write issue to miner input file", e);
                     }
                 }
             }
+            });
+        
+        
+        /**
+         * Run forks in parallel processes.
+         * 
+         * Each fork will read issues from its input file.
+         */
+        List<Process> forks = new ArrayList<>();
+        for (Integer i = 0; i < forkConfig.getForkCount(); i++){
+            try {
+            ProcessBuilder pb = new ProcessBuilder(
+                "java",
+                "-jar", 
+                "./target/dataminer-0.0.1-SNAPSHOT.jar",
+                // gives each child its index 
+                "--dataminer.fork.index="+i.toString(),
+                // children do not need to modify db, only read
+                "--spring.jpa.hibernate.ddl-auto=none",
+                // children have their own data dir to avoid conflicts
+                "--dataminer.data.dir="+forkConfig.getForkDir(i))
+            .directory(new File(System.getProperty("user.dir")))
+            .inheritIO();
+            forks.add(pb.start());
+            } catch (IOException e) {
+                throw new RuntimeException("Cannot start miner process "+i.toString(), e);
+            } 
+        }
+        /**
+         * Wait for forks to finish
+         */
+        for (int i = 0; i < forkConfig.getForkCount(); i++){
+            try {
+                forks.get(i).waitFor();
+            } catch (InterruptedException e) {
+                log.error("Error while waiting for fork {}", i, e);
+            }
+        }
 
-        }         
+        /**
+         * Print measurements
+         */
+        transaction.executeWithoutResult( status -> {
+            for (Dataset dataset : datasets){
+                Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
+                for (Project project : projects){
+                    for (MeasurementDate measurementDate : measurementDates){
+                        try {
+                            printMeasurements(dataset, project, measurementDate);
+                        } catch (IOException e) {
+                            
+                            throw new RuntimeException("Cannot print measurements", e);
+                        }
+                    }
+                }
+            }
+        });
+        
     }
 
-    private boolean measurementPrintExists(String dataset, String project, String measurementDate){
-        return new File(measurementConfig.getOutputFileName(dataset, project, measurementDate)).exists();
+    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate){
+        try( issues;
+        ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
+        
+        IssueCount issueCount = new IssueCount();
+        issues.forEach( issue -> {
+            
+            progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
+
+            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+
+            // update already existing measurements instead of replacing it with a new one
+            Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
+            if (measurement == null){
+                measurement = new Measurement();
+                measurement.setMeasurementDate(measurementDateValue);
+                measurement.setMeasurementDateName(measurementDate.getName());
+                measurement.setIssue(issue);
+                measurement.setDataset(dataset);
+            }
+
+            FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
+            doMeasurements(bean);
+            saveMeasurement(bean);
+
+            progressBar.step();
+            issueCount.add();
+
+
+        });
+        
+        log.info("measured {} issues", issueCount.getCount());
     }
+}
+
+    @Transactional
+    public void mineFeaturesAsFork() throws IOException{
+        List<Dataset> datasets = datasetDao.findAll();
+        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+        for (Dataset dataset : datasets){
+            for (MeasurementDate measurementDate : measurementDates){
+                File inputIssues = new File(forkConfig.getForkInputFile(dataset, measurementDate));
+                Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line));
+                mineFeatures(issues, dataset, measurementDate);
+            } 
+        }
+        
+    }
+
+
 
     private boolean measurementPrintExists(){
         return new File(measurementConfig.getDir()).listFiles().length > 0;

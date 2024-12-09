@@ -34,7 +34,7 @@ public class CodeSmellsService extends CodeSmellsMiningImplBase{
         responseObserver.onCompleted();
     }
         
-    private CodeSmellsCountResponse processRequest(CodeSmellsCountRequest request) {
+    private synchronized CodeSmellsCountResponse processRequest(CodeSmellsCountRequest request) {
         
         Integer smellsCount;
         String dataDirName = System.getProperty("user.dir")+"/data";
