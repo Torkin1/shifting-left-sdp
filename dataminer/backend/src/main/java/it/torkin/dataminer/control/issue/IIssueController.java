@@ -104,4 +104,9 @@ public interface IIssueController {
      * @return
      */
     public Set<String> getAssigneeChangeset(IssueBean bean);
-    }
+    /**
+     * Gets sets of developer ids that have authored changes on the issue
+     * before the specified measurement date.
+     */
+    public Set<String> getHistoryAuthors(IssueBean bean);
+}

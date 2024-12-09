@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -321,14 +322,19 @@ public class IssueController implements IIssueController{
      * Only histories that are created before the measurement date are returned.
      */
     private List<IssueHistory> getHistories(IssueBean bean, IssueField field){
-        return bean.getIssue().getDetails().getChangelog().getHistories().stream()
-            // makes sure the histories are ordered by creation date
-            .sorted((h1, h2) -> h1.getCreated().compareTo(h2.getCreated()))
-            // accept only histories that are not after the measurement date
-            .filter(history -> !history.getCreated().after(bean.getMeasurementDate()))
-            // accept only histories with at least one item related to the given field
-            .filter(history -> changesField(history, field))
-            .toList();
+        Stream<IssueHistory> histories = getItemsBeforeDate(
+            bean.getIssue().getDetails().getChangelog().getHistories(),
+            bean.getMeasurementDate(),
+            history -> history.getCreated());
+        // accept only histories with at least one item related to the given field
+        // (if specified)
+        if (field != null)
+            histories = histories.filter(history -> changesField(history, field)); 
+        return histories.toList();
+    }
+
+    private List<IssueHistory> getHistories(IssueBean bean){
+        return getHistories(bean, null);
     }
 
     private boolean changesField(IssueHistory history, IssueField field){
@@ -432,5 +438,20 @@ public class IssueController implements IIssueController{
             fields -> fields.getAssignee() == null? "" : fields.getAssignee().getKey(),
             entries -> entries.get(0).getValue()
         ).apply(new IssueFieldBean(bean, IssueField.ASSIGNEE));
+    }
+    
+    private <I> Stream<I> getItemsBeforeDate(List<I> items, Timestamp date, Function<I, Timestamp> getItemDate){
+        return items.stream()
+            .sorted((i1, i2) -> getItemDate.apply(i1).compareTo(getItemDate.apply(i2)))
+            .takeWhile(item -> !getItemDate.apply(item).after(date));
+    }
+    
+    @Override
+    public Set<String> getHistoryAuthors(IssueBean bean) {
+        List<IssueHistory> histories = getHistories(bean);
+        Set<String> authors = histories.stream()
+        .map(history -> history.getAuthor().getKey())
+        .collect(Collectors.toSet());
+        return authors;
     }
 }
