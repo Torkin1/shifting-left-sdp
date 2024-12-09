@@ -13,26 +13,22 @@ import java.util.Set;
 
 import org.jline.utils.Log;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import io.grpc.Channel;
-import io.grpc.ManagedChannelBuilder;
-import it.torkin.dataminer.CodeSmellsMiningGrpc;
-import it.torkin.dataminer.CodeSmellsMiningGrpc.CodeSmellsMiningBlockingStub;
 import it.torkin.dataminer.Smells.CodeSmellsCountRequest;
 import it.torkin.dataminer.Smells.CodeSmellsCountResponse;
 import it.torkin.dataminer.Smells.RepoCoordinates;
 import it.torkin.dataminer.config.DataConfig;
 import it.torkin.dataminer.config.GitConfig;
-import it.torkin.dataminer.config.features.ProjectCodeQualityConfig;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
  * #193: Project Code Quality Miner.
