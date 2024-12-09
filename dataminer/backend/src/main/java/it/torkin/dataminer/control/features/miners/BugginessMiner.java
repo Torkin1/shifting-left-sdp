@@ -7,10 +7,10 @@ import org.springframework.stereotype.Component;
 
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
+import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
 import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
-import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 
 @Component
 public class BugginessMiner extends FeatureMiner{

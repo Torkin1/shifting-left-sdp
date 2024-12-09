@@ -32,7 +32,6 @@ import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
 import it.torkin.dataminer.entities.dataset.features.Feature;
-import it.torkin.dataminer.entities.ephemereal.IssueFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;

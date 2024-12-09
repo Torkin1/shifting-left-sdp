@@ -1,4 +1,4 @@
-package it.torkin.dataminer.entities.ephemereal;
+package it.torkin.dataminer.control.features;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +21,11 @@ public enum IssueFeatureFamily {
      * during its lifecycle, or how often it is involved in debates 
      * and decisions. 
      */
-    TEMPERATURE_INTERNAL("Internal Temperature"),
+    INTERNAL_TEMPERATURE("Internal Temperature"),
     /**
      * How often the environment changes during an issue lifecycle.
      */
-    TEMPERATURE_ENVIRONMENTAL("External Temperature"),
+    ENVIRONMENTAL_TEMPERATURE("External Temperature"),
     /**
      * How the issue is described in natural
      * language, and how it can be comprehended by human developers.

@@ -1,4 +1,4 @@
-package it.torkin.dataminer.entities.ephemereal;
+package it.torkin.dataminer.control.features;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public enum IssueFeature {
     /**
      * buggy tickets introduced in the last x% of tickets.
      */
-    TEMPORAL_LOCALITY("Temporal locality", IssueFeatureFamily.TEMPERATURE_ENVIRONMENTAL),
+    TEMPORAL_LOCALITY("Temporal locality", IssueFeatureFamily.ENVIRONMENTAL_TEMPERATURE),
     /**
      * If the issue has at least one buggy commit linked to it. Target label to predict
      */
@@ -35,7 +35,7 @@ public enum IssueFeature {
     /**
      * Changes to the codebase introduced while the ticket was in progress
      */
-    COMMITS_WHILE_IN_PROGRESS("Commits while in progress", IssueFeatureFamily.TEMPERATURE_ENVIRONMENTAL),
+    COMMITS_WHILE_IN_PROGRESS("Commits while in progress", IssueFeatureFamily.ENVIRONMENTAL_TEMPERATURE),
     /**
      * The components the issue is related to.
      * In jira, components are a way to group issues within a project.
@@ -48,7 +48,12 @@ public enum IssueFeature {
     /**
      * Features that analyze the issue's sentiment using nlp techniques. 
      */
-    NLP_SENTIMENT("NLP Sentiment", IssueFeatureFamily.TEMPERATURE_INTERNAL),
+    NLP_SENTIMENT("NLP Sentiment", IssueFeatureFamily.INTERNAL_TEMPERATURE),
+    /**
+     * Features that analyze the issue's distinct people involved in issue's lifecycle,
+     * such as assignees, reporters, editors, ...
+     */
+    ISSUE_PARTICIPANTS("Issue Participants", IssueFeatureFamily.INTERNAL_TEMPERATURE),
     ;
 
     private final String name;
