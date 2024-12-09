@@ -128,6 +128,9 @@ public class FeatureController implements IFeatureController{
          */
         List<Dataset> datasets = datasetDao.findAll();
         List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+        for (int i = 0; i < forkConfig.getForkCount(); i ++){
+            new File(forkConfig.getForkDir(i)).mkdirs();
+        }
 
         transaction.executeWithoutResult(status -> {
             ProcessedIssuesBean processedIssuesBean;

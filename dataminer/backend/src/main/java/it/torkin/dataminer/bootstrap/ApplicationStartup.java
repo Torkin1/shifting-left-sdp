@@ -40,7 +40,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             if (isTest()) return;
         
             createRawDataset();
-            printStats();
+            if (!forkConfig.isChild()) printStats();
             mineFeatures();
 
 
