@@ -84,7 +84,6 @@ public class FeatureController implements IFeatureController{
     }
 
     private void saveMeasurement(FeatureMinerBean bean){
-        bean.getIssue().getMeasurements().removeIf(m -> m.getMeasurementDateName().equals(bean.getMeasurement().getMeasurementDateName()));
         bean.getIssue().getMeasurements().add(bean.getMeasurement());
         measurementDao.save(bean.getMeasurement());
         issueDao.save(bean.getIssue());
