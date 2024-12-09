@@ -18,10 +18,13 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.jira.JiraDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
+import it.torkin.dataminer.entities.jira.issue.IssueComment;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.entities.jira.issue.IssueHistory;
 import it.torkin.dataminer.entities.jira.issue.IssueHistoryItem;
 import it.torkin.dataminer.entities.jira.issue.IssueStatus;
+import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 import it.torkin.dataminer.rest.UnableToGetResourceException;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.annotation.PostConstruct;
@@ -446,6 +449,30 @@ public class IssueController implements IIssueController{
             .takeWhile(item -> !getItemDate.apply(item).after(date));
     }
     
+    @Override
+    public List<IssueComment> getComments(IssueBean bean) {
+        return getItemsBeforeDate(
+            bean.getIssue().getDetails().getFields().getComment().getComments(),
+            bean.getMeasurementDate(),
+            comment -> comment.getCreated()).toList();
+    }
+
+    @Override
+    public List<IssueWorkItem> getWorkItems(IssueBean bean) {
+        return getItemsBeforeDate(
+            bean.getIssue().getDetails().getFields().getWorklog().getWorklogs(),
+            bean.getMeasurementDate(),
+            worklog -> worklog.getCreated()).toList();
+    }
+
+    @Override
+    public List<IssueAttachment> getAttachments(IssueBean bean) {
+        return getItemsBeforeDate(
+            bean.getIssue().getDetails().getFields().getAttachments(),
+            bean.getMeasurementDate(),
+            attachment -> attachment.getCreated()).toList();
+    }
+
     @Override
     public Set<String> getHistoryAuthors(IssueBean bean) {
         List<IssueHistory> histories = getHistories(bean);
