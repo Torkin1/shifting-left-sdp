@@ -19,6 +19,9 @@ import it.torkin.dataminer.entities.jira.issue.IssueComment;
 import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * #217
+ */
 @Component
 @Slf4j
 public class ParticipantsMiner extends FeatureMiner {
