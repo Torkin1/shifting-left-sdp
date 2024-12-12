@@ -21,6 +21,7 @@ import it.torkin.dataminer.Smells.CodeSmellsCountResponse;
 import it.torkin.dataminer.Smells.RepoCoordinates;
 import it.torkin.dataminer.config.DataConfig;
 import it.torkin.dataminer.config.GitConfig;
+import it.torkin.dataminer.config.features.ProjectCodeQualityConfig;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IssueFeature;
@@ -37,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  * with hibernate.
  */
 @Slf4j
-// @Component
+@Component
 public class ProjectCodeQualityMiner extends FeatureMiner{
 
     private static final String[] featureSubNames = {
@@ -50,6 +51,7 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
 
     @Autowired private GitConfig gitConfig;
     @Autowired private DataConfig dataConfig;
+    @Autowired private ProjectCodeQualityConfig projectCodeQualityConfig;
     
     @Override
     @Transactional
@@ -88,7 +90,7 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
                 .build())
             .build();
         try{
-            CodeSmellsCountResponse response = processRequest(request);
+            CodeSmellsCountResponse response = processRequest(request, bean.getThreadIndex());
             smellsCount = response.getSmellsCount();
         } catch (Exception e){
             Log.error("unable to mine smells for repo {} using issue {} at {}", repository, bean.getIssue().getKey(), bean.getMeasurement().getMeasurementDateName(), e);
@@ -105,12 +107,13 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
      * @param request
      * @return
      */
-    private CodeSmellsCountResponse processRequest(CodeSmellsCountRequest request) {
+    private CodeSmellsCountResponse processRequest(CodeSmellsCountRequest request, Integer threadIndex) {
         
         Integer smellsCount;
         String dataDirName = dataConfig.getDir();
         
-        try (GitDao gitDao = new GitDao(gitConfig, request.getRepoCoordinates().getName())){
+        GitConfig threadGitConfig = gitConfig.forThread(threadIndex);
+        try (GitDao gitDao = new GitDao(threadGitConfig, request.getRepoCoordinates().getName())){
 
             // checkout corresponding repo at measurement date
             Date measurementDate = Date.from(Instant.ofEpochSecond(
@@ -120,8 +123,8 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
             gitDao.checkout(measurementDate);
 
             File repository = new File(gitConfig.getReposDir() + "/" + request.getRepoCoordinates().getName());
-            File violationsFile = new File(dataDirName+"/violations.csv");
-            (new ProcessBuilder("/pmd/bin/pmd", "check", "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
+            File violationsFile = new File(dataDirName+"/violations"+threadIndex+".csv");
+            (new ProcessBuilder(projectCodeQualityConfig.getPmdPath(), "check", "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
                     .directory(repository)
                     .redirectOutput(Redirect.DISCARD)
                     .redirectError(Redirect.INHERIT)

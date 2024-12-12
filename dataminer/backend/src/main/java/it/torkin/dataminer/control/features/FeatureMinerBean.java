@@ -19,4 +19,6 @@ public class FeatureMinerBean {
     private final Measurement measurement;
 
     private final MeasurementDate measurementDate;
+
+    private final int threadIndex;
 }

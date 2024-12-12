@@ -202,7 +202,7 @@ public class FeatureMinerTest {
         issue.getMeasurements().add(measurement);
 
         assigneeANFICMiner.accept(new FeatureMinerBean(
-            dataset.getName(), issue, measurement, measurementDate));
+            dataset.getName(), issue, measurement, measurementDate, 0));
 
         assertEquals(0.3333333333333333, measurement.getFeatureByName(IssueFeature.ANFIC.getFullName()).getValue());
     }
@@ -287,7 +287,7 @@ public class FeatureMinerTest {
 
         temporalLocalityMiner.init();
         temporalLocalityMiner.accept(new FeatureMinerBean(
-            dataset.getName(), issue, measurement, measurementDate));
+            dataset.getName(), issue, measurement, measurementDate, 0));
         
         assertEquals(100.0, measurement.getFeatureByName(IssueFeature.TEMPORAL_LOCALITY.getFullName()).getValue());
     }
@@ -310,7 +310,7 @@ public class FeatureMinerTest {
         measurement.setMeasurementDateName(measurementDate.getName());
         measurement.setIssue(issue);
         
-        projectCodeQualityMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate));
+        projectCodeQualityMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
 
     }
 }

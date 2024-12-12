@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * #195
  */
-// @Component
+@Component
 @Slf4j
 public class CommitsWhileInProgressMiner extends FeatureMiner{
 
@@ -61,7 +61,9 @@ public class CommitsWhileInProgressMiner extends FeatureMiner{
         long count = 0;
         long churn = 0;
 
-        try(GitDao gitDao = new GitDao(gitConfig, repository)){
+        GitConfig threadGitConfig = gitConfig.forThread(bean.getThreadIndex());
+        
+        try(GitDao gitDao = new GitDao(threadGitConfig, repository)){
             // gets temporal spans in which the issue was in progress
             IssueTemporalSpanBean issueTemporalSpanBean = new IssueTemporalSpanBean(issue, measurementDate);
             issueController.getInProgressTemporalSpans(issueTemporalSpanBean);

@@ -84,7 +84,7 @@ public class FeatureController implements IFeatureController{
                     for (MeasurementDate measurementDate : measurementDates){
                         File inputIssues = new File(forkConfig.getForkInputFile(index, dataset, measurementDate));
                         try (Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line))) {
-                            mineFeatures(issues, dataset, measurementDate);
+                            mineFeatures(issues, dataset, measurementDate, index);
                         } catch (IOException e) {
                             throw new RuntimeException("Cannot read issues from input file "+inputIssues.getAbsolutePath(), e);
                         }
@@ -259,7 +259,7 @@ public class FeatureController implements IFeatureController{
         
     }
 
-    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate){
+    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate, int threadIndex){
         try( issues;
         ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
         
@@ -280,7 +280,7 @@ public class FeatureController implements IFeatureController{
                 measurement.setDataset(dataset);
             }
 
-            FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
+            FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, threadIndex);
             doMeasurements(bean);
             saveMeasurement(bean);
 
@@ -296,15 +296,15 @@ public class FeatureController implements IFeatureController{
 
     @Transactional
     public void mineFeaturesAsFork() throws IOException{
-        List<Dataset> datasets = datasetDao.findAll();
-        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
-        for (Dataset dataset : datasets){
-            for (MeasurementDate measurementDate : measurementDates){
-                File inputIssues = new File(forkConfig.getForkInputFile(dataset, measurementDate));
-                Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line));
-                mineFeatures(issues, dataset, measurementDate);
-            } 
-        }
+        // List<Dataset> datasets = datasetDao.findAll();
+        // List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+        // for (Dataset dataset : datasets){
+        //     for (MeasurementDate measurementDate : measurementDates){
+        //         File inputIssues = new File(forkConfig.getForkInputFile(dataset, measurementDate));
+        //         Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line));
+        //         mineFeatures(issues, dataset, measurementDate);
+        //     } 
+        // }
         
     }
 
