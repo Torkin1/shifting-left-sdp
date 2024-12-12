@@ -125,7 +125,8 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
                     .directory(repository)
                     .redirectOutput(Redirect.DISCARD)
                     .redirectError(Redirect.INHERIT)
-                    .start();
+                    .start()
+                    .waitFor();
 
 
             try (BufferedReader reader = new BufferedReader(new FileReader(violationsFile))) {
