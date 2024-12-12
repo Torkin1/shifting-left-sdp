@@ -275,6 +275,7 @@ public class FeatureController implements IFeatureController{
     }
 
     @Override
+    @Transactional
     public void printMeasurements(PrintMeasurementsBean bean){
         List<Dataset> datasets = datasetDao.findAll();
         List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
