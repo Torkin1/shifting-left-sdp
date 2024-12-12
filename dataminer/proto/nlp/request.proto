@@ -23,6 +23,8 @@ message NlpIssueBean{
     optional string description = 6;
     // True if issue is buggy according to the specified dataset
     bool buggy = 7;
+    // issue comments
+    repeated string comments = 9;
 }
 
 message NlpIssueRequest{

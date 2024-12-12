@@ -271,6 +271,14 @@ public class DatasetController implements IDatasetController {
             new SimpleDateFormat("yyyy-MM-dd").format(Date.from(
                 Instant.ofEpochSecond(bean.getMeasurementDate().getSeconds(),
                  bean.getMeasurementDate().getNanos()))));
+        
+        // comments
+        writer.name("comments");
+        writer.beginArray();
+        for (String comment : bean.getCommentsList()){
+            writer.value(comment);
+        }
+        writer.endArray();
 
         writer.endObject();
     }
@@ -291,8 +299,13 @@ public class DatasetController implements IDatasetController {
             .setBuggy(issueController.isBuggy(new IssueCommitBean(issue, dataset.getName())))
             .setMeasurementDate(com.google.protobuf.Timestamp.newBuilder()
                 .setSeconds(measurementDateValue.getTime() / 1000)
-                .setNanos(measurementDateValue.getNanos()).build()
-            );
+                .setNanos(measurementDateValue.getNanos()).build())
+            .addAllComments(
+                issueController.getComments(new IssueBean(issue, measurementDateValue))
+                .stream()
+                .map(comment -> comment.getBody())
+                .toList());
+            
 
         if (description != null){
             beanBuilder.setDescription(description);
