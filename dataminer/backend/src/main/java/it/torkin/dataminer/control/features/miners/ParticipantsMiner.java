@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import it.torkin.dataminer.entities.jira.Developer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -60,13 +61,17 @@ public class ParticipantsMiner extends FeatureMiner {
         participants.addAll(getParticipantsInAttachments(issueBean));
         participants.addAll(getParticipantsInChangelog(issueBean));
 
+        participants.remove(null);
+        participants.remove("");
         return participants;
 
 
     }
 
     private String getAuthor(IssueBean bean) {
-        return bean.getIssue().getDetails().getFields().getCreator().getKey();
+        Developer author = bean.getIssue().getDetails().getFields().getCreator();
+        if (author != null) return author.getName();
+        else return null;
     }
 
     private Set<String> getHistoricalReporters(IssueBean bean) {
@@ -81,8 +86,10 @@ public class ParticipantsMiner extends FeatureMiner {
         List<IssueComment> comments = issueController.getComments(bean);
         Set<String> participants = new HashSet<>();
         for (IssueComment comment : comments) {
-            participants.add(comment.getAuthor().getKey());
-            participants.add(comment.getUpdateAuthor().getKey());
+            Developer author = comment.getAuthor();
+            Developer updateAuthor = comment.getUpdateAuthor();
+            if (author != null) participants.add(author.getName());
+            if (updateAuthor != null) participants.add(updateAuthor.getName());
         }
         return participants;
         
@@ -90,6 +97,7 @@ public class ParticipantsMiner extends FeatureMiner {
 
     private Set<String> getParticipantsInAttachments(IssueBean bean) {
         return issueController.getAttachments(bean).stream()
+                .filter(attachment -> attachment.getAuthor() != null)
         .map(a -> a.getAuthor().getKey())
         .collect(Collectors.toSet());
     }
@@ -98,8 +106,11 @@ public class ParticipantsMiner extends FeatureMiner {
         List<IssueWorkItem> workItems = issueController.getWorkItems(bean);
         Set<String> participants = new HashSet<>();
         for (IssueWorkItem workItem : workItems) {
-            participants.add(workItem.getAuthor().getKey());
-            participants.add(workItem.getUpdateAuthor().getKey());
+            Developer author = workItem.getAuthor();
+            Developer updateAuthor = workItem.getUpdateAuthor();
+            if (author != null) participants.add(author.getName());
+            if (updateAuthor != null) participants.add(updateAuthor.getName());
+
         }
         return participants;
     }

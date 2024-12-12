@@ -479,6 +479,7 @@ public class IssueController implements IIssueController{
     public Set<String> getHistoryAuthors(IssueBean bean) {
         List<IssueHistory> histories = getHistories(bean);
         Set<String> authors = histories.stream()
+                .filter(history -> history.getAuthor() != null)
         .map(history -> history.getAuthor().getKey())
         .collect(Collectors.toSet());
         return authors;

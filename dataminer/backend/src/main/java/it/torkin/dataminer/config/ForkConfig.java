@@ -10,6 +10,8 @@ import it.torkin.dataminer.toolbox.string.StringTools;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 
+import java.io.File;
+
 @Configuration
 @ConfigurationProperties(
     prefix = "dataminer.fork",
@@ -41,7 +43,9 @@ public class ForkConfig {
     }
 
     public String getForkDir(Integer i){
-        return dir + "/" + i;
+        File forkDir = new File(dir + "/forks/" + i);
+        forkDir.mkdirs();
+        return forkDir.getAbsolutePath();
     }
 
 
