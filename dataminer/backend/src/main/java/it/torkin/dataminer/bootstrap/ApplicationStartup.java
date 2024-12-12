@@ -86,8 +86,12 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     }
 
     private void mineFeatures() throws Exception{
-        featureController.initMiners();
-        log.info("Features miners initialized");
+        if (! forkConfig.isChild())
+        {
+            featureController.initMiners();
+            log.info("Features miners initialized");
+        }
+
         featureController.mineFeatures();
         log.info("Features mined");
     }
