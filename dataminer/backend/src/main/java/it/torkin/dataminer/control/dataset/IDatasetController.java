@@ -1,5 +1,7 @@
 package it.torkin.dataminer.control.dataset;
 
+import java.io.IOException;
+
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 
@@ -19,5 +21,11 @@ public interface IDatasetController {
      * Gets processed issues from a dataset 
      */
     void getProcessedIssues(ProcessedIssuesBean bean);
+
+    /**
+     * Prints nlp issue beans in a json file
+     * @throws IOException 
+     */
+    void printNLPIssueBeans() throws IOException;
     
 }

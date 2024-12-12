@@ -4,6 +4,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.junit.Test;
@@ -81,5 +82,11 @@ public class DatasetControllerTest {
 
         fail("Expected exception");
 
+    }
+
+    @Test
+    public void testCreateIssueBeansJson() throws UnableToCreateRawDatasetException, IOException{
+        datasetController.createRawDataset();
+        datasetController.printNLPIssueBeans();
     }
 }

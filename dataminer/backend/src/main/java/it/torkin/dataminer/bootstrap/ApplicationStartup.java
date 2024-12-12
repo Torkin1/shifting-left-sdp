@@ -40,7 +40,10 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             if (isTest()) return;
         
             createRawDataset();
-            if (!forkConfig.isChild()) printStats();
+            if (!forkConfig.isChild()){
+                printStats();
+                printNLPIssueBeans();
+            } 
             mineFeatures();
 
 
@@ -87,5 +90,10 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         log.info("Features miners initialized");
         featureController.mineFeatures();
         log.info("Features mined");
+    }
+
+    private void printNLPIssueBeans() throws IOException {
+        datasetController.printNLPIssueBeans();
+        log.info("NLP issue beans printed");
     }
 }
