@@ -118,118 +118,100 @@ public class FeatureController implements IFeatureController{
                     throw new RuntimeException("Cannot mine features as fork "+forkConfig.getIndex(), e);
                 }
             });
-            return;
-        }
-        
-        /**
-         * Main process divides issues among forks
-         */
-        List<Dataset> datasets = datasetDao.findAll();
-        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
-        for (int i = 0; i < forkConfig.getForkCount(); i ++){
-            new File(forkConfig.getForkDir(i)).mkdirs();
         }
 
-        transaction.executeWithoutResult(status -> {
-            ProcessedIssuesBean processedIssuesBean;
-    
-            // prepare inputs for forks
-            for (Dataset dataset : datasets) {
-                for (MeasurementDate measurementDate : measurementDates) {
-                    
-                    log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
-    
-                    // collect processed issue
-                    processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
-                    processedDatasetController.getFilteredIssues(processedIssuesBean);
-                    Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
-                    
-                    try(issues){
-                        List<BufferedWriter> writers = new ArrayList<>();
-                        for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
-                            File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
-                            BufferedWriter writer = new BufferedWriter(new FileWriter(minerInputFile));
-                            writers.add(writer);
-                        }
-    
-                        Holder<Integer> fork = new Holder<>(0);
-                        issues.forEach(issue -> {
-                            BufferedWriter writer = writers.get(fork.getValue());
-                            try {
-                                writer.write(issue.getKey());
-                                writer.newLine();
-                                fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
-                            } catch (IOException e) {
-                                throw new RuntimeException("Cannot write issue to miner input file", e);
-                            }
-                        });
-                        for (Writer writer : writers){
-                            writer.close();
-                        }
+        else {
+            /**
+             * Main process divides issues among forks
+             */
+            List<Dataset> datasets = datasetDao.findAll();
+            List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+            for (int i = 0; i < forkConfig.getForkCount(); i ++){
+                new File(forkConfig.getForkDir(i)).mkdirs();
+            }
+
+            transaction.executeWithoutResult(status -> {
+                ProcessedIssuesBean processedIssuesBean;
+        
+                // prepare inputs for forks
+                for (Dataset dataset : datasets) {
+                    for (MeasurementDate measurementDate : measurementDates) {
                         
-                    } catch (IOException e) {
-                        status.setRollbackOnly();
-                        throw new RuntimeException("Cannot write issue to miner input file", e);
-                    }
-                }
-            }
-            });
+                        log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
         
+                        // collect processed issue
+                        processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
+                        processedDatasetController.getFilteredIssues(processedIssuesBean);
+                        Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
+                        
+                        try(issues){
+                            List<BufferedWriter> writers = new ArrayList<>();
+                            for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
+                                File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
+                                BufferedWriter writer = new BufferedWriter(new FileWriter(minerInputFile));
+                                writers.add(writer);
+                            }
         
-        /**
-         * Run forks in parallel processes.
-         * 
-         * Each fork will read issues from its input file.
-         */
-        List<Process> forks = new ArrayList<>();
-        for (Integer i = 0; i < forkConfig.getForkCount(); i++){
-            try {
-            ProcessBuilder pb = new ProcessBuilder(
-                "java",
-                "-jar", 
-                "./target/dataminer-0.0.1-SNAPSHOT.jar",
-                // gives each child its index 
-                "--dataminer.fork.index="+i.toString(),
-                // children do not need to modify db, only read
-                "--spring.jpa.hibernate.ddl-auto=none",
-                // children have their own data dir to avoid conflicts
-                "--dataminer.data.dir="+forkConfig.getForkDir(i))
-            .directory(new File(System.getProperty("user.dir")))
-            .inheritIO();
-            forks.add(pb.start());
-            } catch (IOException e) {
-                throw new RuntimeException("Cannot start miner process "+i.toString(), e);
-            } 
-        }
-        /**
-         * Wait for forks to finish
-         */
-        for (int i = 0; i < forkConfig.getForkCount(); i++){
-            try {
-                forks.get(i).waitFor();
-            } catch (InterruptedException e) {
-                log.error("Error while waiting for fork {}", i, e);
-            }
-        }
-
-        /**
-         * Print measurements
-         */
-        transaction.executeWithoutResult( status -> {
-            for (Dataset dataset : datasets){
-                Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
-                for (Project project : projects){
-                    for (MeasurementDate measurementDate : measurementDates){
-                        try {
-                            printMeasurements(dataset, project, measurementDate);
-                        } catch (IOException e) {
+                            Holder<Integer> fork = new Holder<>(0);
+                            issues.forEach(issue -> {
+                                BufferedWriter writer = writers.get(fork.getValue());
+                                try {
+                                    writer.write(issue.getKey());
+                                    writer.newLine();
+                                    fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
+                                } catch (IOException e) {
+                                    throw new RuntimeException("Cannot write issue to miner input file", e);
+                                }
+                            });
+                            for (Writer writer : writers){
+                                writer.close();
+                            }
                             
-                            throw new RuntimeException("Cannot print measurements", e);
+                        } catch (IOException e) {
+                            status.setRollbackOnly();
+                            throw new RuntimeException("Cannot write issue to miner input file", e);
                         }
                     }
                 }
+                });
+            
+            
+            /**
+             * Run forks in parallel processes.
+             * 
+             * Each fork will read issues from its input file.
+             */
+            List<Process> forks = new ArrayList<>();
+            for (Integer i = 0; i < forkConfig.getForkCount(); i++){
+                try {
+                ProcessBuilder pb = new ProcessBuilder(
+                    "java",
+                    "-jar", 
+                    "./target/dataminer-0.0.1-SNAPSHOT.jar",
+                    // gives each child its index 
+                    "--dataminer.fork.index="+i.toString(),
+                    // children do not need to modify db, only read
+                    "--spring.jpa.hibernate.ddl-auto=none",
+                    // children have their own data dir to avoid conflicts
+                    "--dataminer.data.dir="+forkConfig.getForkDir(i))
+                .directory(new File(System.getProperty("user.dir")))
+                .inheritIO();
+                forks.add(pb.start());
+                } catch (IOException e) {
+                    throw new RuntimeException("Cannot start miner process "+i.toString(), e);
+                } 
             }
-        });
+            /**
+             * Wait for forks to finish
+             */
+            for (int i = 0; i < forkConfig.getForkCount(); i++){
+                try {
+                    forks.get(i).waitFor();
+                } catch (InterruptedException e) {
+                    log.error("Error while waiting for fork {}", i, e);
+                }
+            }        
+        }
         
     }
 
@@ -287,26 +269,54 @@ public class FeatureController implements IFeatureController{
     private boolean measurementPrintExists(){
         return new File(measurementConfig.getDir()).listFiles().length > 0;
     }
+
+    private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate){
+        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName())).exists();
+    }
+
+    @Override
+    public void printMeasurements(PrintMeasurementsBean bean){
+        List<Dataset> datasets = datasetDao.findAll();
+        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+        for (Dataset dataset : datasets){
+            Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
+            for (Project project : projects){
+                for (MeasurementDate measurementDate : measurementDates){
+                    try {
+                        if (measurementPrintExists(dataset, project, measurementDate)){
+                            log.info("Measurements already printed for {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName());
+                        }
+                        else {
+                            printMeasurements(dataset, project, measurementDate, bean.getTarget());
+                        }
+                    } catch (IOException e) {
+                        
+                        throw new RuntimeException("Cannot print measurements", e);
+                    }
+                }
+            }
+        }
+    }
     
-    private void printMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
-                
-        // To create csv schema any issue measurement can be eligible
-        // to be a prototype for feature names
-        Set<String> featureNames = getFeatureNames(
-            measurementDao.findAllWithIssue()
-                .findFirst()
-                .get()
-                .getFeatures()
-        );
-        Long measurementCount = measurementDao.countByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName());
-        if (measurementCount > 0){
+    private void printMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate, IssueFeature target) throws IOException{
+                        
             File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName()));
+            CsvMapper mapper = new CsvMapper();
+            Holder<CsvSchema> schema = new Holder<>();
+            Holder<ObjectWriter> writer = new Holder<>();
+            Holder<SequenceWriter> sequenceWriter = new Holder<>();
             try (Stream<Measurement> measurements = measurementDao.findAllByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName())){
-                CsvSchema schema = createCsvSchema(featureNames);
-                CsvMapper mapper = new CsvMapper();
-                ObjectWriter writer = mapper.writer(schema);
-                try (SequenceWriter sequenceWriter = writer.writeValues(outputFile)){
-                    measurements.forEach(measurement -> {
+                measurements.forEach(measurement -> {
+
+                    try {
+                        if (schema.getValue() == null){
+                            // Creates csv schema using a measurement as prototype 
+                            Set<String> featureNames = getFeatureNames(measurement.getFeatures());
+                            schema.setValue(createCsvSchema(featureNames, target));
+                            writer.setValue(mapper.writer(schema.getValue()));
+                            sequenceWriter.setValue(writer.getValue().writeValues(outputFile));
+                        }
+
                         Map<String, Object> row = new LinkedHashMap<>();
                         measurement.getFeatures().forEach(f -> {
                             String sValue;
@@ -331,15 +341,14 @@ public class FeatureController implements IFeatureController{
                             }
                             row.put(f.getName(), sValue);
                         });
-                        try {
-                            sequenceWriter.write(row);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
-                        }
-                    });
-                } 
+                            sequenceWriter.getValue().write(row);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
+                    }
+                });
+            } finally {
+                sequenceWriter.getValue().close();
             }
-        }
          
     }
     
@@ -349,16 +358,16 @@ public class FeatureController implements IFeatureController{
         return featureNames;
     }
 
-    private CsvSchema createCsvSchema(Set<String> featureNames){
+    private CsvSchema createCsvSchema(Set<String> featureNames, IssueFeature target){
         CsvSchema.Builder schemaBuilder = new CsvSchema.Builder();
         int i = 0;
         for (String featureName : featureNames){
-            if (!featureName.equals(IssueFeature.BUGGINESS.getFullName())){
+            if (!featureName.equals(target.getFullName())){
                 schemaBuilder = schemaBuilder.addColumn(new Column(i, featureName));
                 i++;
             }
         }
-        schemaBuilder = schemaBuilder.addColumn(new Column(i, IssueFeature.BUGGINESS.getFullName()));
+        schemaBuilder = schemaBuilder.addColumn(new Column(i, target.getFullName()));
         schemaBuilder = schemaBuilder.setUseHeader(true)
             .setColumnSeparator(',');
         return schemaBuilder.build().withHeader();

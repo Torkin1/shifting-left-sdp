@@ -3,6 +3,7 @@ package it.torkin.dataminer.control.features.miners;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.lang.ProcessBuilder.Redirect;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
@@ -122,7 +123,8 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
             File violationsFile = new File(dataDirName+"/violations.csv");
             (new ProcessBuilder("/pmd/bin/pmd", "check", "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
                     .directory(repository)
-                    .inheritIO()
+                    .redirectOutput(Redirect.DISCARD)
+                    .redirectError(Redirect.INHERIT)
                     .start();
 
 
