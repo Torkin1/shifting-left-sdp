@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class PrintMeasurementsBean {
-    private IssueFeature target;
+    private final IssueFeature target;
 }

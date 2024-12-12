@@ -45,6 +45,8 @@ import it.torkin.dataminer.toolbox.Holder;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
@@ -66,6 +68,33 @@ public class FeatureController implements IFeatureController{
     @Autowired private ForkConfig forkConfig;
 
     @Autowired TransactionTemplate transaction;
+
+    @RequiredArgsConstructor
+    private class MeasureFeaturesThread extends Thread{
+        @Getter
+        private final int index;
+        private final TransactionTemplate transaction;
+
+        @Override
+        public void run() {
+            transaction.executeWithoutResult(status -> {
+                List<Dataset> datasets = datasetDao.findAll();
+                List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+                for (Dataset dataset : datasets){
+                    for (MeasurementDate measurementDate : measurementDates){
+                        File inputIssues = new File(forkConfig.getForkInputFile(index, dataset, measurementDate));
+                        try (Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line))) {
+                            mineFeatures(issues, dataset, measurementDate, index);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Cannot read issues from input file "+inputIssues.getAbsolutePath(), e);
+                        }
+                    } 
+                }
+            });
+        }
+
+        
+    }
 
     @Override
     @Transactional
@@ -109,18 +138,18 @@ public class FeatureController implements IFeatureController{
         /**
          * Childs mine their part of the dataset and die
          */
-        if (forkConfig.isChild()){
-            transaction.executeWithoutResult(status -> {
-                try {
-                    mineFeaturesAsFork();
-                } catch (IOException e) {
-                    status.setRollbackOnly();
-                    throw new RuntimeException("Cannot mine features as fork "+forkConfig.getIndex(), e);
-                }
-            });
-        }
+        // if (forkConfig.isChild()){
+        //     transaction.executeWithoutResult(status -> {
+        //         try {
+        //             mineFeaturesAsFork();
+        //         } catch (IOException e) {
+        //             status.setRollbackOnly();
+        //             throw new RuntimeException("Cannot mine features as fork "+forkConfig.getIndex(), e);
+        //         }
+        //     });
+        // }
 
-        else {
+        // else {
             /**
              * Main process divides issues among forks
              */
@@ -181,41 +210,56 @@ public class FeatureController implements IFeatureController{
              * 
              * Each fork will read issues from its input file.
              */
-            List<Process> forks = new ArrayList<>();
-            for (Integer i = 0; i < forkConfig.getForkCount(); i++){
-                try {
-                ProcessBuilder pb = new ProcessBuilder(
-                    "java",
-                    "-jar", 
-                    "./target/dataminer-0.0.1-SNAPSHOT.jar",
-                    // gives each child its index 
-                    "--dataminer.fork.index="+i.toString(),
-                    // children do not need to modify db, only read
-                    "--spring.jpa.hibernate.ddl-auto=none",
-                    // children have their own data dir to avoid conflicts
-                    "--dataminer.data.dir="+forkConfig.getForkDir(i))
-                .directory(new File(System.getProperty("user.dir")))
-                .inheritIO();
-                forks.add(pb.start());
-                } catch (IOException e) {
-                    throw new RuntimeException("Cannot start miner process "+i.toString(), e);
-                } 
-            }
-            /**
-             * Wait for forks to finish
-             */
-            for (int i = 0; i < forkConfig.getForkCount(); i++){
-                try {
-                    forks.get(i).waitFor();
-                } catch (InterruptedException e) {
-                    log.error("Error while waiting for fork {}", i, e);
-                }
-            }        
+        //     List<Process> forks = new ArrayList<>();
+        //     for (Integer i = 0; i < forkConfig.getForkCount(); i++){
+        //         try {
+        //         ProcessBuilder pb = new ProcessBuilder(
+        //             "java",
+        //             "-jar", 
+        //             "./target/dataminer-0.0.1-SNAPSHOT.jar",
+        //             // gives each child its index 
+        //             "--dataminer.fork.index="+i.toString(),
+        //             // children do not need to modify db, only read
+        //             "--spring.jpa.hibernate.ddl-auto=none",
+        //             // children have their own data dir to avoid conflicts
+        //             "--dataminer.data.dir="+forkConfig.getForkDir(i))
+        //         .directory(new File(System.getProperty("user.dir")))
+        //         .inheritIO();
+        //         forks.add(pb.start());
+        //         } catch (IOException e) {
+        //             throw new RuntimeException("Cannot start miner process "+i.toString(), e);
+        //         } 
+        //     }
+        //     /**
+        //      * Wait for forks to finish
+        //      */
+        //     for (int i = 0; i < forkConfig.getForkCount(); i++){
+        //         try {
+        //             forks.get(i).waitFor();
+        //         } catch (InterruptedException e) {
+        //             log.error("Error while waiting for fork {}", i, e);
+        //         }
+        //     }        
+        // }
+        List<Thread> workers = new ArrayList<>();
+        for (int i = 0; i < forkConfig.getForkCount(); i++){
+            workers.add(new MeasureFeaturesThread(i, transaction));
+            workers.get(i).start();
+            
         }
+        for (int i = 0; i < forkConfig.getForkCount(); i++){
+            try {
+                workers.get(i).join();
+            } catch (InterruptedException e) {
+                log.error("Error while waiting for fork {}", i, e);
+            }
+        }
+
+
         
     }
 
-    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate){
+    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate, int threadIndex){
         try( issues;
         ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
         
@@ -236,7 +280,7 @@ public class FeatureController implements IFeatureController{
                 measurement.setDataset(dataset);
             }
 
-            FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate);
+            FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, threadIndex);
             doMeasurements(bean);
             saveMeasurement(bean);
 
@@ -252,15 +296,15 @@ public class FeatureController implements IFeatureController{
 
     @Transactional
     public void mineFeaturesAsFork() throws IOException{
-        List<Dataset> datasets = datasetDao.findAll();
-        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
-        for (Dataset dataset : datasets){
-            for (MeasurementDate measurementDate : measurementDates){
-                File inputIssues = new File(forkConfig.getForkInputFile(dataset, measurementDate));
-                Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line));
-                mineFeatures(issues, dataset, measurementDate);
-            } 
-        }
+        // List<Dataset> datasets = datasetDao.findAll();
+        // List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+        // for (Dataset dataset : datasets){
+        //     for (MeasurementDate measurementDate : measurementDates){
+        //         File inputIssues = new File(forkConfig.getForkInputFile(dataset, measurementDate));
+        //         Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line));
+        //         mineFeatures(issues, dataset, measurementDate);
+        //     } 
+        // }
         
     }
 
@@ -348,7 +392,9 @@ public class FeatureController implements IFeatureController{
                     }
                 });
             } finally {
-                sequenceWriter.getValue().close();
+                if (sequenceWriter.getValue() != null){
+                    sequenceWriter.getValue().close();
+                }
             }
          
     }

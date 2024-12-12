@@ -53,5 +53,22 @@ public class GitConfig {
      */
     @NotEmpty
     private List<String> defaultBranchCandidates;
+
+    /**
+     * gets a copy of this config tailored to be used by
+     * a worker thread
+     */
+    public GitConfig forThread(int threadIndex){
+        GitConfig clone = new GitConfig();
+        clone.setDataConfig(dataConfig);
+        clone.setHostname(hostname);
+        clone.setLinkedIssueKeyRegexp(linkedIssueKeyRegexp);
+        clone.setDefaultBranchCandidates(defaultBranchCandidates);
+        clone.setReposDir(reposDir + "/" + threadIndex);
+        clone.init();
+        return clone;
+    }
+
+    
     
 }
