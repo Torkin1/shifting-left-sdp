@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  * with hibernate.
  */
 @Slf4j
-@Component
+// @Component
 public class ProjectCodeQualityMiner extends FeatureMiner{
 
     private static final String[] featureSubNames = {

@@ -17,6 +17,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.features.FeatureController;
+import it.torkin.dataminer.control.features.IssueFeature;
+import it.torkin.dataminer.control.features.PrintMeasurementsBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
@@ -147,6 +149,7 @@ public class MeasurementTest {
         
         featureController.initMiners();
         featureController.mineFeatures();
+        featureController.printMeasurements(new PrintMeasurementsBean(IssueFeature.BUGGINESS));
     }
 
 }
