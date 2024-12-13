@@ -38,9 +38,6 @@ public class ForkConfig {
         return index != null;
     }
 
-    public String getForkDir(){
-        return dir;
-    }
 
     public String getForkDir(Integer i){
         File forkDir = new File(dir + "/forks/" + i);
@@ -57,8 +54,5 @@ public class ForkConfig {
         return getForkDir(i) + "/" + dataset.getName() + "_" + measurementDate.getName().toString() + ".issues";
     }
     
-    public String getForkInputFile(Dataset dataset, MeasurementDate measurementDate) {
-        return getForkDir() + "/" + dataset.getName() + "_" + measurementDate.getName().toString() + ".issues";
-    }
 
 }

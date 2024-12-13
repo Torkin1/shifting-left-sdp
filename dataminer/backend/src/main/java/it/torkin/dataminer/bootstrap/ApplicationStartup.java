@@ -10,12 +10,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
-import it.torkin.dataminer.config.ForkConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.IStatsController;
 import it.torkin.dataminer.control.features.IFeatureController;
-import it.torkin.dataminer.control.workers.WorkersController;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -29,9 +27,6 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Autowired private Environment env;
     @Autowired private ApplicationArguments args;
 
-    @Autowired private ForkConfig forkConfig;
-    @Autowired private WorkersController workersController;
-
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         try {
@@ -40,10 +35,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             if (isTest()) return;
         
             createRawDataset();
-            if (!forkConfig.isChild()){
-                printStats();
-                printNLPIssueBeans();
-            } 
+            printStats();
+            printNLPIssueBeans();
             mineFeatures();
 
 
@@ -55,14 +48,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
     private void init(){
         redirectRestletLogging();
-        if (forkConfig.isChild()) {
-            log.info("fork: " + forkConfig.getIndex());
-
-            // disable workers, we won't need them
-            workersController.cleanup();
-
-        }
-}
+    }
     
     private void redirectRestletLogging() {
         System.getProperties().put("org.restlet.engine.loggerFacadeClass", "org.restlet.ext.slf4j.Slf4jLoggerFacade");
@@ -86,11 +72,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     }
 
     private void mineFeatures() throws Exception{
-        if (! forkConfig.isChild())
-        {
-            featureController.initMiners();
-            log.info("Features miners initialized");
-        }
+        featureController.initMiners();
+        log.info("Features miners initialized");
 
         featureController.mineFeatures();
         log.info("Features mined");

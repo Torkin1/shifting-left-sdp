@@ -123,8 +123,11 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
             gitDao.checkout(measurementDate);
 
             File repository = new File(gitConfig.getReposDir() + "/" + request.getRepoCoordinates().getName());
-            File violationsFile = new File(dataDirName+"/violations"+threadIndex+".csv");
-            (new ProcessBuilder(projectCodeQualityConfig.getPmdPath(), "check", "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
+            File root = new File(dataDirName+"/codequality");
+            root.mkdirs();
+            File violationsFile = new File(root.getAbsolutePath()+"/violations"+threadIndex+".csv");
+            File cacheFile = new File(root.getAbsolutePath()+"/cache"+threadIndex+".pmd");
+            (new ProcessBuilder(projectCodeQualityConfig.getPmdPath(), "check", "--cache", cacheFile.getAbsolutePath(), "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
                     .directory(repository)
                     .redirectOutput(Redirect.DISCARD)
                     .redirectError(Redirect.INHERIT)

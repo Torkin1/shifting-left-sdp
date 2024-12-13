@@ -125,7 +125,7 @@ public class GitDao implements AutoCloseable{
                     return candidate;
                 }
             }
-            throw new UnableToDetectDefaultBranchException(String.format("no master candidate branch found in repository %s", projectName));
+            throw new UnableToDetectDefaultBranchException(String.format("no master candidate branch found in repository %s at %s among candidates %s", projectName, localDir.getAbsolutePath(), candidates));
         } catch (IOException | RevisionSyntaxException e) {
             throw new UnableToDetectDefaultBranchException(e);
         }

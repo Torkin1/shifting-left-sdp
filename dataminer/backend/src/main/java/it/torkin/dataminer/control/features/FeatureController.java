@@ -136,111 +136,62 @@ public class FeatureController implements IFeatureController{
         }
 
         /**
-         * Childs mine their part of the dataset and die
+         * Main process divides issues among threads
          */
-        // if (forkConfig.isChild()){
-        //     transaction.executeWithoutResult(status -> {
-        //         try {
-        //             mineFeaturesAsFork();
-        //         } catch (IOException e) {
-        //             status.setRollbackOnly();
-        //             throw new RuntimeException("Cannot mine features as fork "+forkConfig.getIndex(), e);
-        //         }
-        //     });
-        // }
+        List<Dataset> datasets = datasetDao.findAll();
+        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+        for (int i = 0; i < forkConfig.getForkCount(); i ++){
+            new File(forkConfig.getForkDir(i)).mkdirs();
+        }
 
-        // else {
-            /**
-             * Main process divides issues among forks
-             */
-            List<Dataset> datasets = datasetDao.findAll();
-            List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
-            for (int i = 0; i < forkConfig.getForkCount(); i ++){
-                new File(forkConfig.getForkDir(i)).mkdirs();
-            }
-
-            transaction.executeWithoutResult(status -> {
-                ProcessedIssuesBean processedIssuesBean;
-        
-                // prepare inputs for forks
-                for (Dataset dataset : datasets) {
-                    for (MeasurementDate measurementDate : measurementDates) {
-                        
-                        log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
-        
-                        // collect processed issue
-                        processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
-                        processedDatasetController.getFilteredIssues(processedIssuesBean);
-                        Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
-                        
-                        try(issues){
-                            List<BufferedWriter> writers = new ArrayList<>();
-                            for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
-                                File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
-                                BufferedWriter writer = new BufferedWriter(new FileWriter(minerInputFile));
-                                writers.add(writer);
-                            }
-        
-                            Holder<Integer> fork = new Holder<>(0);
-                            issues.forEach(issue -> {
-                                BufferedWriter writer = writers.get(fork.getValue());
-                                try {
-                                    writer.write(issue.getKey());
-                                    writer.newLine();
-                                    fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
-                                } catch (IOException e) {
-                                    throw new RuntimeException("Cannot write issue to miner input file", e);
-                                }
-                            });
-                            for (Writer writer : writers){
-                                writer.close();
-                            }
-                            
-                        } catch (IOException e) {
-                            status.setRollbackOnly();
-                            throw new RuntimeException("Cannot write issue to miner input file", e);
+        transaction.executeWithoutResult(status -> {
+            ProcessedIssuesBean processedIssuesBean;
+    
+            // prepare inputs for forks
+            for (Dataset dataset : datasets) {
+                for (MeasurementDate measurementDate : measurementDates) {
+                    
+                    log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
+    
+                    // collect processed issue
+                    processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
+                    processedDatasetController.getFilteredIssues(processedIssuesBean);
+                    Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
+                    
+                    try(issues){
+                        List<BufferedWriter> writers = new ArrayList<>();
+                        for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
+                            File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
+                            BufferedWriter writer = new BufferedWriter(new FileWriter(minerInputFile));
+                            writers.add(writer);
                         }
+    
+                        Holder<Integer> fork = new Holder<>(0);
+                        issues.forEach(issue -> {
+                            BufferedWriter writer = writers.get(fork.getValue());
+                            try {
+                                writer.write(issue.getKey());
+                                writer.newLine();
+                                fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
+                            } catch (IOException e) {
+                                throw new RuntimeException("Cannot write issue to miner input file", e);
+                            }
+                        });
+                        for (Writer writer : writers){
+                            writer.close();
+                        }
+                        
+                    } catch (IOException e) {
+                        status.setRollbackOnly();
+                        throw new RuntimeException("Cannot write issue to miner input file", e);
                     }
                 }
-                });
-            
-            
-            /**
-             * Run forks in parallel processes.
-             * 
-             * Each fork will read issues from its input file.
-             */
-        //     List<Process> forks = new ArrayList<>();
-        //     for (Integer i = 0; i < forkConfig.getForkCount(); i++){
-        //         try {
-        //         ProcessBuilder pb = new ProcessBuilder(
-        //             "java",
-        //             "-jar", 
-        //             "./target/dataminer-0.0.1-SNAPSHOT.jar",
-        //             // gives each child its index 
-        //             "--dataminer.fork.index="+i.toString(),
-        //             // children do not need to modify db, only read
-        //             "--spring.jpa.hibernate.ddl-auto=none",
-        //             // children have their own data dir to avoid conflicts
-        //             "--dataminer.data.dir="+forkConfig.getForkDir(i))
-        //         .directory(new File(System.getProperty("user.dir")))
-        //         .inheritIO();
-        //         forks.add(pb.start());
-        //         } catch (IOException e) {
-        //             throw new RuntimeException("Cannot start miner process "+i.toString(), e);
-        //         } 
-        //     }
-        //     /**
-        //      * Wait for forks to finish
-        //      */
-        //     for (int i = 0; i < forkConfig.getForkCount(); i++){
-        //         try {
-        //             forks.get(i).waitFor();
-        //         } catch (InterruptedException e) {
-        //             log.error("Error while waiting for fork {}", i, e);
-        //         }
-        //     }        
-        // }
+            }
+            });
+        
+        /**
+         * Each thread processes its issues batch
+         */
         List<Thread> workers = new ArrayList<>();
         for (int i = 0; i < forkConfig.getForkCount(); i++){
             workers.add(new MeasureFeaturesThread(i, transaction));
@@ -293,22 +244,6 @@ public class FeatureController implements IFeatureController{
         log.info("measured {} issues", issueCount.getCount());
     }
 }
-
-    @Transactional
-    public void mineFeaturesAsFork() throws IOException{
-        // List<Dataset> datasets = datasetDao.findAll();
-        // List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
-        // for (Dataset dataset : datasets){
-        //     for (MeasurementDate measurementDate : measurementDates){
-        //         File inputIssues = new File(forkConfig.getForkInputFile(dataset, measurementDate));
-        //         Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line));
-        //         mineFeatures(issues, dataset, measurementDate);
-        //     } 
-        // }
-        
-    }
-
-
 
     private boolean measurementPrintExists(){
         return new File(measurementConfig.getDir()).listFiles().length > 0;
