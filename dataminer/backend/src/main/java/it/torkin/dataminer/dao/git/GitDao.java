@@ -29,7 +29,6 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.AndRevFilter;
 import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
 import org.eclipse.jgit.revwalk.filter.MessageRevFilter;
-import org.eclipse.jgit.revwalk.filter.NotRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
@@ -153,7 +152,6 @@ public class GitDao implements AutoCloseable{
                 .build();
 
             this.defaultBranch = findDefaultBranch(config.getDefaultBranchCandidates());
-            checkout(defaultBranch);
 
         } catch (Exception e) {
 

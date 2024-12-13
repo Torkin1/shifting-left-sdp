@@ -64,6 +64,7 @@ public class CommitsWhileInProgressMiner extends FeatureMiner{
         GitConfig threadGitConfig = gitConfig.forThread(bean.getThreadIndex());
         
         try(GitDao gitDao = new GitDao(threadGitConfig, repository)){
+            gitDao.checkout();
             // gets temporal spans in which the issue was in progress
             IssueTemporalSpanBean issueTemporalSpanBean = new IssueTemporalSpanBean(issue, measurementDate);
             issueController.getInProgressTemporalSpans(issueTemporalSpanBean);
