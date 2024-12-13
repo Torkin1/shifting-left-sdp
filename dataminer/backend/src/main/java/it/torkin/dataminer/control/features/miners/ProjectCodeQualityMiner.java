@@ -122,7 +122,7 @@ public class ProjectCodeQualityMiner extends FeatureMiner{
             System.out.println("requested to measure code quality of repo "+request.getRepoCoordinates().getName()+ " at " +measurementDate);
             gitDao.checkout(measurementDate);
 
-            File repository = new File(gitConfig.getReposDir() + "/" + request.getRepoCoordinates().getName());
+            File repository = new File(threadGitConfig.getReposDir() + "/" + request.getRepoCoordinates().getName());
             File root = new File(dataDirName+"/codequality");
             root.mkdirs();
             File violationsFile = new File(root.getAbsolutePath()+"/violations"+threadIndex+".csv");
