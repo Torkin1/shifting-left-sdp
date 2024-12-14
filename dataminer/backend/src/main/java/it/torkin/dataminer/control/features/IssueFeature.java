@@ -54,6 +54,10 @@ public enum IssueFeature {
      * such as assignees, reporters, editors, ...
      */
     ISSUE_PARTICIPANTS("Issue Participants", IssueFeatureFamily.INTERNAL_TEMPERATURE),
+    /**
+     * Features that measure the size of the codebase impacted by the issue.
+     */
+    PROJECT_CODE_SIZE("Project code size", IssueFeatureFamily.CODE),
     ;
 
     private final String name;

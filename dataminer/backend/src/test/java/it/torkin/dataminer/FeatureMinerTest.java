@@ -28,6 +28,7 @@ import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.miners.AssigneeANFICMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
 import it.torkin.dataminer.control.features.miners.ProjectCodeQualityMiner;
+import it.torkin.dataminer.control.features.miners.ProjectCodeSizeMiner;
 import it.torkin.dataminer.control.features.miners.TemporalLocalityMiner;
 import it.torkin.dataminer.control.features.miners.UnableToInitNLPFeaturesMinerException;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
@@ -311,6 +312,29 @@ public class FeatureMinerTest {
         measurement.setIssue(issue);
         
         projectCodeQualityMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
+        log.debug("measurement: {}", measurement);
 
+    }
+
+    @Autowired private ProjectCodeSizeMiner projectCodeSizeMiner;
+
+    @Transactional
+    @Test
+    public void testCodeSize() throws Exception{
+        datasetController.createRawDataset();
+        projectCodeSizeMiner.init();
+
+        Dataset dataset = datasetDao.findAll().get(0);
+        Issue issue = issueDao.findAllByDataset(dataset.getName()).findFirst().get();
+
+        MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
+        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+        Measurement measurement = new Measurement();
+        measurement.setMeasurementDate(measurementDateValue);
+        measurement.setMeasurementDateName(measurementDate.getName());
+        measurement.setIssue(issue);
+        
+        projectCodeSizeMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
+        log.debug("measurement: {}", measurement);
     }
 }
