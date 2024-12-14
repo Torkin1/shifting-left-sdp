@@ -59,9 +59,13 @@ public enum IssueFeature {
      */
     PROJECT_CODE_SIZE("Project code size", IssueFeatureFamily.CODE),
     /**
-     * How important the issue is to the project 
+     * How important the issue is to the project (i.e: critical, major, minor, trivial) 
      */
     PRIORITY("Priority", IssueFeatureFamily.INTRINSIC),
+    /**
+     * The purpose of the issue (i.e: bug, improvement, new feature, ...)
+     */
+    TYPE("Type", IssueFeatureFamily.INTRINSIC),
     ;
 
     private final String name;

@@ -17,6 +17,7 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.IssuePriorityDao;
 import it.torkin.dataminer.dao.local.IssueStatusDao;
+import it.torkin.dataminer.dao.local.IssueTypeDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
@@ -26,6 +27,7 @@ import it.torkin.dataminer.entities.jira.issue.IssueHistory;
 import it.torkin.dataminer.entities.jira.issue.IssueHistoryItem;
 import it.torkin.dataminer.entities.jira.issue.IssuePriority;
 import it.torkin.dataminer.entities.jira.issue.IssueStatus;
+import it.torkin.dataminer.entities.jira.issue.IssueType;
 import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 import it.torkin.dataminer.rest.UnableToGetResourceException;
 import it.torkin.dataminer.toolbox.time.TimeTools;
@@ -109,6 +111,7 @@ public class IssueController implements IIssueController{
         
     @Autowired private IssueStatusDao issueStatusDao;
     @Autowired private IssuePriorityDao issuePriorityDao;
+    @Autowired private IssueTypeDao issueTypeDao;
     
     private Set<String> inProgressIssueStatuses = new HashSet<>();
     
@@ -484,6 +487,14 @@ public class IssueController implements IIssueController{
         return new IssueFieldGetter<Optional<IssuePriority>>(
             fields -> Optional.ofNullable(fields.getPriority()),
             entries -> issuePriorityDao.findById(entries.get(0).getValue())
-        ).apply(new IssueFieldBean(bean, IssueField.ASSIGNEE));
+        ).apply(new IssueFieldBean(bean, IssueField.PRIORITY));
+    }
+
+    @Override
+    public Optional<IssueType> getType(IssueBean bean) {
+        return new IssueFieldGetter<Optional<IssueType>>(
+            fields -> Optional.ofNullable(fields.getIssuetype()),
+            entries -> issueTypeDao.findById(entries.get(0).getValue())
+        ).apply(new IssueFieldBean(bean, IssueField.TYPE));
     }
 }

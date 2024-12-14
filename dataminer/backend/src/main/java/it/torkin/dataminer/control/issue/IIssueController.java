@@ -8,6 +8,7 @@ import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
 import it.torkin.dataminer.entities.jira.issue.IssueComment;
 import it.torkin.dataminer.entities.jira.issue.IssuePriority;
+import it.torkin.dataminer.entities.jira.issue.IssueType;
 import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 
 /**
@@ -136,4 +137,9 @@ public interface IIssueController {
      * Gets priority of ticket at measurement date
      */
     public Optional<IssuePriority> getPriority(IssueBean bean);
+
+    /**
+     * Gets issue type at measurement date
+     */
+    public Optional<IssueType> getType(IssueBean bean);
 }
