@@ -14,6 +14,8 @@ import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.IStatsController;
 import it.torkin.dataminer.control.features.IFeatureController;
+import it.torkin.dataminer.control.features.IssueFeature;
+import it.torkin.dataminer.control.features.PrintMeasurementsBean;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -77,6 +79,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
         featureController.mineFeatures();
         log.info("Features mined");
+
+        featureController.printMeasurements(new PrintMeasurementsBean(IssueFeature.BUGGINESS));
     }
 
     private void printNLPIssueBeans() throws IOException {
