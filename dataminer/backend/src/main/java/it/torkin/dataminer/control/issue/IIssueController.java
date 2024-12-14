@@ -1,11 +1,13 @@
 package it.torkin.dataminer.control.issue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
 import it.torkin.dataminer.entities.jira.issue.IssueComment;
+import it.torkin.dataminer.entities.jira.issue.IssuePriority;
 import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 
 /**
@@ -129,4 +131,9 @@ public interface IIssueController {
      * before the specified measurement date.
      */
     public Set<String> getHistoryAuthors(IssueBean bean);
+
+    /**
+     * Gets priority of ticket at measurement date
+     */
+    public Optional<IssuePriority> getPriority(IssueBean bean);
 }

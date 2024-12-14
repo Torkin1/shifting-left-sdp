@@ -4,19 +4,19 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import it.torkin.dataminer.dao.local.IssueStatusDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import it.torkin.dataminer.config.JiraConfig;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
-import it.torkin.dataminer.dao.jira.JiraDao;
+import it.torkin.dataminer.dao.local.IssuePriorityDao;
+import it.torkin.dataminer.dao.local.IssueStatusDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
@@ -24,11 +24,11 @@ import it.torkin.dataminer.entities.jira.issue.IssueComment;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.entities.jira.issue.IssueHistory;
 import it.torkin.dataminer.entities.jira.issue.IssueHistoryItem;
+import it.torkin.dataminer.entities.jira.issue.IssuePriority;
 import it.torkin.dataminer.entities.jira.issue.IssueStatus;
 import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 import it.torkin.dataminer.rest.UnableToGetResourceException;
 import it.torkin.dataminer.toolbox.time.TimeTools;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -107,16 +107,10 @@ public class IssueController implements IIssueController{
     }
 
         
-    @Autowired private JiraConfig jiraConfig;
     @Autowired private IssueStatusDao issueStatusDao;
+    @Autowired private IssuePriorityDao issuePriorityDao;
     
     private Set<String> inProgressIssueStatuses = new HashSet<>();
-    private JiraDao jiraDao;
-
-    @PostConstruct
-    public void init(){
-        jiraDao = new JiraDao(jiraConfig);
-    }
     
     @Override
     public Boolean isBuggy(IssueCommitBean bean){
@@ -483,5 +477,13 @@ public class IssueController implements IIssueController{
         .map(history -> history.getAuthor().getKey())
         .collect(Collectors.toSet());
         return authors;
+    }
+
+    @Override
+    public Optional<IssuePriority> getPriority(IssueBean bean) {
+        return new IssueFieldGetter<Optional<IssuePriority>>(
+            fields -> Optional.ofNullable(fields.getPriority()),
+            entries -> issuePriorityDao.findById(entries.get(0).getValue())
+        ).apply(new IssueFieldBean(bean, IssueField.ASSIGNEE));
     }
 }

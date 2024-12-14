@@ -58,6 +58,10 @@ public enum IssueFeature {
      * Features that measure the size of the codebase impacted by the issue.
      */
     PROJECT_CODE_SIZE("Project code size", IssueFeatureFamily.CODE),
+    /**
+     * How important the issue is to the project 
+     */
+    PRIORITY("Priority", IssueFeatureFamily.INTRINSIC),
     ;
 
     private final String name;

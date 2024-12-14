@@ -8,6 +8,7 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,6 +28,7 @@ import it.torkin.dataminer.control.features.IFeatureController;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.miners.AssigneeANFICMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
+import it.torkin.dataminer.control.features.miners.PriorityMiner;
 import it.torkin.dataminer.control.features.miners.ProjectCodeQualityMiner;
 import it.torkin.dataminer.control.features.miners.ProjectCodeSizeMiner;
 import it.torkin.dataminer.control.features.miners.TemporalLocalityMiner;
@@ -336,5 +338,31 @@ public class FeatureMinerTest {
         
         projectCodeSizeMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
         log.debug("measurement: {}", measurement);
+    }
+
+    @Autowired private PriorityMiner priorityMiner;
+
+    @Transactional
+    @Test
+    public void testPriority() throws Exception{
+        datasetController.createRawDataset();
+        priorityMiner.init();
+
+        Dataset dataset = datasetDao.findAll().get(0);
+        
+        Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
+
+        issues.forEach(issue -> {
+            MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
+            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+            Measurement measurement = new Measurement();
+            measurement.setMeasurementDate(measurementDateValue);
+            measurement.setMeasurementDateName(measurementDate.getName());
+            measurement.setIssue(issue);
+            
+            priorityMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
+            log.debug("measurement: {}", measurement);
+        });
+        
     }
 }
