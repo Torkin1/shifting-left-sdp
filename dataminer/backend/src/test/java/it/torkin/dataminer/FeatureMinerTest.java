@@ -23,9 +23,11 @@ import it.torkin.dataminer.control.dataset.DatasetController;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
+import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IFeatureController;
 import it.torkin.dataminer.control.features.IssueFeature;
+import it.torkin.dataminer.control.features.miners.ActivitiesMiner;
 import it.torkin.dataminer.control.features.miners.AssigneeANFICMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
@@ -369,6 +371,27 @@ public class FeatureMinerTest {
 
     @Autowired private TypeMiner typeMiner;
 
+    private void testMiner(FeatureMiner miner) throws Exception{
+        datasetController.createRawDataset();
+        miner.init();
+
+        Dataset dataset = datasetDao.findAll().get(0);
+        
+        Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
+
+        issues.forEach(issue -> {
+            MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
+            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+            Measurement measurement = new Measurement();
+            measurement.setMeasurementDate(measurementDateValue);
+            measurement.setMeasurementDateName(measurementDate.getName());
+            measurement.setIssue(issue);
+            
+            miner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
+            log.debug("measurement: {}", measurement);
+        });
+    }
+    
     @Transactional
     @Test
     public void testType() throws Exception{
@@ -390,6 +413,14 @@ public class FeatureMinerTest {
             typeMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
             log.debug("measurement: {}", measurement);
         });
-        
+
+    }
+
+    @Autowired private ActivitiesMiner activitiesMiner;
+
+    @Transactional
+    @Test
+    public void testActivities() throws Exception{
+        testMiner(activitiesMiner);
     }
 }

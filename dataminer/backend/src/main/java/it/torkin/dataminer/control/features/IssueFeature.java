@@ -66,6 +66,11 @@ public enum IssueFeature {
      * The purpose of the issue (i.e: bug, improvement, new feature, ...)
      */
     TYPE("Type", IssueFeatureFamily.INTRINSIC),
+    /**
+     * The activities the issue has been involved in. Activities
+     * can be about issue state change, discussion, implementation efforts, ...
+     */
+    ACTIVITIES("Activities", IssueFeatureFamily.INTERNAL_TEMPERATURE),
     ;
 
     private final String name;

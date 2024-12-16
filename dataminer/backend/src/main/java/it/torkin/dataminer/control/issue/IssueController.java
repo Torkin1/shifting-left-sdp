@@ -335,9 +335,6 @@ public class IssueController implements IIssueController{
         return histories.toList();
     }
 
-    private List<IssueHistory> getHistories(IssueBean bean){
-        return getHistories(bean, null);
-    }
 
     private boolean changesField(IssueHistory history, IssueField field){
         return history.getItems().stream().anyMatch(item -> item.getField().equals(field.getName()));
@@ -496,5 +493,10 @@ public class IssueController implements IIssueController{
             fields -> Optional.ofNullable(fields.getIssuetype()),
             entries -> issueTypeDao.findById(entries.get(0).getValue())
         ).apply(new IssueFieldBean(bean, IssueField.TYPE));
+    }
+
+    @Override
+    public List<IssueHistory> getHistories(IssueBean bean) {
+        return getHistories(bean, null);
     }
 }
