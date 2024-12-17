@@ -30,7 +30,7 @@ public class TypeMiner extends FeatureMiner{
             .map(IssueType::getName)
             .orElse("");
         
-        bean.getMeasurement().getFeatures().add(new StringFeature(IssueFeature.TYPE.getName(), type));
+        bean.getMeasurement().getFeatures().add(new StringFeature(IssueFeature.TYPE.getFullName(), type));
     }
 
     @Override

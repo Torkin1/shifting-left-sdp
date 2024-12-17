@@ -36,7 +36,7 @@ public class PriorityMiner extends FeatureMiner{
             .map(IssuePriority::getName)
             .orElse("");
         
-        bean.getMeasurement().getFeatures().add(new StringFeature(IssueFeature.PRIORITY.getName(), priority));
+        bean.getMeasurement().getFeatures().add(new StringFeature(IssueFeature.PRIORITY.getFullName(), priority));
 
     }
     
