@@ -25,6 +25,7 @@ import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.entities.jira.project.Project;
+import it.torkin.dataminer.toolbox.Holder;
 import it.torkin.dataminer.toolbox.math.SafeMath;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,6 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TemporalLocalityMiner extends FeatureMiner{
 
+    private static final String WEIGHTED = IssueFeature.TEMPORAL_LOCALITY.getFullName() + ": weighted";
+    
     private Map<String, Map<String, Long>> issuesInWindowByProjectByDataset = new HashMap<>();
     private Map<String, Map<String, Long>> issuesCountByProjectByDataset = new HashMap<>();
 
@@ -53,7 +56,8 @@ public class TemporalLocalityMiner extends FeatureMiner{
     @Override
     public void mine(FeatureMinerBean bean) {
         
-        Double temperature = null;
+        Holder<Double> temperature = new Holder<>(0.0);
+        Holder<Double> weightedTemperature = new Holder<>(0.0);
 
         String dataset = bean.getDataset();
         String project = bean.getIssue().getDetails().getFields().getProject().getKey();
@@ -65,7 +69,8 @@ public class TemporalLocalityMiner extends FeatureMiner{
         // if we don't have enough issues to fill the window, we can't be sure that the temperature value
         // is reliable, so we set it to Nan
         if (issuesCount < issuesInWindow){
-            temperature = Double.NaN;
+            temperature.setValue(Double.NaN);
+            weightedTemperature.setValue(Double.NaN);
         }
         else {
     
@@ -73,7 +78,8 @@ public class TemporalLocalityMiner extends FeatureMiner{
             datasetController.getProcessedIssues(processedIssuesBean);
 
             try(Stream<Issue> issues = processedIssuesBean.getProcessedIssues()){
-                long buggyCount = issues
+                Holder<Integer> j = new Holder<>(0);
+                issues
                     // retain only issues of same project
                     .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
                     // retain only issues prior to the issue to be measured
@@ -84,13 +90,24 @@ public class TemporalLocalityMiner extends FeatureMiner{
                     .sorted((i1, i2) -> - issueController.compareMeasurementDate(new IssueMeasurementDateBean(bean.getDataset(), i1, i2, bean.getMeasurementDate())))
                     // limit to issues in window
                     .limit(issuesInWindow)
-                    // retain only buggy issues
-                    .filter(i -> issueController.isBuggy(new IssueCommitBean(i, bean.getDataset())))
-                    // count buggy issues in window
-                    .count();
+                    .forEach(i -> {
+                        
+                        if (issueController.isBuggy(new IssueCommitBean(i, dataset))){
+                            // count buggy issues in window
+                            // temperature is the proportion of buggy issues in the window
+                            temperature.setValue(temperature.getValue() + (1.0 / issuesInWindow));
 
-                // calculate temperature as the proportion of buggy issues in window
-                temperature = buggyCount / (double) issuesInWindow;
+                            // weighted count. Issue weight is its position in the window starting from the most recent issue.
+                            // So, oldest issues have less weight.
+                            long weight = issuesInWindow - j.getValue();
+                            double sumOfweights = SafeMath.sumOfFirst(issuesInWindow);
+                            weightedTemperature.setValue(weightedTemperature.getValue() + (1.0 * weight / sumOfweights));
+                        }
+                        
+                        j.setValue(j.getValue() + 1);
+
+                    });
+
             }
             
         }
@@ -98,7 +115,10 @@ public class TemporalLocalityMiner extends FeatureMiner{
         // store temperature in measurement
         bean.getMeasurement().getFeatures().add(new DoubleFeature(
             IssueFeature.TEMPORAL_LOCALITY.getFullName(),
-            temperature));
+            temperature.getValue()));
+        bean.getMeasurement().getFeatures().add(new DoubleFeature(
+            WEIGHTED,
+            weightedTemperature.getValue()));
 
     }
 

@@ -215,87 +215,11 @@ public class FeatureMinerTest {
 
     @Autowired private TemporalLocalityMiner temporalLocalityMiner;
 
-    /**
-     * NOTE: deactivate issue filters before firing this test
-     */
     @Transactional
     @Test
     public void testTemporalLocality() throws Exception{
-        Issue buggyPastIssue = new Issue();
-        Issue buggyPastIssue2 = new Issue();
-        Issue issue = new Issue();
 
-        Project project = new Project();
-        project.setKey("myProject");
-        project.setJiraId("myProject");
-
-        Developer dev = new Developer();
-        dev.setKey("myDev");
-
-        Dataset dataset = new Dataset();
-        dataset.setName("jitsdp");
-        dataset = datasetDao.save(dataset);
-
-        Commit buggyCommit = new Commit();
-        buggyCommit.setHash("buggyCommit");
-        buggyCommit.setTimestamp(TimeTools.now());
-        buggyCommit.setBuggy(true);
-        buggyCommit.setDataset(dataset);
-
-        Commit cleanCommit = new Commit();
-        cleanCommit.setHash("cleanCommit");
-        cleanCommit.setTimestamp(TimeTools.now());
-        cleanCommit.setBuggy(false);
-        cleanCommit.setDataset(dataset);
-
-        buggyPastIssue.setKey("issue1");
-        buggyPastIssue.setDetails(new IssueDetails());
-        buggyPastIssue.getDetails().setFields(new IssueFields());
-        buggyPastIssue.getDetails().getFields().setAssignee(dev);
-        buggyPastIssue.getDetails().getFields().setCreated(Timestamp.from(TimeTools.now().toInstant().minus(2, ChronoUnit.DAYS)));
-        buggyPastIssue.getDetails().getFields().setProject(project);
-
-        buggyCommit.getIssues().add(buggyPastIssue);
-        buggyPastIssue.getCommits().add(buggyCommit);
-
-        buggyCommit.getIssues().add(buggyPastIssue2);
-        cleanCommit.getIssues().add(issue);
-        buggyPastIssue2.getCommits().add(buggyCommit);
-        issue.getCommits().add(cleanCommit);
-
-        buggyPastIssue2.setKey("issue2");
-        buggyPastIssue2.setDetails(new IssueDetails());
-        buggyPastIssue2.getDetails().setFields(new IssueFields());
-        buggyPastIssue2.getDetails().getFields().setAssignee(dev);
-        buggyPastIssue2.getDetails().getFields().setCreated(Timestamp.from(TimeTools.now().toInstant().minus(2, ChronoUnit.DAYS)));
-        buggyPastIssue2.getDetails().getFields().setProject(project);
-
-        issue.setKey("issue3");
-        issue.setDetails(new IssueDetails());
-        issue.getDetails().setFields(new IssueFields());
-        issue.getDetails().getFields().setAssignee(dev);
-        issue.getDetails().getFields().setCreated(TimeTools.now());
-        issue.getDetails().getFields().setProject(project);
-
-        commitDao.save(buggyCommit);
-        commitDao.save(cleanCommit);
-
-        buggyPastIssue = issueDao.save(buggyPastIssue);
-        buggyPastIssue2 = issueDao.save(buggyPastIssue2);
-        issue = issueDao.save(issue);
-
-        Measurement measurement = new Measurement();
-        MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
-        measurement.setMeasurementDate(measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)));
-        measurement.setMeasurementDateName(measurementDate.getName());
-        measurement.setIssue(issue);
-        issue.getMeasurements().add(measurement);
-
-        temporalLocalityMiner.init();
-        temporalLocalityMiner.accept(new FeatureMinerBean(
-            dataset.getName(), issue, measurement, measurementDate, 0));
-        
-        assertEquals(100.0, measurement.getFeatureByName(IssueFeature.TEMPORAL_LOCALITY.getFullName()).getValue());
+        testMiner(temporalLocalityMiner);
     }
 
     @Autowired private ProjectCodeQualityMiner projectCodeQualityMiner;
