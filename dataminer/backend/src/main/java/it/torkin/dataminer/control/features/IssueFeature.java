@@ -71,6 +71,12 @@ public enum IssueFeature {
      * can be about issue state change, discussion, implementation efforts, ...
      */
     ACTIVITIES("Activities", IssueFeatureFamily.INTERNAL_TEMPERATURE),
+    /**
+     * Latest commit submitted to project codebase before the issue measurement date.
+     * If such commit changed the project a lot, the integration of the issue implementation
+     * could bring new defects.
+     */
+    LATEST_PROJECT_COMMIT("Latest project commit", IssueFeatureFamily.ENVIRONMENTAL_TEMPERATURE),
     ;
 
     private final String name;

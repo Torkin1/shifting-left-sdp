@@ -30,6 +30,8 @@ import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.miners.ActivitiesMiner;
 import it.torkin.dataminer.control.features.miners.AssigneeANFICMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
+import it.torkin.dataminer.control.features.miners.CommitsWhileInProgressMiner;
+import it.torkin.dataminer.control.features.miners.LatestProjectCommitMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
 import it.torkin.dataminer.control.features.miners.ProjectCodeQualityMiner;
 import it.torkin.dataminer.control.features.miners.ProjectCodeSizeMiner;
@@ -346,5 +348,21 @@ public class FeatureMinerTest {
     @Test
     public void testActivities() throws Exception{
         testMiner(activitiesMiner);
+    }
+
+    @Autowired private LatestProjectCommitMiner latestProjectCommitMiner;
+
+    @Transactional
+    @Test
+    public void testLatestProjectCommit() throws Exception{
+        testMiner(latestProjectCommitMiner);
+    }
+    
+    @Autowired private CommitsWhileInProgressMiner commitsWhileInProgressMiner;
+
+    @Transactional
+    @Test
+    public void testCommitsWhileInProgress() throws Exception{
+        testMiner(commitsWhileInProgressMiner);
     }
 }

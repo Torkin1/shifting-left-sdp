@@ -8,9 +8,11 @@ import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
@@ -19,6 +21,8 @@ import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.Edit;
 import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -377,6 +381,10 @@ public class GitDao implements AutoCloseable{
         return commit == null ? null : commit.getName();
     }
 
+    public String getLatestCommitHash(Date beforeDate) throws UnableToGetCommitsException{
+        return getLatestCommitHash(beforeDate, null);
+    }
+
     /**
      * Gets all commits applied in given time frame (inclusive bounds).
           * @throws UnableToGetCommitsException 
@@ -498,34 +506,87 @@ public class GitDao implements AutoCloseable{
 
         List<RevCommit> commits;
         long churn = 0;
-        RevCommit[] parents;
-        List<DiffEntry> diffs;
     
         try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)){
             df.setRepository(repository);
             commits = getCommits(start, end);
+            
             for (RevCommit commit : commits){
-                parents = commit.getParents();
-                if (parents.length == 0){
-                    // commit is the first one commited ever in the repository
-                    diffs = getDiffs(commit);
-                } else {
-                    // get diffs for each commit parent
-                    diffs = new ArrayList<>();
-                    for (RevCommit parent : parents){
-                        diffs.addAll(getDiffs(parent, commit));
-                    }
-                }
-                // cumulate churn from each diff
-                for (DiffEntry diff : diffs){
-                    churn += calculateChurn(df, diff).getTotal();
-                }
+                churn += getChurn(commit, df);
             }
-
             return churn;
 
-        } catch (UnableToGetCommitsException | UnableToDoDiffException e) {
+        } catch (UnableToGetCommitsException | UnableToDoDiffException | IOException e) {
             throw new UnableToCalculateChurnException(e);
+        }
+    }
+
+    private long getChurn(RevCommit commit, DiffFormatter df) throws UnableToDoDiffException, UnableToCalculateChurnException, MissingObjectException, IncorrectObjectTypeException, IOException{
+        
+        RevCommit[] parents = commit.getParents();
+        List<DiffEntry> diffs;
+        long churn = 0;
+        try(RevWalk revWalk = new RevWalk(repository)){
+            if (parents.length == 0){
+                // commit is the first one commited ever in the repository
+                diffs = getDiffs(commit);
+            } else {
+                // get diffs for each commit parent
+                diffs = new ArrayList<>();
+                for (RevCommit parent : parents){
+                    parent = revWalk.parseCommit(parent.getId());
+                    diffs.addAll(getDiffs(parent, commit));
+                }
+            }
+            // cumulate churn from each diff
+            for (DiffEntry diff : diffs){
+                churn += calculateChurn(df, diff).getTotal();
+            }
+    
+            return churn;
+        }
+        
+}
+    
+    public long getChurn(String commitHash) throws UnableToCalculateChurnException{
+
+        try {
+            RevCommit commit = getCommit(commitHash);
+            try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)){
+                df.setRepository(repository);
+                return getChurn(commit, df);
+            }
+        } catch (Exception e) {
+            throw new UnableToCalculateChurnException(e);
+        }
+    }
+
+    public Set<String> getCommitChangeset(String commitHash) throws UnableToGetChangesetException {
+        
+        Set<String> changeset = new HashSet<>();
+        
+        try (RevWalk revWalk = new RevWalk(repository)){
+            List<DiffEntry> diffs = new ArrayList<>();
+            RevCommit commit = getCommit(commitHash);
+            RevCommit[] parents = commit.getParents();
+            if (parents.length == 0){
+                diffs = getDiffs(commit);
+            } else {
+                for (RevCommit parent : parents){
+                    parent = revWalk.parseCommit(parent.getId());
+                    diffs.addAll(getDiffs(parent, commit));
+                }
+            }
+            for (DiffEntry diff : diffs){
+                
+                changeset.add(diff.getOldPath());
+                changeset.add(diff.getNewPath());
+
+            }
+            changeset.remove(DiffEntry.DEV_NULL);
+            return changeset;
+        } catch (UnableToGetCommitException | UnableToDoDiffException | IOException e) {
+            throw new UnableToGetChangesetException(e);
         }
     }
     
