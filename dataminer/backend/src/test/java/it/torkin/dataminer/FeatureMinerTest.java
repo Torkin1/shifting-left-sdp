@@ -8,6 +8,7 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -49,7 +50,9 @@ import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
+import it.torkin.dataminer.entities.dataset.Repository;
 import it.torkin.dataminer.entities.jira.Developer;
+import it.torkin.dataminer.entities.jira.issue.IssueChangelog;
 import it.torkin.dataminer.entities.jira.issue.IssueDetails;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
 import it.torkin.dataminer.entities.jira.project.Project;
@@ -142,6 +145,10 @@ public class FeatureMinerTest {
         Issue buggyPastIssue = new Issue();
         Issue cleanPastIssue = new Issue();
         Issue issue = new Issue();
+        Issue pastIssue = new Issue();
+
+        Repository repository = new Repository();
+        repository.setId("myRepo");
 
         Project project = new Project();
         project.setKey("myProject");
@@ -154,24 +161,35 @@ public class FeatureMinerTest {
         dataset.setName("jitsdp");
         dataset = datasetDao.save(dataset);
 
+        Timestamp now = TimeTools.now();
         Commit buggyCommit = new Commit();
         buggyCommit.setHash("buggyCommit");
-        buggyCommit.setTimestamp(TimeTools.now());
+        buggyCommit.setTimestamp(now);
         buggyCommit.setBuggy(true);
         buggyCommit.setDataset(dataset);
+        buggyCommit.setRepository(repository);
 
         Commit cleanCommit = new Commit();
         cleanCommit.setHash("cleanCommit");
-        cleanCommit.setTimestamp(TimeTools.now());
+        cleanCommit.setTimestamp(now);
         cleanCommit.setBuggy(false);
         cleanCommit.setDataset(dataset);
+        cleanCommit.setRepository(repository);
 
-        buggyPastIssue.setKey("issue1");
+        Commit pastCommit = new Commit();
+        pastCommit.setHash("pastCommit");
+        pastCommit.setTimestamp(Timestamp.from(now.toInstant().minus(1, ChronoUnit.SECONDS)));
+        pastCommit.setBuggy(false);
+        pastCommit.setDataset(dataset);
+        pastCommit.setRepository(repository);
+
+        buggyPastIssue.setKey("buggyPastIssue");
         buggyPastIssue.setDetails(new IssueDetails());
         buggyPastIssue.getDetails().setFields(new IssueFields());
         buggyPastIssue.getDetails().getFields().setAssignee(dev);
         buggyPastIssue.getDetails().getFields().setCreated(Timestamp.from(TimeTools.now().toInstant().minus(2, ChronoUnit.DAYS)));
         buggyPastIssue.getDetails().getFields().setProject(project);
+        buggyPastIssue.getDetails().setChangelog(new IssueChangelog());
 
         buggyCommit.getIssues().add(buggyPastIssue);
         buggyPastIssue.getCommits().add(buggyCommit);
@@ -180,27 +198,40 @@ public class FeatureMinerTest {
         cleanCommit.getIssues().add(issue);
         cleanPastIssue.getCommits().add(cleanCommit);
         issue.getCommits().add(cleanCommit);
+        pastIssue.getCommits().add(pastCommit);
+        pastCommit.getIssues().add(pastIssue);
 
-        cleanPastIssue.setKey("issue2");
+        cleanPastIssue.setKey("cleanPastIssue");
         cleanPastIssue.setDetails(new IssueDetails());
         cleanPastIssue.getDetails().setFields(new IssueFields());
         cleanPastIssue.getDetails().getFields().setAssignee(dev);
         cleanPastIssue.getDetails().getFields().setCreated(Timestamp.from(TimeTools.now().toInstant().minus(2, ChronoUnit.DAYS)));
         cleanPastIssue.getDetails().getFields().setProject(project);
+        cleanPastIssue.getDetails().setChangelog(new IssueChangelog());
 
-        issue.setKey("issue3");
+        issue.setKey("issue");
         issue.setDetails(new IssueDetails());
         issue.getDetails().setFields(new IssueFields());
         issue.getDetails().getFields().setAssignee(dev);
         issue.getDetails().getFields().setCreated(Timestamp.from(TimeTools.now().toInstant().minus(2, ChronoUnit.DAYS)));
         issue.getDetails().getFields().setProject(project);
+        issue.getDetails().setChangelog(new IssueChangelog());
+
+        pastIssue.setKey("pastIssue");
+        pastIssue.setDetails(new IssueDetails());
+        pastIssue.getDetails().setFields(new IssueFields());
+        pastIssue.getDetails().getFields().setCreated(Timestamp.from(TimeTools.now().toInstant().minus(2, ChronoUnit.DAYS)));
+        pastIssue.getDetails().getFields().setProject(project);
+        pastIssue.getDetails().setChangelog(new IssueChangelog());
 
         commitDao.save(buggyCommit);
         commitDao.save(cleanCommit);
+        commitDao.save(pastCommit);
 
         buggyPastIssue = issueDao.save(buggyPastIssue);
         cleanPastIssue = issueDao.save(cleanPastIssue);
         issue = issueDao.save(issue);
+        pastIssue = issueDao.save(pastIssue);
 
         Measurement measurement = new Measurement();
         MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
@@ -209,10 +240,13 @@ public class FeatureMinerTest {
         measurement.setIssue(issue);
         issue.getMeasurements().add(measurement);
 
+        List<Issue> issues = issueDao.findAll();
+
         assigneeANFICMiner.accept(new FeatureMinerBean(
             dataset.getName(), issue, measurement, measurementDate, 0));
 
-        assertEquals(0.3333333333333333, measurement.getFeatureByName(IssueFeature.ASSIGNEE.getFullName()).getValue());
+        assertEquals(0.5, measurement.getFeatureByName(IssueFeature.ASSIGNEE.getFullName() + ": ANFIC").getValue());
+        assertEquals(0.6666666666666666, measurement.getFeatureByName(IssueFeature.ASSIGNEE.getFullName() + ": Familiarity").getValue());
     }
 
     @Autowired private TemporalLocalityMiner temporalLocalityMiner;
@@ -364,5 +398,13 @@ public class FeatureMinerTest {
     @Test
     public void testCommitsWhileInProgress() throws Exception{
         testMiner(commitsWhileInProgressMiner);
+    }
+
+    @Autowired private AssigneeMiner assigneeMiner;
+
+    @Transactional
+    @Test
+    public void testAssignee() throws Exception{
+        testMiner(assigneeMiner);
     }
 }

@@ -15,12 +15,11 @@ import it.torkin.dataminer.control.issue.HasBeenAssignedBean;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
-import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
+import it.torkin.dataminer.control.issue.IssueMeasurementDateBean;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
-import it.torkin.dataminer.toolbox.time.TimeTools;
+import it.torkin.dataminer.toolbox.Holder;
 import jakarta.transaction.Transactional;
-import lombok.Data;
 
 /**
  * Implements feature tracked by #148
@@ -30,67 +29,55 @@ import lombok.Data;
 @Component
 public class AssigneeMiner extends FeatureMiner{
 
-    @Data
-    private class IssueCount {
-
-        private double buggyIssues;
-        private double issues;
-
-        public void addBuggyIssue(){
-            buggyIssues ++;
-        }
-
-        public void addIssue(){
-            issues ++;
-        }
-    }
-
     private static final String ANFIC = IssueFeature.ASSIGNEE.getFullName() + ": ANFIC";
-    
+    private static final String FAMILIARITY = IssueFeature.ASSIGNEE.getFullName() + ": Familiarity";
+
     @Autowired private IIssueController issueController;
     @Autowired private ProcessedDatasetController processedDatasetController;
 
     @Override
     @Transactional
     public void mine(FeatureMinerBean bean) {
-        /**
-         * for issue assigned dev:
-         *   - count past tickets where assigned == dev (at some point in time) AND ticket is buggy
-         *   - do the same for non-buggy tickets
-         *   - calc ANFIC(dev) = #BuggyTickets/#Tickets
-         *   - store ANFIC as a Feature
-        */
 
         Double anfic;
+        Double familiarity;
 
-        IssueCount issueCount = new IssueCount();
+        Holder<Long> totalIssues = new Holder<>(0L);
+        Holder<Long> assigneeTotalIssues = new Holder<>(0L);
+        Holder<Long> assigneeBuggyIssues = new Holder<>(0L);
+
         ProcessedIssuesBean processedIssuesBean = new ProcessedIssuesBean(bean.getDataset(), bean.getMeasurementDate());
 
         processedDatasetController.getFilteredIssues(processedIssuesBean);
         try(Stream<Issue> issues =  processedIssuesBean.getProcessedIssues()){
             issues
-            // only pick issues with measurement date before or equal the measurement date of this issue
-            .filter(i -> !bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDataset(), i)).after(bean.getMeasurement().getMeasurementDate()))
-            // only pick issues of same dataset and project
-            .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
             // exclude the issue to be measured
             .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
-            // only pick issues which were assigned to the dev at some point in the past
-            .filter(i -> issueController.hasBeenAssigned(new HasBeenAssignedBean(
-                bean.getIssue(),
-                issueController.getAssigneeKey(new IssueBean(bean.getIssue(), bean.getMeasurement().getMeasurementDate())), 
-                TimeTools.now())))
-            // count issues dividing them in buggy and buggy+clean
+            // only pick issues with measurement date before or equal the measurement date of this issue
+            .filter(i -> !issueController.isAfter(new IssueMeasurementDateBean(bean.getDataset(), i, bean.getIssue(), bean.getMeasurementDate())))
+            // only pick issues of same dataset and project
+            .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
             .forEach(i -> {
-                if (issueController.isBuggy(new IssueCommitBean(i, bean.getDataset()))){
-                    issueCount.addBuggyIssue();
+                // count total project issues in dataset prior to measurement date
+                totalIssues.setValue(totalIssues.getValue() + 1);
+                String assigneeKey = issueController.getAssigneeKey(new IssueBean(bean.getIssue(), bean.getMeasurement().getMeasurementDate()));
+                boolean hasBeenAssigned = issueController.hasBeenAssigned(new HasBeenAssignedBean(i, assigneeKey, bean.getMeasurement().getMeasurementDate()));
+                if (hasBeenAssigned){
+                    // count buggy issues assigned 
+                    if (issueController.isBuggy(new IssueCommitBean(i, bean.getDataset()))){
+                        assigneeBuggyIssues.setValue(assigneeBuggyIssues.getValue() + 1);
+                    }
+                    // count issues assigned
+                    assigneeTotalIssues.setValue(assigneeTotalIssues.getValue() + 1);
                 }
-                issueCount.addIssue();
             });
         }
             
-        anfic = issueCount.buggyIssues / issueCount.issues;
+        anfic = assigneeBuggyIssues.getValue() / (double) assigneeTotalIssues.getValue();
+        familiarity = assigneeTotalIssues.getValue() / (double) totalIssues.getValue();
+        
         bean.getMeasurement().getFeatures().add(new DoubleFeature(ANFIC, anfic));
+        bean.getMeasurement().getFeatures().add(new DoubleFeature(FAMILIARITY, familiarity));
     }
 
     @Override
