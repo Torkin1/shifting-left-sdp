@@ -28,7 +28,7 @@ import lombok.Data;
  * 
  */
 @Component
-public class AssigneeANFICMiner extends FeatureMiner{
+public class AssigneeMiner extends FeatureMiner{
 
     @Data
     private class IssueCount {
@@ -44,6 +44,8 @@ public class AssigneeANFICMiner extends FeatureMiner{
             issues ++;
         }
     }
+
+    private static final String ANFIC = IssueFeature.ASSIGNEE.getFullName() + ": ANFIC";
     
     @Autowired private IIssueController issueController;
     @Autowired private ProcessedDatasetController processedDatasetController;
@@ -88,11 +90,11 @@ public class AssigneeANFICMiner extends FeatureMiner{
         }
             
         anfic = issueCount.buggyIssues / issueCount.issues;
-        bean.getMeasurement().getFeatures().add(new DoubleFeature(IssueFeature.ANFIC.getFullName(), anfic));
+        bean.getMeasurement().getFeatures().add(new DoubleFeature(ANFIC, anfic));
     }
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.ANFIC.getFullName());
+        return Set.of(ANFIC);
     }
 }

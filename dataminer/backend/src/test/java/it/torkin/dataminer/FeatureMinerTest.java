@@ -28,13 +28,13 @@ import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IFeatureController;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.miners.ActivitiesMiner;
-import it.torkin.dataminer.control.features.miners.AssigneeANFICMiner;
+import it.torkin.dataminer.control.features.miners.AssigneeMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
 import it.torkin.dataminer.control.features.miners.CommitsWhileInProgressMiner;
-import it.torkin.dataminer.control.features.miners.LatestProjectCommitMiner;
+import it.torkin.dataminer.control.features.miners.LatestCommitMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
-import it.torkin.dataminer.control.features.miners.ProjectCodeQualityMiner;
-import it.torkin.dataminer.control.features.miners.ProjectCodeSizeMiner;
+import it.torkin.dataminer.control.features.miners.CodeQualityMiner;
+import it.torkin.dataminer.control.features.miners.CodeSizeMiner;
 import it.torkin.dataminer.control.features.miners.TemporalLocalityMiner;
 import it.torkin.dataminer.control.features.miners.TypeMiner;
 import it.torkin.dataminer.control.features.miners.UnableToInitNLPFeaturesMinerException;
@@ -107,7 +107,7 @@ public class FeatureMinerTest {
     }
 
     @Autowired private CommitDao commitDao;
-    @Autowired private AssigneeANFICMiner assigneeANFICMiner;
+    @Autowired private AssigneeMiner assigneeANFICMiner;
     @Autowired private DatasetController datasetController;
     @Autowired private DatasetDao datasetDao;
 
@@ -212,7 +212,7 @@ public class FeatureMinerTest {
         assigneeANFICMiner.accept(new FeatureMinerBean(
             dataset.getName(), issue, measurement, measurementDate, 0));
 
-        assertEquals(0.3333333333333333, measurement.getFeatureByName(IssueFeature.ANFIC.getFullName()).getValue());
+        assertEquals(0.3333333333333333, measurement.getFeatureByName(IssueFeature.ASSIGNEE.getFullName()).getValue());
     }
 
     @Autowired private TemporalLocalityMiner temporalLocalityMiner;
@@ -224,7 +224,7 @@ public class FeatureMinerTest {
         testMiner(temporalLocalityMiner);
     }
 
-    @Autowired private ProjectCodeQualityMiner projectCodeQualityMiner;
+    @Autowired private CodeQualityMiner projectCodeQualityMiner;
     
     @Transactional
     @Test
@@ -247,7 +247,7 @@ public class FeatureMinerTest {
 
     }
 
-    @Autowired private ProjectCodeSizeMiner projectCodeSizeMiner;
+    @Autowired private CodeSizeMiner projectCodeSizeMiner;
 
     @Transactional
     @Test
@@ -350,7 +350,7 @@ public class FeatureMinerTest {
         testMiner(activitiesMiner);
     }
 
-    @Autowired private LatestProjectCommitMiner latestProjectCommitMiner;
+    @Autowired private LatestCommitMiner latestProjectCommitMiner;
 
     @Transactional
     @Test

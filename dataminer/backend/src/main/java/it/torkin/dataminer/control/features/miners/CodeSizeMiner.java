@@ -27,11 +27,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class ProjectCodeSizeMiner extends FeatureMiner{
+public class CodeSizeMiner extends FeatureMiner{
     
-    private static final String TOTAL_LOCS = IssueFeature.PROJECT_CODE_SIZE + ": total LOCs";
-    private static final String NUM_OF_FILES = IssueFeature.PROJECT_CODE_SIZE + ": number of files";
-    private static final String NUM_OF_LANGUAGES = IssueFeature.PROJECT_CODE_SIZE + ": number of languages";
+    private static final String TOTAL_LOCS = IssueFeature.CODE_SIZE + ": total LOCs";
+    private static final String NUM_OF_FILES = IssueFeature.CODE_SIZE + ": number of files";
+    private static final String NUM_OF_LANGUAGES = IssueFeature.CODE_SIZE + ": number of languages";
 
     @Autowired DatasetDao datasetDao;
     @Autowired private GitConfig gitConfig;
