@@ -1,6 +1,6 @@
 package it.torkin.dataminer.entities.dataset;
 
-import jakarta.persistence.FetchType;
+import jakarta.persistence.*;
 
 import java.sql.Timestamp;
 import java.util.HashMap;
@@ -8,11 +8,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import lombok.Data;
 
 @Entity
@@ -54,7 +49,7 @@ public class Dataset {
      * If the project is not in the map, no guess can be taken from the repositories
      * loaded from this dataset.
      */
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Map<String, String> guessedRepoByProjects = new HashMap<>();
 
     /**

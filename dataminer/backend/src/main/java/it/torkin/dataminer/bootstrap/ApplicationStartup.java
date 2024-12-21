@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.PrintMeasurementsBean;
+import it.torkin.dataminer.control.workers.IWorkersController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -27,6 +28,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     @Autowired private IDatasetController datasetController;
     @Autowired private IStatsController statsController;
     @Autowired private IFeatureController featureController;
+    @Autowired private IWorkersController workersController;
 
     @Autowired private Environment env;
     @Autowired private ApplicationArguments args;
@@ -39,6 +41,10 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             if (isTest()) return;
         
             createRawDataset();
+
+            // disable workers since they aren't used anymore to recycle resources
+            workersController.cleanup();
+
             printStats();
             printNLPIssueBeans();
             mineFeatures();

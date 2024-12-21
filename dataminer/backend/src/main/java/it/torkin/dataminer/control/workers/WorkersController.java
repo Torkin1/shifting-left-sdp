@@ -25,11 +25,13 @@ public class WorkersController implements IWorkersController{
     @Autowired private WorkersConfig workersConfig;
     
     @PostConstruct
+    @Override
     public void init(){
         workers = Executors.newWorkStealingPool(workersConfig.getParallelismLevel());
     }
 
     @PreDestroy
+    @Override
     public void cleanup(){
         workers.shutdown();
     }
