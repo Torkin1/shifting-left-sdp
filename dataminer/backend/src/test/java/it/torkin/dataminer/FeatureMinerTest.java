@@ -285,21 +285,7 @@ public class FeatureMinerTest {
     @Transactional
     @Test
     public void testCodeSize() throws Exception{
-        datasetController.createRawDataset();
-        projectCodeSizeMiner.init();
-
-        Dataset dataset = datasetDao.findAll().get(0);
-        Issue issue = issueDao.findAllByDataset(dataset.getName()).findFirst().get();
-
-        MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
-        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
-        Measurement measurement = new Measurement();
-        measurement.setMeasurementDate(measurementDateValue);
-        measurement.setMeasurementDateName(measurementDate.getName());
-        measurement.setIssue(issue);
-        
-        projectCodeSizeMiner.accept(new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, 0));
-        log.debug("measurement: {}", measurement);
+        testMiner(projectCodeSizeMiner);
     }
 
     @Autowired private PriorityMiner priorityMiner;

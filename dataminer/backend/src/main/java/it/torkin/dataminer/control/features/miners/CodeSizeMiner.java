@@ -1,5 +1,6 @@
 package it.torkin.dataminer.control.features.miners;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -96,8 +97,9 @@ public class CodeSizeMiner extends FeatureMiner{
     }
 
     private Path getRepositoryPath(String dataset, Project project, GitConfig gitConfig) {
-        String repository = repositoriesByProjectByDataset.get(dataset).get(project.getKey());
-        return Paths.get(gitConfig.getReposDir(), repository);
+        String repositoryName = repositoriesByProjectByDataset.get(dataset).get(project.getKey());
+        File repository = new File(gitConfig.getReposDir(), repositoryName);
+        return Paths.get(repository.getAbsolutePath());
     }
 
     private Map<Path, Map<Language, Counts>> getCounts(Path repository) throws IOException{
