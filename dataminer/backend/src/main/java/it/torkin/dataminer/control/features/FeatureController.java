@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import it.torkin.dataminer.config.GitConfig;
+import it.torkin.dataminer.dao.git.GitDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -70,6 +72,8 @@ public class FeatureController implements IFeatureController{
     @Autowired private ForkConfig forkConfig;
 
     @Autowired TransactionTemplate transaction;
+    @Autowired
+    private GitConfig gitConfig;
 
     @RequiredArgsConstructor
     private class MeasureFeaturesThread extends Thread{
@@ -190,6 +194,22 @@ public class FeatureController implements IFeatureController{
                 }
             }
             });
+
+        /**
+         * Clones one copy of guessed repository for each thread to work on them
+         * */
+        for (Dataset dataset : datasets) {
+            for (int i = 0; i < forkConfig.getForkCount(); i ++){
+                GitConfig threadGitConfig = gitConfig.forThread(i);
+                for (String repo : dataset.getGuessedRepoByProjects().values()) {
+                    try (GitDao gitDao = new GitDao(threadGitConfig, repo)) {
+                        // opening the git dao ensures that the underlying repo is cloned
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
         
         /**
          * Each thread processes its issues batch
