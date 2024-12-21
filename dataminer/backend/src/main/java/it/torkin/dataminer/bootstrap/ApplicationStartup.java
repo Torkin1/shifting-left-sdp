@@ -2,6 +2,8 @@ package it.torkin.dataminer.bootstrap;
 
 import java.io.IOException;
 
+import it.torkin.dataminer.control.features.IssueFeature;
+import it.torkin.dataminer.control.features.PrintMeasurementsBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.context.event.ApplicationReadyEvent;

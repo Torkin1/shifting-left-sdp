@@ -82,7 +82,7 @@ public class JiraDao {
 
     private void expandWorklog(IssueDetails issueDetails){
         IssueWorklog worklog = issueDetails.getFields().getWorklog();
-        if (worklog.getMaxResults() < worklog.getTotal()){
+        if (worklog != null && worklog.getMaxResults() < worklog.getTotal()){
             // there are more worklog entries to fetch
             try {
                 IssueWorklog fullWorklog = getIssueWorklog(issueDetails.getJiraKey());
@@ -92,6 +92,8 @@ public class JiraDao {
                 // in the issue details
                 log.warn("unable to get full worklog for issue {}", issueDetails.getJiraKey(), e);
             }
+        } else {
+            issueDetails.getFields().setWorklog(new IssueWorklog());
         }
     }
 
