@@ -1,19 +1,18 @@
 package it.torkin.dataminer.control.features.miners;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-
-import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
-import it.torkin.dataminer.toolbox.csv.Resultset;
-import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IssueFeature;
+import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
+import it.torkin.dataminer.toolbox.csv.Resultset;
+import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -44,10 +43,30 @@ public class NLP4REMiner extends FeatureMiner{
         SENTIMENT_POLARITY("IT_POL"),
         SENTIMENT_SUBJECTIVITY("IT_SUB"),
         HAS_CODE("EX_COD"),
+        NUM_NEGATIVE_SENTIMENT("CM_NNS"),
+        PERC_NEGATIVE_SENTIMENT("CM_PNS"),
+        ONE_NEGATIVE_SENTIMENT("CM_ONS"),
         ;
 
         private final String name;
     }
+
+    private Set<NLP4REFeatures> sentimentFeatures = Set.of(
+        NLP4REFeatures.SENTIMENT_POLARITY,
+        NLP4REFeatures.SENTIMENT_SUBJECTIVITY,
+        NLP4REFeatures.NUM_NEGATIVE_SENTIMENT,
+        NLP4REFeatures.PERC_NEGATIVE_SENTIMENT,
+        NLP4REFeatures.ONE_NEGATIVE_SENTIMENT);
+
+    private Set<NLP4REFeatures> descriptionAttributes = Set.of(
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_ACTION,
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_CONDITIONALS,
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_CONTINUANCES,
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_IMPERATIVES,
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_INCOMPLETES,
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_OPTIONS,
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_SOURCES,
+        NLP4REFeatures.DESCRIPTION_ATTRIBUTE_WEAK_PHRASES);
     
     @Override
     public void mine(FeatureMinerBean bean) {
@@ -61,14 +80,26 @@ public class NLP4REMiner extends FeatureMiner{
             while (rows.hasNext()) {
                 row = rows.next();
                 if (bean.getIssue().getKey().equals(row.get("Requirement ID"))
-                // FIXME: project name is not unique. We should use project key instead, but current result file uses project names.
-                && bean.getIssue().getDetails().getFields().getProject().getName().equals(row.get("Project name"))
-                && bean.getMeasurementDate().getName().equals(row.get("measurementDateName"))){
+                 && bean.getIssue().getDetails().getFields().getProject().getKey().equals(row.get("Project name"))
+                 && bean.getMeasurementDate().getName().equals(row.get("measurementDateName"))){
                     for (NLP4REFeatures feature : NLP4REFeatures.values()) {
+                        
                         String fName = buildFullFeatureName(feature);
-                        String fValueString = row.get(fName);
-                        Double fValue = fValueString == null ? Double.NaN : Double.parseDouble(fValueString);
-                        bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, fValue));
+                        
+                        switch(feature){
+                            case DESCRIPTION_ATTRIBUTE_RISK_LEVEL:
+                                Double riskLevel = 0.0;
+                                for (NLP4REFeatures da : descriptionAttributes){
+                                    riskLevel += Integer.parseInt(row.get(da.getName()));
+                                }
+                                bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, riskLevel));
+                                break;
+                            default:
+                                String fValueString = row.get(fName);
+                                Double fValue = fValueString == null ? Double.NaN : Double.parseDouble(fValueString);
+                                bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, fValue));
+    
+                        }                        
                     }
                     return;
                 }
@@ -88,7 +119,6 @@ public class NLP4REMiner extends FeatureMiner{
 
     private String buildFullFeatureName(NLP4REFeatures feature) {
         // as of now, there are only sentiment or description features.
-        Set<NLP4REFeatures> sentimentFeatures = Set.of(NLP4REFeatures.SENTIMENT_POLARITY, NLP4REFeatures.SENTIMENT_SUBJECTIVITY);
         if (sentimentFeatures.contains(feature)){
             return IssueFeature.NLP_SENTIMENT.getFullName() + ": " + feature.getName();
         } else {

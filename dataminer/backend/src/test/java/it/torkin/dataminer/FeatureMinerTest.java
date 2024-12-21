@@ -33,6 +33,7 @@ import it.torkin.dataminer.control.features.miners.AssigneeMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
 import it.torkin.dataminer.control.features.miners.CommitsWhileInProgressMiner;
 import it.torkin.dataminer.control.features.miners.LatestCommitMiner;
+import it.torkin.dataminer.control.features.miners.NLP4REMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
 import it.torkin.dataminer.control.features.miners.CodeQualityMiner;
 import it.torkin.dataminer.control.features.miners.CodeSizeMiner;
@@ -240,8 +241,6 @@ public class FeatureMinerTest {
         measurement.setIssue(issue);
         issue.getMeasurements().add(measurement);
 
-        List<Issue> issues = issueDao.findAll();
-
         assigneeANFICMiner.accept(new FeatureMinerBean(
             dataset.getName(), issue, measurement, measurementDate, 0));
 
@@ -406,5 +405,13 @@ public class FeatureMinerTest {
     @Test
     public void testAssignee() throws Exception{
         testMiner(assigneeMiner);
+    }
+
+    @Autowired private NLP4REMiner nlp4reMiner;
+    
+    @Transactional
+    @Test
+    public void testNLP4REMiner() throws Exception{
+        testMiner(nlp4reMiner);
     }
 }
