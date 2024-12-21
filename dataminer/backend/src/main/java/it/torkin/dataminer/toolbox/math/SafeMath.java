@@ -28,4 +28,8 @@ public class SafeMath {
     public long nullAsZero(Long value) {
         return value == null ? 0 : value;
     }
+
+    public double sumOfFirst(long n){
+        return n * (n + 1) / 2.0;
+    }
 }

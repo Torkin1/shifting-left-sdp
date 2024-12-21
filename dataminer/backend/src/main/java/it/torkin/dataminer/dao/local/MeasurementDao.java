@@ -20,4 +20,7 @@ public interface MeasurementDao extends JpaRepository<Measurement, Long> {
 
     @Query("SELECT m FROM Measurement m WHERE m.issue IS NOT NULL ORDER BY m.measurementDate ASC")
     Stream<Measurement> findAllWithIssue();
+
+    @Query("SELECT m FROM Measurement m WHERE m.commit IS NOT NULL AND m.commit.dataset.name = :dataset ORDER BY m.measurementDate ASC")
+    Stream<Measurement> findAllWithCommitByDataset(String dataset);
 }

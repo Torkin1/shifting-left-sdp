@@ -16,6 +16,8 @@ import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.IStatsController;
 import it.torkin.dataminer.control.features.IFeatureController;
+import it.torkin.dataminer.control.features.IssueFeature;
+import it.torkin.dataminer.control.features.PrintMeasurementsBean;
 import lombok.extern.slf4j.Slf4j;
 
 @Component

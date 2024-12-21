@@ -11,6 +11,8 @@ import it.torkin.dataminer.toolbox.string.StringTools;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @ConfigurationProperties(
@@ -19,6 +21,21 @@ import lombok.Data;
 @Data
 public class MeasurementConfig {
 
+    @RequiredArgsConstructor
+    @Getter
+    public static enum PredictionScope{
+        ISSUE("T"),
+        COMMIT("JIT"),
+        ISSUE_COMMIT("TJIT");
+
+        private final String code;
+
+        @Override
+        public String toString(){
+            return code;
+        }
+    }
+    
     /**
      * List of measurement dates implementation that can be used
      */
@@ -42,8 +59,8 @@ public class MeasurementConfig {
     
     private String dir;
 
-    public String getOutputFileName(String dataset, String project, String measurementDate){
-        return dir + "/" + dataset + "_" + project + "_" + measurementDate + ".csv";
+    public String getOutputFileName(String dataset, String project, String measurementDate, PredictionScope scope){
+        return dir + "/" + dataset + "_" + project + "_" + measurementDate + "_" + scope + ".csv";
     }
 
     /**

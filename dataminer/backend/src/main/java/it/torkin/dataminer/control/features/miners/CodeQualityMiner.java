@@ -39,10 +39,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-public class ProjectCodeQualityMiner extends FeatureMiner{
+public class CodeQualityMiner extends FeatureMiner{
 
     private static final String[] featureSubNames = {
-        IssueFeature.PROJECT_CODE_QUALITY + ": " + "Smells count",
+        IssueFeature.CODE_QUALITY + ": " + "Smells count",
     };
 
     @Autowired private DatasetDao datasetDao;

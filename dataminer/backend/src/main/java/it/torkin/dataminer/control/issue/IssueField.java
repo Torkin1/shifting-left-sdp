@@ -12,6 +12,8 @@ public enum IssueField {
     STATUS("status"),
     COMPONENT("Component"),
     REPORTER("reporter"),
+    PRIORITY("priority"),
+    TYPE("type"),
     ;
 
     private final String name;

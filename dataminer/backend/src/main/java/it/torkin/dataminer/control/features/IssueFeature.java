@@ -17,9 +17,9 @@ public enum IssueFeature {
      */
     BUGGY_SIMILARITY("Buggy similarity", IssueFeatureFamily.R2R),
     /**
-     * Buggy tickets each dev has been historically assigned.
+     * Metrics describing the developer perfomances.
      */
-    ANFIC("Assignee ANFIC", IssueFeatureFamily.DEVELOPER),
+    ASSIGNEE("Assignee", IssueFeatureFamily.DEVELOPER),
     /**
      * buggy tickets introduced in the last x% of tickets.
      */
@@ -31,7 +31,7 @@ public enum IssueFeature {
     /**
      * Technical debt accumulated in the estimated set of classes impacted by the ticket (worst case: the entire project)
      */
-    PROJECT_CODE_QUALITY("Project code quality", IssueFeatureFamily.CODE),
+    CODE_QUALITY("code quality", IssueFeatureFamily.CODE),
     /**
      * Changes to the codebase introduced while the ticket was in progress
      */
@@ -54,6 +54,29 @@ public enum IssueFeature {
      * such as assignees, reporters, editors, ...
      */
     ISSUE_PARTICIPANTS("Issue Participants", IssueFeatureFamily.INTERNAL_TEMPERATURE),
+    /**
+     * Features that measure the size of the codebase impacted by the issue.
+     */
+    CODE_SIZE("code size", IssueFeatureFamily.CODE),
+    /**
+     * How important the issue is to the project (i.e: critical, major, minor, trivial) 
+     */
+    PRIORITY("Priority", IssueFeatureFamily.INTRINSIC),
+    /**
+     * The purpose of the issue (i.e: bug, improvement, new feature, ...)
+     */
+    TYPE("Type", IssueFeatureFamily.INTRINSIC),
+    /**
+     * The activities the issue has been involved in. Activities
+     * can be about issue state change, discussion, implementation efforts, ...
+     */
+    ACTIVITIES("Activities", IssueFeatureFamily.INTERNAL_TEMPERATURE),
+    /**
+     * Latest commit submitted to project codebase before the issue measurement date.
+     * If such commit changed the project a lot, the integration of the issue implementation
+     * could bring new defects.
+     */
+    LATEST_COMMIT("Latest commit", IssueFeatureFamily.ENVIRONMENTAL_TEMPERATURE),
     ;
 
     private final String name;

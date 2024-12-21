@@ -18,6 +18,7 @@ import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
 import it.torkin.dataminer.control.workers.IWorkersController;
 import it.torkin.dataminer.control.workers.Task;
 import it.torkin.dataminer.dao.git.GitDao;
+import it.torkin.dataminer.dao.git.UnableToCheckoutException;
 import it.torkin.dataminer.dao.git.UnableToGetCommitDetailsException;
 import it.torkin.dataminer.dao.git.UnableToGetLinkedIssueKeyException;
 import it.torkin.dataminer.dao.git.UnableToInitRepoException;
@@ -202,7 +203,7 @@ public class RawDatasetController implements IRawDatasetController{
         }
     }
 
-    private ProcessCommitBean processCommit(ProcessCommitBean task) throws UnableToInitRepoException, UnableToGetCommitDetailsException, UnableToFetchIssueException {
+    private ProcessCommitBean processCommit(ProcessCommitBean task) throws UnableToInitRepoException, UnableToGetCommitDetailsException, UnableToFetchIssueException, UnableToCheckoutException {
         try {
             fillCommitDetails(task.getCommit());
             getCommitIssues(task.getCommit());
@@ -212,7 +213,7 @@ public class RawDatasetController implements IRawDatasetController{
         return task;
     }
 
-    private void fillCommitDetails(Commit commit) throws UnableToInitRepoException, UnableToGetCommitDetailsException {
+    private void fillCommitDetails(Commit commit) throws UnableToInitRepoException, UnableToGetCommitDetailsException, UnableToCheckoutException {
 
         GitDao gitDao;
 
@@ -276,15 +277,17 @@ public class RawDatasetController implements IRawDatasetController{
                 throw new UnableToFetchIssueException(commit.getHash(), "no issues found for given key set: " + issueKeys.toString());
             }
             return issues;
-        } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException e) {
+        } catch (UnableToInitRepoException | UnableToGetLinkedIssueKeyException | UnableToCheckoutException e) {
             throw new UnableToFetchIssueException(commit.getHash(), e);
         }
     }
 
-    synchronized private GitDao getGitdaoByProject(String project) throws UnableToInitRepoException{
+    synchronized private GitDao getGitdaoByProject(String project) throws UnableToInitRepoException, UnableToCheckoutException{
         
         if(!gitdaoByProject.containsKey(project)){
-            gitdaoByProject.put(project, new GitDao(gitConfig, project));
+            GitDao gitDao = new GitDao(gitConfig, project);
+            gitDao.checkout();
+            gitdaoByProject.put(project, gitDao);
         }
         return gitdaoByProject.get(project);
     }
