@@ -27,6 +27,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema.Column;
 
 import it.torkin.dataminer.config.ForkConfig;
 import it.torkin.dataminer.config.MeasurementConfig;
+import it.torkin.dataminer.config.MeasurementConfig.PredictionScope;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.measurementdate.IMeasurementDateController;
@@ -36,6 +37,7 @@ import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.dao.local.MeasurementDao;
 import it.torkin.dataminer.dao.local.ProjectDao;
+import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.Measurement;
@@ -250,7 +252,7 @@ public class FeatureController implements IFeatureController{
     }
 
     private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate){
-        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName())).exists();
+        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.ISSUE)).exists();
     }
 
     @Override
@@ -267,7 +269,9 @@ public class FeatureController implements IFeatureController{
                             log.info("Measurements already printed for {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName());
                         }
                         else {
-                            printMeasurements(dataset, project, measurementDate, bean.getTarget());
+                            printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
+                            printCommitMeasurements(dataset, project, measurementDate);
+                            printIssueCommitMeasurements(dataset, project, measurementDate);
                         }
                     } catch (IOException e) {
                         
@@ -277,10 +281,34 @@ public class FeatureController implements IFeatureController{
             }
         }
     }
+
+    private String serializeFeature(Feature<?> f){
+        String sValue;
+        if (f.getValue() instanceof Number){
+            // feature is numeric, we normalize it if a log base has been provided
+            Double logBase = measurementConfig.getPrintLogBase();
+            Number value = ((Number)f.getValue());
+            Double dValue = logBase == null? value.doubleValue() : new LogNormalizer(logBase).apply(value);
+            // Truncate value to fit in bounds
+            if (!Double.isNaN(dValue) && dValue < measurementConfig.getPrintLowerBound()){
+                dValue = measurementConfig.getPrintLowerBound();
+            }
+            if (!Double.isNaN(dValue) && dValue > measurementConfig.getPrintUpperBound()){
+                dValue = measurementConfig.getPrintUpperBound();
+            }
+            // print NaNs in a weka compatible way
+            sValue = Double.isNaN(dValue)? measurementConfig.getPrintNanReplacement() : dValue.toString();
+                                            
+        } else {
+            // feature is not numeric, we print it as is
+            sValue = f.getValue().toString();
+        }
+        return sValue;
+}
     
-    private void printMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate, IssueFeature target) throws IOException{
+    private void printIssueMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate, IssueFeature target) throws IOException{
                         
-            File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName()));
+            File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE));
             CsvMapper mapper = new CsvMapper();
             Holder<CsvSchema> schema = new Holder<>();
             Holder<ObjectWriter> writer = new Holder<>();
@@ -300,25 +328,7 @@ public class FeatureController implements IFeatureController{
                         Map<String, Object> row = new LinkedHashMap<>();
                         measurement.getFeatures().forEach(f -> {
                             String sValue;
-                            if (f.getValue() instanceof Number){
-                                // feature is numeric, we normalize it if a log base has been provided
-                                Double logBase = measurementConfig.getPrintLogBase();
-                                Number value = ((Number)f.getValue());
-                                Double dValue = logBase == null? value.doubleValue() : new LogNormalizer(logBase).apply(value);
-                                // Truncate value to fit in bounds
-                                if (!Double.isNaN(dValue) && dValue < measurementConfig.getPrintLowerBound()){
-                                    dValue = measurementConfig.getPrintLowerBound();
-                                }
-                                if (!Double.isNaN(dValue) && dValue > measurementConfig.getPrintUpperBound()){
-                                    dValue = measurementConfig.getPrintUpperBound();
-                                }
-                                // print NaNs in a weka compatible way
-                                sValue = Double.isNaN(dValue)? measurementConfig.getPrintNanReplacement() : dValue.toString();
-                                                                
-                            } else {
-                                // feature is not numeric, we print it as is
-                                sValue = f.getValue().toString();
-                            }
+                            sValue = serializeFeature(f);
                             row.put(f.getName(), sValue);
                         });
                             sequenceWriter.getValue().write(row);
@@ -333,7 +343,125 @@ public class FeatureController implements IFeatureController{
             }
          
     }
-    
+
+    private void printIssueCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
+
+        String target = "isBuggy";
+        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE_COMMIT));
+        CsvMapper mapper = new CsvMapper();
+        Holder<CsvSchema> schema = new Holder<>();
+        Holder<ObjectWriter> writer = new Holder<>();
+        Holder<SequenceWriter> sequenceWriter = new Holder<>();
+        Stream<Measurement> measurements = measurementDao.findAllWithCommitByDataset(dataset.getName())
+        // retain only commits with a single linked issue
+        .filter(m -> m.getCommit().getIssues().size() == 1)
+        // linked issue must belong to the given project and have a measurement at the given date
+        .filter(m -> {
+            Issue issue = m.getCommit().getIssues().get(0);
+            return issue.getDetails().getFields().getProject().getKey().equals(project.getKey())
+                && issue.getMeasurementByMeasurementDateName(measurementDate.getName()) != null;
+        });
+        try (measurements){
+            measurements.forEach(measurement -> {
+
+                try {
+                    if (schema.getValue() == null){
+                        // Creates csv schema using a measurement as prototype 
+                        Set<String> featureNames = getFeatureNames(measurement.getFeatures());
+                        schema.setValue(createCsvSchema(featureNames, target));
+                        writer.setValue(mapper.writer(schema.getValue()));
+                        sequenceWriter.setValue(writer.getValue().writeValues(outputFile));
+                    }
+
+                    Issue issue = measurement.getCommit().getIssues().get(0);
+                    Commit commit = measurement.getCommit();
+                    Measurement issueMeasurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
+
+
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    issueMeasurement.getFeatures().forEach(f -> {
+                        if (!f.getName().equals(IssueFeature.BUGGINESS.getFullName())){
+                            String sValue;
+                            sValue = serializeFeature(f);
+                            row.put(f.getName(), sValue);
+                        }
+                    });
+                    measurement.getFeatures().forEach(f -> {
+                        String sValue;
+                        sValue = serializeFeature(f);
+                        row.put(f.getName(), sValue);
+                    });
+                    row.put(target, commit.isBuggy());
+
+
+                    sequenceWriter.getValue().write(row);
+                } catch (IOException e) {
+                    throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
+                }
+            });
+        } finally {
+            if (sequenceWriter.getValue() != null){
+                sequenceWriter.getValue().close();
+            }
+        }
+                    
+     
+    }
+
+    private void printCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
+
+        String target = "isBuggy";
+        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.COMMIT));
+        CsvMapper mapper = new CsvMapper();
+        Holder<CsvSchema> schema = new Holder<>();
+        Holder<ObjectWriter> writer = new Holder<>();
+        Holder<SequenceWriter> sequenceWriter = new Holder<>();
+        Stream<Measurement> measurements = measurementDao.findAllWithCommitByDataset(dataset.getName())
+        // retain only commits with a single linked issue
+        .filter(m -> m.getCommit().getIssues().size() == 1)
+        // linked issue must belong to the given project and have a measurement at the given date
+        .filter(m -> {
+            Issue issue = m.getCommit().getIssues().get(0);
+            return issue.getDetails().getFields().getProject().getKey().equals(project.getKey())
+                && issue.getMeasurementByMeasurementDateName(measurementDate.getName()) != null;
+        });
+        try (measurements){
+            measurements.forEach(measurement -> {
+
+                try {
+                    if (schema.getValue() == null){
+                        // Creates csv schema using a measurement as prototype 
+                        Set<String> featureNames = getFeatureNames(measurement.getFeatures());
+                        schema.setValue(createCsvSchema(featureNames, target));
+                        writer.setValue(mapper.writer(schema.getValue()));
+                        sequenceWriter.setValue(writer.getValue().writeValues(outputFile));
+                    }
+
+                    Commit commit = measurement.getCommit();
+
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    measurement.getFeatures().forEach(f -> {
+                        String sValue;
+                        sValue = serializeFeature(f);
+                        row.put(f.getName(), sValue);
+                    });
+                    row.put(target, commit.isBuggy());
+
+
+                    sequenceWriter.getValue().write(row);
+                } catch (IOException e) {
+                    throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
+                }
+            });
+        } finally {
+            if (sequenceWriter.getValue() != null){
+                sequenceWriter.getValue().close();
+            }
+        }
+                    
+     
+    }
+
     private Set<String> getFeatureNames(Set<Feature<?>> prototype){
         Set<String> featureNames = new HashSet<>();
         prototype.forEach(f -> featureNames.add(f.getName()));
@@ -341,15 +469,19 @@ public class FeatureController implements IFeatureController{
     }
 
     private CsvSchema createCsvSchema(Set<String> featureNames, IssueFeature target){
+        return createCsvSchema(featureNames, target.getFullName());
+    }
+
+    private CsvSchema createCsvSchema(Set<String> featureNames, String targetName){
         CsvSchema.Builder schemaBuilder = new CsvSchema.Builder();
         int i = 0;
         for (String featureName : featureNames){
-            if (!featureName.equals(target.getFullName())){
+            if (!featureName.equals(targetName)){
                 schemaBuilder = schemaBuilder.addColumn(new Column(i, featureName));
                 i++;
             }
         }
-        schemaBuilder = schemaBuilder.addColumn(new Column(i, target.getFullName()));
+        schemaBuilder = schemaBuilder.addColumn(new Column(i, targetName));
         schemaBuilder = schemaBuilder.setUseHeader(true)
             .setColumnSeparator(',');
         return schemaBuilder.build().withHeader();

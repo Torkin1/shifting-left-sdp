@@ -5,6 +5,8 @@ import jakarta.persistence.FetchType;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -54,5 +56,20 @@ public class Dataset {
      */
     @ElementCollection
     private Map<String, String> guessedRepoByProjects = new HashMap<>();
+
+    /**
+     * Gets the project key by the guessed repository, if the repository is
+     * actually linked to a project, else null
+     * @param repo
+     * @return
+     */
+    public Optional<String> getProjectByGuessedRepo(String repo){
+        for (Entry<String, String> entry : guessedRepoByProjects.entrySet()){
+            if (entry.getValue().equals(repo)){
+                return Optional.of(entry.getKey());
+            }
+        }
+        return Optional.empty();
+    }
     
 }
