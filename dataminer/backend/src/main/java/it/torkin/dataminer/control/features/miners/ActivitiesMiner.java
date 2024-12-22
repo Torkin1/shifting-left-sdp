@@ -17,10 +17,10 @@ import it.torkin.dataminer.entities.dataset.features.LongFeature;
 @Component
 public class ActivitiesMiner extends FeatureMiner{
 
-    private static final String ACTIVITIES_COUNT = IssueFeature.ACTIVITIES + ": count";
-    private static final String COMMENTS_COUNT = IssueFeature.ACTIVITIES + ": comments count";
-    private static final String HISTORIES_COUNT = IssueFeature.ACTIVITIES + ": histories Count";
-    private static final String WORK_ITEMS_COUNT = IssueFeature.ACTIVITIES + ": work items Count";
+    private static final String ACTIVITIES_COUNT = IssueFeature.ACTIVITIES.getFullName("count");
+    private static final String COMMENTS_COUNT = IssueFeature.ACTIVITIES.getFullName("comments count");
+    private static final String HISTORIES_COUNT = IssueFeature.ACTIVITIES.getFullName("histories Count");
+    private static final String WORK_ITEMS_COUNT = IssueFeature.ACTIVITIES.getFullName("work items Count");
 
     @Autowired private IIssueController issueController;
     

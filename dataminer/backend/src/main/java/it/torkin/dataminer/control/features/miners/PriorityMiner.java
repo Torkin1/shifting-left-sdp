@@ -23,7 +23,7 @@ public class PriorityMiner extends FeatureMiner{
     
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.PRIORITY.name());
+        return Set.of(IssueFeature.PRIORITY.getFullName());
     }
 
     @Override

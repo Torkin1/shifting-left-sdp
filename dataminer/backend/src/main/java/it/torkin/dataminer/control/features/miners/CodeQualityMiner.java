@@ -41,9 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class CodeQualityMiner extends FeatureMiner{
 
-    private static final String[] featureSubNames = {
-        IssueFeature.CODE_QUALITY + ": " + "Smells count",
-    };
+    private static final String SMELLS = IssueFeature.CODE_QUALITY.getFullName("Smells count");
 
     @Autowired private DatasetDao datasetDao;
 
@@ -98,7 +96,7 @@ public class CodeQualityMiner extends FeatureMiner{
         }
         
         // store results in the measurement object
-        bean.getMeasurement().getFeatures().add(new IntegerFeature(featureSubNames[0], smellsCount));
+        bean.getMeasurement().getFeatures().add(new IntegerFeature(SMELLS, smellsCount));
         
     }
 
@@ -155,7 +153,7 @@ public class CodeQualityMiner extends FeatureMiner{
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(featureSubNames);
+        return Set.of(SMELLS);
     }
 
     
