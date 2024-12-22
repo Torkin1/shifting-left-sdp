@@ -27,8 +27,8 @@ import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
 @Component
 public class ComponentsMiner extends FeatureMiner{
 
-    private static final String COUNT = IssueFeature.COMPONENTS.getFullName() + ": " + "Count";
-    private static final String BUGGINESS_MAX = IssueFeature.COMPONENTS.getFullName() + ": " + "Max Bugginess";
+    private static final String COUNT = IssueFeature.COMPONENTS.getFullName("Count");
+    private static final String BUGGINESS_MAX = IssueFeature.COMPONENTS.getFullName("Max Bugginess");
 
     @Autowired private IIssueController issueController;
     @Autowired private IProcessedDatasetController processedDatasetController;

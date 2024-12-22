@@ -91,4 +91,8 @@ public enum IssueFeature {
         
         return this.family == null? this.name : this.family.getName() + "-" + this.name;
     }
+
+    public String getFullName(String variant){
+        return this.getFullName() + ": " + variant; 
+    }
 }

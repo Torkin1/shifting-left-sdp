@@ -120,9 +120,9 @@ public class NLP4REMiner extends FeatureMiner{
     private String buildFullFeatureName(NLP4REFeatures feature) {
         // as of now, there are only sentiment or description features.
         if (sentimentFeatures.contains(feature)){
-            return IssueFeature.NLP_SENTIMENT.getFullName() + ": " + feature.getName();
+            return IssueFeature.NLP_SENTIMENT.getFullName(feature.getName());
         } else {
-            return IssueFeature.NLP_DESCRIPTION.getFullName() + ": " + feature.getName();
+            return IssueFeature.NLP_DESCRIPTION.getFullName(feature.getName());
         }
     }
     

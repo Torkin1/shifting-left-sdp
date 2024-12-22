@@ -29,8 +29,8 @@ import jakarta.transaction.Transactional;
 @Component
 public class AssigneeMiner extends FeatureMiner{
 
-    private static final String ANFIC = IssueFeature.ASSIGNEE.getFullName() + ": ANFIC";
-    private static final String FAMILIARITY = IssueFeature.ASSIGNEE.getFullName() + ": Familiarity";
+    private static final String ANFIC = IssueFeature.ASSIGNEE.getFullName("ANFIC");
+    private static final String FAMILIARITY = IssueFeature.ASSIGNEE.getFullName("Familiarity");
 
     @Autowired private IIssueController issueController;
     @Autowired private ProcessedDatasetController processedDatasetController;
@@ -82,6 +82,6 @@ public class AssigneeMiner extends FeatureMiner{
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(ANFIC);
+        return Set.of(ANFIC, FAMILIARITY);
     }
 }

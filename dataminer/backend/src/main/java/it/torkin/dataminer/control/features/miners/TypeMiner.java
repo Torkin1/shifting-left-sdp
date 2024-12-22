@@ -35,7 +35,7 @@ public class TypeMiner extends FeatureMiner{
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.TYPE.name());
+        return Set.of(IssueFeature.TYPE.getFullName());
     }
     
 }

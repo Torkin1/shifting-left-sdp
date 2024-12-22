@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ParticipantsMiner extends FeatureMiner {
 
-    private static final String ISSUE_PARTICIPANTS_COUNT = IssueFeature.ISSUE_PARTICIPANTS.getFullName() + ": count";
+    private static final String ISSUE_PARTICIPANTS_COUNT = IssueFeature.ISSUE_PARTICIPANTS.getFullName("count");
     
     @Autowired private IIssueController issueController;
     
