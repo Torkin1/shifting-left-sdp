@@ -28,4 +28,8 @@ public interface IWorkersController {
      * @return
      */
     public Task<?> collect() throws InterruptedException, ExecutionException;
+
+    public void init();
+
+    public void cleanup();
 }

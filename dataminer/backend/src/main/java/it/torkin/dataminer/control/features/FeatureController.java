@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.dao.git.GitDao;
+import org.eclipse.jgit.api.Git;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -152,7 +153,7 @@ public class FeatureController implements IFeatureController{
 
         transaction.executeWithoutResult(status -> {
             ProcessedIssuesBean processedIssuesBean;
-    
+
             // prepare inputs for forks
             for (Dataset dataset : datasets) {
                 for (MeasurementDate measurementDate : measurementDates) {
@@ -163,8 +164,11 @@ public class FeatureController implements IFeatureController{
                     processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                     processedDatasetController.getFilteredIssues(processedIssuesBean);
                     Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
+
+                    Set<String> projects = new HashSet<>();
                     
                     try(issues){
+
                         List<BufferedWriter> writers = new ArrayList<>();
                         for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
                             File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
@@ -174,6 +178,28 @@ public class FeatureController implements IFeatureController{
     
                         Holder<Integer> fork = new Holder<>(0);
                         issues.forEach(issue -> {
+
+                            /**
+                             * Clones one copy of guessed repository for each thread
+                             * */
+                            Project project = issue.getDetails().getFields().getProject();
+                            boolean repoCloned = !projects.add(project.getKey());
+                            if (!repoCloned){
+                                for (int i = 0; i < forkConfig.getForkCount(); i ++){
+                                    GitConfig threadGitConfig = gitConfig.forThread(i);
+                                    String repo = dataset.getGuessedRepoByProjects().get(project.getKey());
+                                    try (GitDao gitDao = new GitDao(threadGitConfig, repo)){
+                                        // opening the GitDao has the cloning of the repo as side-effect
+                                    } catch (Exception e) {
+                                        status.setRollbackOnly();
+                                        throw new RuntimeException(e);
+                                    }
+                                }
+                            }
+
+                            /*
+                            * Writes issues assigned to each thread in a corresponding file
+                            * */
                             BufferedWriter writer = writers.get(fork.getValue());
                             try {
                                 writer.write(issue.getKey());
@@ -193,24 +219,9 @@ public class FeatureController implements IFeatureController{
                     }
                 }
             }
-            });
+        });
 
-        /**
-         * Clones one copy of guessed repository for each thread to work on them
-         * */
-        for (Dataset dataset : datasets) {
-            for (int i = 0; i < forkConfig.getForkCount(); i ++){
-                GitConfig threadGitConfig = gitConfig.forThread(i);
-                for (String repo : dataset.getGuessedRepoByProjects().values()) {
-                    try (GitDao gitDao = new GitDao(threadGitConfig, repo)) {
-                        // opening the git dao ensures that the underlying repo is cloned
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-        
+
         /**
          * Each thread processes its issues batch
          */
