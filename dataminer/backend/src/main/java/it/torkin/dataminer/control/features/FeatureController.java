@@ -301,8 +301,8 @@ public class FeatureController implements IFeatureController{
                         }
                         else {
                             printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
-                            printCommitMeasurements(dataset, project, measurementDate);
-                            printIssueCommitMeasurements(dataset, project, measurementDate);
+                            //printCommitMeasurements(dataset, project, measurementDate);
+                            //printIssueCommitMeasurements(dataset, project, measurementDate);
                         }
                     } catch (IOException e) {
                         
@@ -393,20 +393,24 @@ public class FeatureController implements IFeatureController{
                 && issue.getMeasurementByMeasurementDateName(measurementDate.getName()) != null;
         });
         try (measurements){
-            measurements.forEach(measurement -> {
+            measurements.forEach(commitMeasurement -> {
+
+                Issue issue = commitMeasurement.getCommit().getIssues().get(0);
+                Commit commit = commitMeasurement.getCommit();
+                Measurement issueMeasurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
 
                 try {
                     if (schema.getValue() == null){
-                        // Creates csv schema using a measurement as prototype 
-                        Set<String> featureNames = getFeatureNames(measurement.getFeatures());
+                        // Creates csv schema using a measurement as prototype
+                        Set<Feature<?>> features = new HashSet<>();
+                        features.addAll(issueMeasurement.getFeatures());
+                        features.addAll(commitMeasurement.getFeatures());
+
+                        Set<String> featureNames = getFeatureNames(features);
                         schema.setValue(createCsvSchema(featureNames, target));
                         writer.setValue(mapper.writer(schema.getValue()));
                         sequenceWriter.setValue(writer.getValue().writeValues(outputFile));
                     }
-
-                    Issue issue = measurement.getCommit().getIssues().get(0);
-                    Commit commit = measurement.getCommit();
-                    Measurement issueMeasurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
 
 
                     Map<String, Object> row = new LinkedHashMap<>();
@@ -417,7 +421,7 @@ public class FeatureController implements IFeatureController{
                             row.put(f.getName(), sValue);
                         }
                     });
-                    measurement.getFeatures().forEach(f -> {
+                    commitMeasurement.getFeatures().forEach(f -> {
                         String sValue;
                         sValue = serializeFeature(f);
                         row.put(f.getName(), sValue);
