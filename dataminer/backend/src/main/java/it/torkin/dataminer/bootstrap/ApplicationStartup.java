@@ -47,13 +47,19 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
             printStats();
             printNLPIssueBeans();
-            mineFeatures();
+           // mineFeatures();
+            printMeasurements();
 
 
         } catch (Exception e) {
             log.error("fatal", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private void printMeasurements() {
+        featureController.printMeasurements(new PrintMeasurementsBean(IssueFeature.BUGGINESS));
+        log.info("measurements printed");
     }
 
     private void init(){
@@ -88,7 +94,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         featureController.mineFeatures();
         log.info("Features mined");
 
-        featureController.printMeasurements(new PrintMeasurementsBean(IssueFeature.BUGGINESS));
+
     }
 
     private void printNLPIssueBeans() throws IOException {
