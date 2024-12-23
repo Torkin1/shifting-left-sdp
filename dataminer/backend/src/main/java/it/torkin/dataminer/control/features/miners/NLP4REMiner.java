@@ -95,7 +95,7 @@ public class NLP4REMiner extends FeatureMiner{
                                 bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, riskLevel));
                                 break;
                             default:
-                                String fValueString = row.get(fName);
+                                String fValueString = row.get(feature.getName());
                                 Double fValue = fValueString == null ? Double.NaN : Double.parseDouble(fValueString);
                                 bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, fValue));
     
