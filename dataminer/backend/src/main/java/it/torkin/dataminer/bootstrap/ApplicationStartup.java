@@ -47,7 +47,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
 
             printStats();
             printNLPIssueBeans();
-           // mineFeatures();
+            mineFeatures();
             printMeasurements();
 
 

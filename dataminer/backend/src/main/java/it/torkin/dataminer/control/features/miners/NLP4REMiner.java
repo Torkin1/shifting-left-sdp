@@ -34,7 +34,7 @@ public class NLP4REMiner extends FeatureMiner{
         NUMBER_OF_SUBJECTS("EX_SBJ"),
         NUMBER_OF_WORDS("EX_CNS"),
         NUMBER_OF_VERBS("EX_VRB"),
-        NUMBER_OF_AMBIGUITES("EX_AMB"),
+        NUMBER_OF_AMBIGUITES("EX_AMG"),
         NUMBER_OF_DIRECTIVES("EX_DIR"),
         READABILITY_SCORE("EX_RDS"),
         SENTENCE_COMPLETENESS("EX_ICP"),
