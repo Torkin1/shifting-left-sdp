@@ -99,6 +99,8 @@ public class Leveragingjit implements Datasource{
         record = records.peek().next();
         record.forEach((k, v) -> {
 
+            String featureName = featurename(k);
+            
             switch (k) {
                 case "Project":
                     String repo = toRepo(v);
@@ -115,7 +117,7 @@ public class Leveragingjit implements Datasource{
                      * Storing release as a string to allow Ordinal scale operations
                      * only.
                      */
-                    measurement.getFeatures().add(new StringFeature(k, v));
+                    measurement.getFeatures().add(new StringFeature(featureName, v));
                     break;
                 case "NS":
                 case "ND":
@@ -129,14 +131,14 @@ public class Leveragingjit implements Datasource{
                 case "NUC":
                 case "EXP":
                 case "SEXP":
-                    measurement.getFeatures().add(new IntegerFeature(k, Integer.parseInt(v)));
+                    measurement.getFeatures().add(new IntegerFeature(featureName, Integer.parseInt(v)));
                     break;
                 case "Entropy":
                 case "REXP":
-                    measurement.getFeatures().add(new DoubleFeature(k, Double.parseDouble(v)));
+                    measurement.getFeatures().add(new DoubleFeature(featureName, Double.parseDouble(v)));
                     break;
                 case "FIX":
-                    measurement.getFeatures().add(new BooleanFeature(k, booleanReader.read(v)));
+                    measurement.getFeatures().add(new BooleanFeature(featureName, booleanReader.read(v)));
                     break;
                 default:
                     break;

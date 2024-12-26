@@ -82,6 +82,8 @@ public class Jitsdp implements Datasource{
         record = datasourceFiles.peek().getRecords().next();
         record.forEach((k, v) -> {
 
+            String featureName = featurename(k);
+            
             switch (k) {
                 case "commit_hash":
                     commit.setHash(v);
@@ -90,7 +92,7 @@ public class Jitsdp implements Datasource{
                     commit.setBuggy(booleanReader.read(v));
                     break;
                 case "classification":
-                    measurement.getFeatures().add(new StringFeature(k, v));
+                    measurement.getFeatures().add(new StringFeature(featureName, v));
                     break;
                 case "entrophy":
                 case "ns":
@@ -106,11 +108,11 @@ public class Jitsdp implements Datasource{
                 case "rexp":
                 case "sexp":
                 case "glm_probability":
-                    measurement.getFeatures().add(new DoubleFeature(k, Double.parseDouble(v)));
+                    measurement.getFeatures().add(new DoubleFeature(featureName, Double.parseDouble(v)));
                     break;
                 case "fix":
                 case "linked":
-                    measurement.getFeatures().add(new BooleanFeature(k, booleanReader.read(v)));
+                    measurement.getFeatures().add(new BooleanFeature(featureName, booleanReader.read(v)));
                     break;
                 default:
                     break;

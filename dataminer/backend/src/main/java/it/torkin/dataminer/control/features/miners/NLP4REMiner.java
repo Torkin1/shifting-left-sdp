@@ -42,7 +42,8 @@ public class NLP4REMiner extends FeatureMiner{
         NUMBER_OF_ENTITIES("EX_ENT"),
         SENTIMENT_POLARITY("IT_POL"),
         SENTIMENT_SUBJECTIVITY("IT_SUB"),
-        HAS_CODE("EX_COD"),
+        // TODO: uncomment when EX_CODE results are available
+        // HAS_CODE("EX_COD"),
         NUM_NEGATIVE_SENTIMENT("CM_NNS"),
         PERC_NEGATIVE_SENTIMENT("CM_PNS"),
         ONE_NEGATIVE_SENTIMENT("CM_ONS"),

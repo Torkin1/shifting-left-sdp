@@ -42,6 +42,8 @@ public class Apachejit implements Datasource{
 
         record.forEach((k,v) -> {
                                     
+            String featureName = featurename(k);
+            
             switch(k){
                 case "commit_id":
                     commit.setHash(v);
@@ -53,21 +55,21 @@ public class Apachejit implements Datasource{
                     commit.setRepository(new Repository(v, v.split("/")[1], v.split("/")[0]));
                     break;
                 case "fix":
-                    measurement.getFeatures().add(new BooleanFeature(k, booleanReader.read(v)));
+                    measurement.getFeatures().add(new BooleanFeature(featureName, booleanReader.read(v)));
                     break;
                 case "year":
                     v = String.format("%s-01-01 00:00:00", v);
-                    measurement.getFeatures().add(new TimestampFeature(k, Timestamp.valueOf(v)));
+                    measurement.getFeatures().add(new TimestampFeature(featureName, Timestamp.valueOf(v)));
                     break;
                 case "author_date":
-                    measurement.getFeatures().add(new TimestampFeature(k, Timestamp.from(Instant.ofEpochSecond(Long.parseLong(v)))));
+                    measurement.getFeatures().add(new TimestampFeature(featureName, Timestamp.from(Instant.ofEpochSecond(Long.parseLong(v)))));
                     break;
                 case "la":
                 case "ld":
                 case "nf":
                 case "nd":
                 case "ns":
-                    measurement.getFeatures().add(new IntegerFeature(k, Integer.parseInt(v)));
+                    measurement.getFeatures().add(new IntegerFeature(featureName, Integer.parseInt(v)));
                     break;
                 case "ent":
                 case "ndev":
@@ -76,7 +78,7 @@ public class Apachejit implements Datasource{
                 case "aexp":
                 case "arexp":
                 case "asexp":
-                    measurement.getFeatures().add(new DoubleFeature(k, Double.parseDouble(v)));
+                    measurement.getFeatures().add(new DoubleFeature(featureName, Double.parseDouble(v)));
                     break;
                 default:
                     log.debug("Unknown feature from apachejit: {}={}", k, v);

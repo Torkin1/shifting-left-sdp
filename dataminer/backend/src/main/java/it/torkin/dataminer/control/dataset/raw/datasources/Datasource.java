@@ -10,5 +10,7 @@ public interface Datasource extends Iterator<Commit>, AutoCloseable {
 
     public void init(DatasourceConfig config) throws UnableToInitDatasourceException;   
 
-
+    public default String featurename(String name){
+        return "JIT:" + name;
+    }
 }

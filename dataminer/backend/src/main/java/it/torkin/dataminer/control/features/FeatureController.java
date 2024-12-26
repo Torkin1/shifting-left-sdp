@@ -398,6 +398,7 @@ public class FeatureController implements IFeatureController{
                         Set<Feature<?>> features = new HashSet<>();
                         features.addAll(issueMeasurement.getFeatures());
                         features.addAll(commitMeasurement.getFeatures());
+                        features.removeIf(f -> f.getName().equals(IssueFeature.BUGGINESS.getFullName()));
 
                         Set<String> featureNames = getFeatureNames(features);
                         schema.setValue(createCsvSchema(featureNames, target));
