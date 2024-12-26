@@ -17,7 +17,6 @@ import java.util.stream.Stream;
 
 import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.dao.git.GitDao;
-import org.eclipse.jgit.api.Git;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -301,8 +300,8 @@ public class FeatureController implements IFeatureController{
                         }
                         else {
                             printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
-                            //printCommitMeasurements(dataset, project, measurementDate);
-                            //printIssueCommitMeasurements(dataset, project, measurementDate);
+                            printCommitMeasurements(dataset, project, measurementDate);
+                            printIssueCommitMeasurements(dataset, project, measurementDate);
                         }
                     } catch (IOException e) {
                         
@@ -383,15 +382,9 @@ public class FeatureController implements IFeatureController{
         Holder<CsvSchema> schema = new Holder<>();
         Holder<ObjectWriter> writer = new Holder<>();
         Holder<SequenceWriter> sequenceWriter = new Holder<>();
-        Stream<Measurement> measurements = measurementDao.findAllWithCommitByDataset(dataset.getName())
-        // retain only commits with a single linked issue
-        .filter(m -> m.getCommit().getIssues().size() == 1)
-        // linked issue must belong to the given project and have a measurement at the given date
-        .filter(m -> {
-            Issue issue = m.getCommit().getIssues().get(0);
-            return issue.getDetails().getFields().getProject().getKey().equals(project.getKey())
-                && issue.getMeasurementByMeasurementDateName(measurementDate.getName()) != null;
-        });
+        Stream<Measurement> measurements = measurementDao.findAllWithCommitByDatasetAndProjectAndMeasurementDate(dataset.getName(), project.getKey(), measurementDate.getName())
+                // retain only commits with a single linked issue
+                .filter(m -> m.getCommit().getIssues().size() == 1);
         try (measurements){
             measurements.forEach(commitMeasurement -> {
 
@@ -451,15 +444,9 @@ public class FeatureController implements IFeatureController{
         Holder<CsvSchema> schema = new Holder<>();
         Holder<ObjectWriter> writer = new Holder<>();
         Holder<SequenceWriter> sequenceWriter = new Holder<>();
-        Stream<Measurement> measurements = measurementDao.findAllWithCommitByDataset(dataset.getName())
+        Stream<Measurement> measurements = measurementDao.findAllWithCommitByDatasetAndProjectAndMeasurementDate(dataset.getName(), project.getKey(), measurementDate.getName())
         // retain only commits with a single linked issue
-        .filter(m -> m.getCommit().getIssues().size() == 1)
-        // linked issue must belong to the given project and have a measurement at the given date
-        .filter(m -> {
-            Issue issue = m.getCommit().getIssues().get(0);
-            return issue.getDetails().getFields().getProject().getKey().equals(project.getKey())
-                && issue.getMeasurementByMeasurementDateName(measurementDate.getName()) != null;
-        });
+        .filter(m -> m.getCommit().getIssues().size() == 1);
         try (measurements){
             measurements.forEach(measurement -> {
 
