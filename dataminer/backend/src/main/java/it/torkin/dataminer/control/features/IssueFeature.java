@@ -15,7 +15,7 @@ public enum IssueFeature {
     /**
      * similarity score of this ticket among other tickets known as buggy before the measurement date
      */
-    BUGGY_SIMILARITY("NLP:buggy_similarity", IssueFeatureFamily.R2R),
+    BUGGY_SIMILARITY("buggy_similarity", IssueFeatureFamily.R2R),
     /**
      * Metrics describing the developer perfomances.
      */
