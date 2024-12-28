@@ -14,7 +14,7 @@ public class BuggyRequirementSimilarity {
 
     public static final String JSON_FILE_PATH = "./data/requirements.json";
     
-    public static final Set<String> METHODS = Set.of("TFIDF_Cosine", "Jaccard", "EuclideanDistance");
+    public static final Set<String> METHODS = Set.of("TFIDFCosine", "Jaccard", "EuclideanDistance");
     public static final Set<String> FIELDS = Set.of("Title", "Text");
     public static final Set<String> AGGREGATION = Set.of("MaxSimilarity", "AvgSimilarity");
 

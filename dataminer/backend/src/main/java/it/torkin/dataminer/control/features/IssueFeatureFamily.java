@@ -21,16 +21,16 @@ public enum IssueFeatureFamily {
      * during its lifecycle, or how often it is involved in debates 
      * and decisions. 
      */
-    INTERNAL_TEMPERATURE("Internal Temperature"),
+    INTERNAL_TEMPERATURE("Internal_Temperature"),
     /**
      * How often the environment changes during an issue lifecycle.
      */
-    ENVIRONMENTAL_TEMPERATURE("External Temperature"),
+    ENVIRONMENTAL_TEMPERATURE("External_Temperature"),
     /**
      * How the issue is described in natural
      * language, and how it can be comprehended by human developers.
      */
-    TICKET_DESCRIPTION("Ticket Description"),
+    TICKET_DESCRIPTION("Ticket_Description"),
     /**
      * The human factor. Features that take into account how a developer's
      * effort can influence the issue bugginess.

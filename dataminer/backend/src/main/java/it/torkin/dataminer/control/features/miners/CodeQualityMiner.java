@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class CodeQualityMiner extends FeatureMiner{
 
-    private static final String SMELLS = IssueFeature.CODE_QUALITY.getFullName("Smells count");
+    private static final String SMELLS = IssueFeature.CODE_QUALITY.getFullName("Smells_count");
 
     @Autowired private DatasetDao datasetDao;
 

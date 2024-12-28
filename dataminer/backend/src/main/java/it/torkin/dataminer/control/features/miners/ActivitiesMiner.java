@@ -18,9 +18,9 @@ import it.torkin.dataminer.entities.dataset.features.LongFeature;
 public class ActivitiesMiner extends FeatureMiner{
 
     private static final String ACTIVITIES_COUNT = IssueFeature.ACTIVITIES.getFullName("count");
-    private static final String COMMENTS_COUNT = IssueFeature.ACTIVITIES.getFullName("comments count");
-    private static final String HISTORIES_COUNT = IssueFeature.ACTIVITIES.getFullName("histories Count");
-    private static final String WORK_ITEMS_COUNT = IssueFeature.ACTIVITIES.getFullName("work items Count");
+    private static final String COMMENTS_COUNT = IssueFeature.ACTIVITIES.getFullName("comments_count");
+    private static final String HISTORIES_COUNT = IssueFeature.ACTIVITIES.getFullName("histories_Count");
+    private static final String WORK_ITEMS_COUNT = IssueFeature.ACTIVITIES.getFullName("work_items_Count");
 
     @Autowired private IIssueController issueController;
     

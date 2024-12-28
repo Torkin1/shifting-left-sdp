@@ -28,7 +28,7 @@ import it.torkin.dataminer.entities.dataset.features.LongFeature;
 public class LatestCommitMiner extends FeatureMiner{
 
     private static final String CHURN = IssueFeature.LATEST_COMMIT.getFullName("Churn");
-    private static final String NUM_OF_FILES = IssueFeature.LATEST_COMMIT.getFullName("Number of files"); 
+    private static final String NUM_OF_FILES = IssueFeature.LATEST_COMMIT.getFullName("Number_of_files");
 
     @Autowired private GitConfig gitConfig;
     @Autowired private DatasetDao datasetDao;

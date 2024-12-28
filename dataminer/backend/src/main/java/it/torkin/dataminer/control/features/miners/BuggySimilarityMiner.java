@@ -87,7 +87,7 @@ public class BuggySimilarityMiner extends FeatureMiner{
             NlpIssueSimilarityScores buggySimilarityScores = buggySimilarityStub.getSimilarityScores(request);
 
             buggySimilarityScores.getScoreByNameMap().forEach((k, v) -> {
-                Feature<?> feature = new DoubleFeature(k, v);
+                Feature<?> feature = new DoubleFeature(IssueFeature.BUGGY_SIMILARITY.getFullName(k), v);
                 bean.getMeasurement().getFeatures().add(feature);
             });
         } catch (Exception e){

@@ -30,9 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CodeSizeMiner extends FeatureMiner{
     
-    private static final String TOTAL_LOCS = IssueFeature.CODE_SIZE.getFullName("total LOCs");
-    private static final String NUM_OF_FILES = IssueFeature.CODE_SIZE.getFullName("number of files");
-    private static final String NUM_OF_LANGUAGES = IssueFeature.CODE_SIZE.getFullName("number of languages");
+    private static final String TOTAL_LOCS = IssueFeature.CODE_SIZE.getFullName("total_LOCs");
+    private static final String NUM_OF_FILES = IssueFeature.CODE_SIZE.getFullName("number_of_files");
+    private static final String NUM_OF_LANGUAGES = IssueFeature.CODE_SIZE.getFullName("number_of_languages");
 
     @Autowired DatasetDao datasetDao;
     @Autowired private GitConfig gitConfig;
