@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 import os
 
-INPUT_DIR = os.path.join(".", "data", "output", "measurements")
+INPUT_DIR = os.path.join("..", "data", "output", "measurements")
 OUTPUT_DIR = os.path.join(INPUT_DIR, "preprocessed")
 
 def preprocess(inputs):
@@ -12,6 +12,7 @@ def preprocess(inputs):
     for input_file in inputs:
 
         output_file = os.path.join(OUTPUT_DIR, input_file)
+        input_file = os.path.join(INPUT_DIR, input_file)
 
         # List of columns to keep
         # List of columns to keep (updated header name included)
