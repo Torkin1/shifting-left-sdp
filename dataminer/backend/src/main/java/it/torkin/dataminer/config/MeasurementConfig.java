@@ -23,10 +23,13 @@ public class MeasurementConfig {
 
     @RequiredArgsConstructor
     @Getter
-    public static enum PredictionScope{
-        ISSUE("T"),
+    public static enum Treatments{
         COMMIT("JIT"),
-        ISSUE_COMMIT("TJIT");
+        ISSUE_COMMIT("TJIT"),
+        NOT_YET_IMPLEMENTED("NYI"),
+        NOT_YET_ASSIGNED("NYA"),
+        JUST_COMPLETED("JC"),
+        ;
 
         private final String code;
 
@@ -59,8 +62,8 @@ public class MeasurementConfig {
     
     private String dir;
 
-    public String getOutputFileName(String dataset, String project, String measurementDate, PredictionScope scope){
-        return dir + "/" + dataset + "_" + project + "_" + measurementDate + "_" + scope + ".csv";
+    public String getOutputFileName(String dataset, String project, String measurementDate, Treatments treatment){
+        return dir + "/" + dataset + "_" + project + "_" + measurementDate + "_" + treatment + ".csv";
     }
 
     /**

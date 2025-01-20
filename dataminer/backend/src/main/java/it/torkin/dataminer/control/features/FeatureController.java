@@ -29,7 +29,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema.Column;
 
 import it.torkin.dataminer.config.ForkConfig;
 import it.torkin.dataminer.config.MeasurementConfig;
-import it.torkin.dataminer.config.MeasurementConfig.PredictionScope;
+import it.torkin.dataminer.config.MeasurementConfig.Treatments;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.measurementdate.IMeasurementDateController;
@@ -282,7 +282,7 @@ public class FeatureController implements IFeatureController{
     }
 
     private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate){
-        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.ISSUE)).exists();
+        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), Treatments.NOT_YET_ASSIGNED)).exists();
     }
 
     @Override
@@ -336,9 +336,9 @@ public class FeatureController implements IFeatureController{
         return sValue;
 }
     
-    private void printIssueMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate, IssueFeature target) throws IOException{
-                        
-            File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE));
+        private void printIssueMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate, IssueFeature target) throws IOException{
+                            
+            File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.Treatments.NOT_YET_ASSIGNED));
             CsvMapper mapper = new CsvMapper();
             Holder<CsvSchema> schema = new Holder<>();
             Holder<ObjectWriter> writer = new Holder<>();
@@ -377,7 +377,7 @@ public class FeatureController implements IFeatureController{
     private void printIssueCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
 
         String target = "isBuggy";
-        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE_COMMIT));
+        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.Treatments.ISSUE_COMMIT));
         CsvMapper mapper = new CsvMapper();
         Holder<CsvSchema> schema = new Holder<>();
         Holder<ObjectWriter> writer = new Holder<>();
@@ -440,7 +440,7 @@ public class FeatureController implements IFeatureController{
     private void printCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
 
         String target = "isBuggy";
-        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.COMMIT));
+        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.Treatments.COMMIT));
         CsvMapper mapper = new CsvMapper();
         Holder<CsvSchema> schema = new Holder<>();
         Holder<ObjectWriter> writer = new Holder<>();
