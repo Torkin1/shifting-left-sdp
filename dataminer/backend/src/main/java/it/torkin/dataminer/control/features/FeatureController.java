@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -29,7 +30,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema.Column;
 
 import it.torkin.dataminer.config.ForkConfig;
 import it.torkin.dataminer.config.MeasurementConfig;
-import it.torkin.dataminer.config.MeasurementConfig.Treatments;
+import it.torkin.dataminer.config.MeasurementConfig.PredictionScope;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.measurementdate.IMeasurementDateController;
@@ -167,7 +168,7 @@ public class FeatureController implements IFeatureController{
                     Set<String> projects = new HashSet<>();
                     
                     try(issues){
-
+                                    
                         List<BufferedWriter> writers = new ArrayList<>();
                         for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
                             File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
@@ -177,6 +178,13 @@ public class FeatureController implements IFeatureController{
     
                         Holder<Integer> fork = new Holder<>(0);
                         issues.forEach(issue -> {
+
+                            // skip issue with measurement date not available
+                            Optional<Timestamp> measurementDateOptional = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+                            if (measurementDateOptional.isEmpty()){
+                                log.warn("{}: Measurement date {} not available for issue {}",dataset.getName(), measurementDate.getName(), issue.getKey());
+                                return;
+                            }
 
                             /**
                              * Clones one copy of guessed repository for each thread
@@ -251,7 +259,8 @@ public class FeatureController implements IFeatureController{
             
             progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
 
-            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+            // at this point we are measuring issues with an available measurement date
+            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
 
             // update already existing measurements instead of replacing it with a new one
             Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
@@ -282,7 +291,7 @@ public class FeatureController implements IFeatureController{
     }
 
     private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate){
-        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), Treatments.NOT_YET_ASSIGNED)).exists();
+        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.ISSUE)).exists();
     }
 
     @Override
@@ -338,7 +347,7 @@ public class FeatureController implements IFeatureController{
     
         private void printIssueMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate, IssueFeature target) throws IOException{
                             
-            File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.Treatments.NOT_YET_ASSIGNED));
+            File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE));
             CsvMapper mapper = new CsvMapper();
             Holder<CsvSchema> schema = new Holder<>();
             Holder<ObjectWriter> writer = new Holder<>();
@@ -377,7 +386,7 @@ public class FeatureController implements IFeatureController{
     private void printIssueCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
 
         String target = "isBuggy";
-        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.Treatments.ISSUE_COMMIT));
+        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE_COMMIT));
         CsvMapper mapper = new CsvMapper();
         Holder<CsvSchema> schema = new Holder<>();
         Holder<ObjectWriter> writer = new Holder<>();
@@ -440,7 +449,7 @@ public class FeatureController implements IFeatureController{
     private void printCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
 
         String target = "isBuggy";
-        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.Treatments.COMMIT));
+        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.COMMIT));
         CsvMapper mapper = new CsvMapper();
         Holder<CsvSchema> schema = new Holder<>();
         Holder<ObjectWriter> writer = new Holder<>();

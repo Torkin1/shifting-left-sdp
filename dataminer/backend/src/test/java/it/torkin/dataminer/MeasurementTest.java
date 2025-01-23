@@ -117,14 +117,14 @@ public class MeasurementTest {
         measurement1.setMeasurementDateName(measurementDate.getName());
         measurement1.setDataset(dataset);
         measurement1.setIssue(issue);
-        measurement1.setMeasurementDate(measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)));
+        measurement1.setMeasurementDate(measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get());
         issue.getMeasurements().add(measurement1);
 
         Measurement measurement2 = new Measurement();
         measurement2.setMeasurementDateName("boh");
         measurement2.setDataset(dataset);
         measurement2.setIssue(issue);
-        measurement2.setMeasurementDate(measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)));
+        measurement2.setMeasurementDate(measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get());
         issue.getMeasurements().add(measurement2);
         
         measurement1 = measurementDao.save(measurement1);

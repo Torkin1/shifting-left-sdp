@@ -148,4 +148,10 @@ public interface IIssueController {
      * Gets historical changes applied to the issue until the specified measurement date
      */
     public List<IssueHistory> getHistories(IssueBean bean);
+
+    /**
+     * Gets historical changes applied to the issue until the specified measurement date
+     * for the specified field
+     */
+    public List<IssueHistory> getHistories(IssueBean bean, IssueField field);
 }

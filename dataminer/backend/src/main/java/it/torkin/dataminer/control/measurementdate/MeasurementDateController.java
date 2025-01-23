@@ -1,6 +1,7 @@
 package it.torkin.dataminer.control.measurementdate;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,8 @@ public class MeasurementDateController  implements IMeasurementDateController{
     
     @Override
     public List<MeasurementDate> getMeasurementDates() {
-        return dates.stream().filter(d -> config.getDates().contains(d.getName())).toList();
+        Set<String> dateNames = Set.of(config.getDates());
+        return dates.stream().filter(d -> dateNames.contains(d.getName())).toList();
     }
     
 }

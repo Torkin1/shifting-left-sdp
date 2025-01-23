@@ -8,7 +8,6 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
-import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -31,12 +30,12 @@ import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.miners.ActivitiesMiner;
 import it.torkin.dataminer.control.features.miners.AssigneeMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
+import it.torkin.dataminer.control.features.miners.CodeQualityMiner;
+import it.torkin.dataminer.control.features.miners.CodeSizeMiner;
 import it.torkin.dataminer.control.features.miners.CommitsWhileInProgressMiner;
 import it.torkin.dataminer.control.features.miners.LatestCommitMiner;
 import it.torkin.dataminer.control.features.miners.NLP4REMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
-import it.torkin.dataminer.control.features.miners.CodeQualityMiner;
-import it.torkin.dataminer.control.features.miners.CodeSizeMiner;
 import it.torkin.dataminer.control.features.miners.TemporalLocalityMiner;
 import it.torkin.dataminer.control.features.miners.TypeMiner;
 import it.torkin.dataminer.control.features.miners.UnableToInitNLPFeaturesMinerException;
@@ -236,7 +235,7 @@ public class FeatureMinerTest {
 
         Measurement measurement = new Measurement();
         MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
-        measurement.setMeasurementDate(measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)));
+        measurement.setMeasurementDate(measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get());
         measurement.setMeasurementDateName(measurementDate.getName());
         measurement.setIssue(issue);
         issue.getMeasurements().add(measurement);
@@ -269,7 +268,7 @@ public class FeatureMinerTest {
         Issue issue = issueDao.findAllByDataset(dataset.getName()).findFirst().get();
 
         MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
-        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
         Measurement measurement = new Measurement();
         measurement.setMeasurementDate(measurementDateValue);
         measurement.setMeasurementDateName(measurementDate.getName());
@@ -302,7 +301,7 @@ public class FeatureMinerTest {
 
         issues.forEach(issue -> {
             MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
-            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
             Measurement measurement = new Measurement();
             measurement.setMeasurementDate(measurementDateValue);
             measurement.setMeasurementDateName(measurementDate.getName());
@@ -326,7 +325,7 @@ public class FeatureMinerTest {
 
         issues.forEach(issue -> {
             MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
-            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
             Measurement measurement = new Measurement();
             measurement.setMeasurementDate(measurementDateValue);
             measurement.setMeasurementDateName(measurementDate.getName());
@@ -349,7 +348,7 @@ public class FeatureMinerTest {
 
         issues.forEach(issue -> {
             MeasurementDate measurementDate = new OneSecondBeforeFirstCommitDate();
-            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
             Measurement measurement = new Measurement();
             measurement.setMeasurementDate(measurementDateValue);
             measurement.setMeasurementDateName(measurementDate.getName());

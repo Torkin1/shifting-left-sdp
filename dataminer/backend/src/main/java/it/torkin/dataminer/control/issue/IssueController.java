@@ -127,36 +127,44 @@ public class IssueController implements IIssueController{
         });
     }
 
-    private int compareMeasurementDate(String datasetName, Issue i1, Issue i2, MeasurementDate measurementDate){
-        return measurementDate.apply(new MeasurementDateBean(datasetName, i1))
-            .compareTo(measurementDate.apply(new MeasurementDateBean(datasetName, i2)));
+    private Timestamp applyMeasurementDate(Issue issue, IssueMeasurementDateBean bean){
+        
+        String datasetName = bean.getDataset();
+        MeasurementDate measurementDate = bean.getMeasurementDate();
+        MeasurementDate fallbackDate = bean.getFallbackDate();
+        
+        Optional<Timestamp> measurementDateOptional = measurementDate.apply(new MeasurementDateBean(datasetName, issue));
+        if (fallbackDate == null){
+            // fallback date disabled
+            return measurementDateOptional.orElseThrow(() -> new MissingMeasurementDateException(datasetName, issue, measurementDate));
+        } else {
+            // fallback date enabled
+            return measurementDateOptional.orElseGet(() -> {
+                bean.getFellBackIssueKeys().add(issue.getKey());
+                return fallbackDate.apply(new MeasurementDateBean(datasetName, issue)).get();
+            });
+        }
     }
-
+    
     @Override
     public int compareMeasurementDate(IssueMeasurementDateBean bean){
-        return compareMeasurementDate(
-            bean.getDataset(),
-            bean.getI1(),
-            bean.getI2(),
-            bean.getMeasurementDate());
+        Issue i1 = bean.getI1();
+        Issue i2 = bean.getI2();
+
+        Timestamp date1 = applyMeasurementDate(i1, bean);
+        Timestamp date2 = applyMeasurementDate(i2, bean);
+
+        return date1.compareTo(date2);
     }
 
     @Override
     public boolean isBefore(IssueMeasurementDateBean bean){
-        return compareMeasurementDate(
-            bean.getDataset(),
-            bean.getI1(),
-            bean.getI2(),
-            bean.getMeasurementDate()) < 0;
+        return compareMeasurementDate(bean) < 0;
     }
 
     @Override
     public boolean isAfter(IssueMeasurementDateBean bean){
-        return compareMeasurementDate(
-            bean.getDataset(),
-            bean.getI1(),
-            bean.getI2(),
-            bean.getMeasurementDate()) > 0;
+        return compareMeasurementDate(bean) > 0;
     }
 
     @Override
@@ -259,7 +267,7 @@ public class IssueController implements IIssueController{
          * 
          * 3. The list is not empty, and the first history is before the measurement date
          *    => the field did change in a time before the measurement date
-         *    => we return the last history that is not after the measurement date
+         *    => we return all histories that are not after the measurement date
          *       since it contains the wanted value in the to|toString IssueHistoryItem fields
          */
 
@@ -323,7 +331,8 @@ public class IssueController implements IIssueController{
      * Gets changelog histories related to the given field sorted by creation date.
      * Only histories that are created before the measurement date are returned.
      */
-    private List<IssueHistory> getHistories(IssueBean bean, IssueField field){
+    @Override
+    public List<IssueHistory> getHistories(IssueBean bean, IssueField field){
         Stream<IssueHistory> histories = getItemsBeforeDate(
             bean.getIssue().getDetails().getChangelog().getHistories(),
             bean.getMeasurementDate(),

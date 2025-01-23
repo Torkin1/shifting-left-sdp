@@ -55,7 +55,7 @@ public class LatestCommitMiner extends FeatureMiner{
         String dataset = bean.getDataset();
         String project = issue.getDetails().getFields().getProject().getKey();
         String repository = repoByProjectByDataset.get(dataset).get(project);
-        Timestamp firstCommitDate = new OneSecondBeforeFirstCommitDate().apply(new MeasurementDateBean(dataset, issue));
+        Timestamp firstCommitDate = new OneSecondBeforeFirstCommitDate().apply(new MeasurementDateBean(dataset, issue)).get();
 
         GitConfig threadGitConfig = gitConfig.forThread(bean.getThreadIndex());
 

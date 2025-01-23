@@ -286,7 +286,9 @@ public class DatasetController implements IDatasetController {
     private NlpIssueBean prepareBean(Issue issue, Dataset dataset, MeasurementDate measurementDate){
 
         IssueFields fields = issue.getDetails().getFields();
-        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+
+        // at this point we are sure that the measurement date is available
+        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
 
         String description = issueController.getDescription(new IssueBean(issue, measurementDateValue));
         String title = issueController.getTitle(new IssueBean(issue, measurementDateValue));

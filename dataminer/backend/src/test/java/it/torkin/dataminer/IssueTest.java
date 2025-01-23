@@ -234,7 +234,7 @@ public class IssueTest {
 
         Timestamp historyTimestamp = Timestamp.from(Instant.parse("2009-06-15T22:55:46.519Z"));
         Timestamp now = TimeTools.now();
-        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue)).get();
 
         assertTrue(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "shralex", now)));
         assertTrue(issueController.hasBeenAssigned(new HasBeenAssignedBean(issue, "phunt", historyTimestamp)));
@@ -264,7 +264,7 @@ public class IssueTest {
          */
 
         Timestamp now = TimeTools.now();
-        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue)).get();
         Timestamp start = Timestamp.from(Instant.parse("2024-11-24T14:16:13.824Z"));
         Timestamp oneSecondAfterStart = Timestamp.from(start.toInstant().plus(1, ChronoUnit.SECONDS));
         Timestamp end = Timestamp.from(Instant.parse("2024-11-25T07:51:20.795Z"));
@@ -304,7 +304,7 @@ public class IssueTest {
          */
 
         Timestamp now = TimeTools.now();
-        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue)).get();
         Set<String> components;
 
         components = issueController.getComponentsIds(new IssueBean(issue, now));
@@ -327,7 +327,7 @@ public class IssueTest {
 
         Timestamp historyTimestamp = Timestamp.from(Instant.parse("2009-06-15T22:55:46.519Z"));
         Timestamp now = TimeTools.now();
-        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue));
+        Timestamp openingDate = new OpeningDate().apply(new MeasurementDateBean(null, issue)).get();
 
         Set<String> assigneeChangSet= issueController.getAssigneeChangeset(new IssueBean(issue, now));
         Set<String> reporterChangeSet = issueController.getReporterChangeset(new IssueBean(issue, now));

@@ -23,12 +23,13 @@ public class MeasurementConfig {
 
     @RequiredArgsConstructor
     @Getter
-    public static enum Treatments{
+    public static enum PredictionScope{
         COMMIT("JIT"),
+        ISSUE("T"),
         ISSUE_COMMIT("TJIT"),
-        NOT_YET_IMPLEMENTED("NYI"),
-        NOT_YET_ASSIGNED("NYA"),
-        JUST_COMPLETED("JC"),
+        // NOT_YET_IMPLEMENTED("NYI"),
+        // NOT_YET_ASSIGNED("NYA"),
+        // JUST_COMPLETED("JC"),
         ;
 
         private final String code;
@@ -43,7 +44,7 @@ public class MeasurementConfig {
      * List of measurement dates implementation that can be used
      */
     @NotEmpty
-    private Set<String> dates;
+    private String[] dates;
 
     @Autowired private DataConfig dataConfig;
 
@@ -62,8 +63,8 @@ public class MeasurementConfig {
     
     private String dir;
 
-    public String getOutputFileName(String dataset, String project, String measurementDate, Treatments treatment){
-        return dir + "/" + dataset + "_" + project + "_" + measurementDate + "_" + treatment + ".csv";
+    public String getOutputFileName(String dataset, String project, String measurementDate, PredictionScope scope){
+        return dir + "/" + dataset + "_" + project + "_" + measurementDate + "_" + scope + ".csv";
     }
 
     /**

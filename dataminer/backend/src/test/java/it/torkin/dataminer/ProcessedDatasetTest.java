@@ -66,8 +66,8 @@ public class ProcessedDatasetTest {
             @Override
             public void accept(Issue issue) {
                 if (lastIssue != null){
-                    assertFalse(measurementDate.apply(new MeasurementDateBean(datasetName, lastIssue))
-                        .after(measurementDate.apply(new MeasurementDateBean(datasetName, issue))));
+                    assertFalse(measurementDate.apply(new MeasurementDateBean(datasetName, lastIssue)).get()
+                        .after(measurementDate.apply(new MeasurementDateBean(datasetName, issue)).get()));
                 }
                 lastIssue = issue;
             }

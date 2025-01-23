@@ -3,10 +3,12 @@ package it.torkin.dataminer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.FileNotFoundException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,10 +18,14 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+
 import it.torkin.dataminer.control.measurementdate.IMeasurementDateController;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
+import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstAssignmentDate;
 import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
@@ -108,10 +114,40 @@ public class MeasurementDateTest {
         commit.setDataset(dataset);
         issue.getCommits().add(commit);
 
-        Timestamp firstCommitDateValue = firstCommitDate.apply(new MeasurementDateBean(dataset.getName(), issue));
-        Timestamp oneSecondBeforeFirstCommitDateValue = oneSecondBeforeFirstCommitDate.apply(new MeasurementDateBean(dataset.getName(), issue));
+        Timestamp firstCommitDateValue = firstCommitDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
+        Timestamp oneSecondBeforeFirstCommitDateValue = oneSecondBeforeFirstCommitDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
 
         assertTrue(firstCommitDateValue.after(oneSecondBeforeFirstCommitDateValue));
+    }
+
+    @Autowired
+    private OneSecondBeforeFirstAssignmentDate oneSecondBeforeFirstAssignmentDate;
+
+    @Test
+    public void testOneSecondBeforeAssignment() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+        /**
+         * test the following cases:
+         * 
+         * 1) no developer assigned, no measurement date available
+         * 2) developer assigned but not present in changelog, measurement date is opening date
+         * 3) developer assigned and present in changelog, measurement date is one second before history creation date
+         */
+
+        Issue issue1 = IssueTools.getIssueExample("AVRO-2064");
+        Issue issue2 = IssueTools.getIssueExample("AVRO-1124");
+        Issue issue3 = IssueTools.getIssueExample("AVRO-107");
+
+        Optional<Timestamp> firstAssignementDate1 = oneSecondBeforeFirstAssignmentDate.apply(new MeasurementDateBean(null, issue1));
+        Optional<Timestamp> firstAssignementDate2 = oneSecondBeforeFirstAssignmentDate.apply(new MeasurementDateBean(null, issue2));
+        Optional<Timestamp> firstAssignementDate3 = oneSecondBeforeFirstAssignmentDate.apply(new MeasurementDateBean(null, issue3));
+
+        Timestamp expected2 = Timestamp.from(Instant.parse("2012-07-11T03:46:41.557Z")); 
+        Timestamp expected3 = Timestamp.from(Instant.parse("2009-08-27T22:25:14.112Z"));
+
+        assertTrue(firstAssignementDate1.isEmpty());
+        assertEquals(expected2, firstAssignementDate2.get());
+        assertEquals(expected3, firstAssignementDate3.get());
+
     }
     
 }

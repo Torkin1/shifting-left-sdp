@@ -2,6 +2,7 @@ package it.torkin.dataminer.control.measurementdate.impl;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,7 @@ import it.torkin.dataminer.entities.dataset.Commit;
 public class FirstCommitDate implements MeasurementDate{
 
     @Override
-    public Timestamp apply(MeasurementDateBean bean) {
+    public Optional<Timestamp> apply(MeasurementDateBean bean) {
         
         List<Commit> commits = bean.getIssue().getCommits();
         Commit earliest = commits.get(0);
@@ -23,7 +24,7 @@ public class FirstCommitDate implements MeasurementDate{
                 earliest = commit;
             }
         }
-        return earliest.getTimestamp();
+        return Optional.of(earliest.getTimestamp());
     }
 
 }

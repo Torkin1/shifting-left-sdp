@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -70,7 +71,12 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
         bean.setProcessedIssues(issueDao.findAllByDataset(bean.getDatasetName())
             // we filter out issues that do not pass the filters
             .filter((issue) -> {
-                Timestamp measurementDate = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
+                Optional<Timestamp> measurementDateOptional = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
+                // filter away issues that do not have the measurement date available
+                if (measurementDateOptional.isEmpty()) {
+                    return false;
+                }
+                Timestamp measurementDate = measurementDateOptional.get();
                 issueFilterBean.setIssue(issue);
                 issueFilterBean.setDatasetName(bean.getDatasetName());
                 issueFilterBean.setMeasurementDate(measurementDate);

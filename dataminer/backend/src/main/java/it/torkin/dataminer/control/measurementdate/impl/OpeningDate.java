@@ -1,6 +1,7 @@
 package it.torkin.dataminer.control.measurementdate.impl;
 
 import java.sql.Timestamp;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -11,8 +12,8 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 public class OpeningDate implements MeasurementDate {
 
     @Override
-    public Timestamp apply(MeasurementDateBean bean) {
-        return bean.getIssue().getDetails().getFields().getCreated();
+    public Optional<Timestamp> apply(MeasurementDateBean bean) {
+        return Optional.of(bean.getIssue().getDetails().getFields().getCreated());
     }
 
 }
