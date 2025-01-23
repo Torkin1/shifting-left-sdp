@@ -1,6 +1,7 @@
 package it.torkin.dataminer.control.measurementdate.impl;
 
 import java.sql.Timestamp;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,8 @@ public class OneSecondBeforeFirstAssignmentDate implements MeasurementDate{
     @Override
     public Optional<Timestamp> apply(MeasurementDateBean bean) {
 
+        Optional<Timestamp> date;
+        
         // search in the changelog for histories related to the assignee field
         List<IssueHistory> assigneeHistories = issueController.getHistories(
             new IssueBean(bean.getIssue(), TimeTools.now()),
@@ -36,18 +39,21 @@ public class OneSecondBeforeFirstAssignmentDate implements MeasurementDate{
             // Changelog of assignee field is empty. 
             // If there is an assignee in ticket details, we return the opening date
             Developer assignee = bean.getIssue().getDetails().getFields().getAssignee();
-            return assignee != null? new OpeningDate().apply(bean) : Optional.empty();
+            date = assignee != null? new OpeningDate().apply(bean) : Optional.empty();
 
+        } else {
+            IssueHistory firstHistory = assigneeHistories.get(0);
+            IssueHistoryItem firstItem = firstHistory.getItems().stream()
+                .filter(item -> IssueField.ASSIGNEE.getName().equals(item.getField()))
+                .findFirst()
+                .get(); // should never be empty at this point
+                
+            // if the `from` field of the item is set, we return the opening date, else we return the
+            // history creation date
+            date = StringTools.isBlank(firstItem.getFrom())? Optional.of(firstHistory.getCreated()) : new OpeningDate().apply(bean);
         }
-        IssueHistory firstHistory = assigneeHistories.get(0);
-        IssueHistoryItem firstItem = firstHistory.getItems().stream()
-            .filter(item -> IssueField.ASSIGNEE.getName().equals(item.getField()))
-            .findFirst()
-            .get(); // should never be empty at this point
-            
-        // if the `from` field of the item is set, we return the opening date, else we return the
-        // history creation date
-        return StringTools.isBlank(firstItem.getFrom())? Optional.of(firstHistory.getCreated()) : new OpeningDate().apply(bean);  
+        if (!date.isPresent()) return date;
+        return Optional.of(Timestamp.from(date.get().toInstant().minus(1, ChronoUnit.SECONDS)));
     }
     
 }

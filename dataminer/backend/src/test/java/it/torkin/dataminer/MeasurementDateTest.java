@@ -141,8 +141,8 @@ public class MeasurementDateTest {
         Optional<Timestamp> firstAssignementDate2 = oneSecondBeforeFirstAssignmentDate.apply(new MeasurementDateBean(null, issue2));
         Optional<Timestamp> firstAssignementDate3 = oneSecondBeforeFirstAssignmentDate.apply(new MeasurementDateBean(null, issue3));
 
-        Timestamp expected2 = Timestamp.from(Instant.parse("2012-07-11T03:46:41.557Z")); 
-        Timestamp expected3 = Timestamp.from(Instant.parse("2009-08-27T22:25:14.112Z"));
+        Timestamp expected2 = Timestamp.from(Instant.parse("2012-07-11T03:46:40.557Z")); 
+        Timestamp expected3 = Timestamp.from(Instant.parse("2009-08-27T22:25:13.112Z"));
 
         assertTrue(firstAssignementDate1.isEmpty());
         assertEquals(expected2, firstAssignementDate2.get());
