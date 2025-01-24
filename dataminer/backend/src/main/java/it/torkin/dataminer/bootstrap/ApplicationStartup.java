@@ -2,9 +2,6 @@ package it.torkin.dataminer.bootstrap;
 
 import java.io.IOException;
 
-import it.torkin.dataminer.control.features.IssueFeature;
-import it.torkin.dataminer.control.features.PrintMeasurementsBean;
-import it.torkin.dataminer.control.workers.IWorkersController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -19,6 +16,7 @@ import it.torkin.dataminer.control.dataset.stats.IStatsController;
 import it.torkin.dataminer.control.features.IFeatureController;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.PrintMeasurementsBean;
+import it.torkin.dataminer.control.workers.IWorkersController;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
