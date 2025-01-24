@@ -20,6 +20,7 @@ import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.dao.git.GitDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -72,7 +73,7 @@ public class FeatureController implements IFeatureController{
     @Autowired private MeasurementConfig measurementConfig;
     @Autowired private ForkConfig forkConfig;
 
-    @Autowired TransactionTemplate transaction;
+    @Autowired private PlatformTransactionManager transactionManager;
     @Autowired
     private GitConfig gitConfig;
 
@@ -151,6 +152,8 @@ public class FeatureController implements IFeatureController{
             new File(forkConfig.getForkDir(i)).mkdirs();
         }
 
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        transaction.setReadOnly(true);
         transaction.executeWithoutResult(status -> {
             ProcessedIssuesBean processedIssuesBean;
 
