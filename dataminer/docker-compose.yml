@@ -27,6 +27,10 @@ services:
       
       - GRPC_HOSTNAME_PROJECT_CODE_QUALITY=project-code-quality
       - GRPC_PORT_PROJECT_CODE_QUALITY=8080
+
+      # tune the following lines according to the target machine capabilities
+      # - JDK_JAVA_OPTIONS=-Xms16G -Xmx16G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
+      # - JAVA_OPTS=-Xms16G -Xmx16G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
     volumes:
       - backend_data:/backend/data/
     

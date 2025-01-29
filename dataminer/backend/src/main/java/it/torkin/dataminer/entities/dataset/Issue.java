@@ -27,7 +27,7 @@ public class Issue {
     @Id
     private String key; // "PROJ-123"
     
-    @ManyToMany(mappedBy = "issues", fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "issues")
     @OrderBy("timestamp ASC")
     private List<Commit> commits = new ArrayList<>();
 

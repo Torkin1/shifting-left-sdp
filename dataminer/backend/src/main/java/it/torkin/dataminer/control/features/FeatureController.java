@@ -137,11 +137,6 @@ public class FeatureController implements IFeatureController{
     
     @Override
     public void mineFeatures(){
-                
-        if (measurementPrintExists()){
-            log.info("Measurement prints already exists, skipping mining");
-            return;
-        }
 
         /**
          * Main process divides issues among threads
@@ -181,13 +176,6 @@ public class FeatureController implements IFeatureController{
     
                         Holder<Integer> fork = new Holder<>(0);
                         issues.forEach(issue -> {
-
-                            // skip issue with measurement date not available
-                            Optional<Timestamp> measurementDateOptional = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue));
-                            if (measurementDateOptional.isEmpty()){
-                                log.warn("{}: Measurement date {} not available for issue {}",dataset.getName(), measurementDate.getName(), issue.getKey());
-                                return;
-                            }
 
                             /**
                              * Clones one copy of guessed repository for each thread
