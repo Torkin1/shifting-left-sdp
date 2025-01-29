@@ -8,7 +8,10 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.toolbox.string.StringTools;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 
@@ -17,15 +20,23 @@ import java.io.File;
     prefix = "dataminer.fork",
     ignoreUnknownFields = false)
 @Data
+@Slf4j
 public class ForkConfig {
 
     @Autowired private DataConfig dataConfig;
     @Autowired private WorkersConfig workersConfig;
+
+    private static final int DEFAULT_MAX_FORKS = Runtime.getRuntime().availableProcessors() / 2;
     
     @PostConstruct
     public void init(){
         if (StringTools.isBlank(dir)){
             dir = dataConfig.getDir();
+        }
+
+        if (parallelismLevel == null || parallelismLevel > DEFAULT_MAX_FORKS) {
+            log.warn("Max workers not set or set too high, using default value {}", DEFAULT_MAX_FORKS);
+            parallelismLevel = DEFAULT_MAX_FORKS;
         }
         
     }
@@ -33,6 +44,10 @@ public class ForkConfig {
     private String dir;
 
     private Integer index;
+
+    @NotNull
+    @Min(1)
+    private Integer parallelismLevel;
 
     public boolean isChild(){
         return index != null;
@@ -47,7 +62,7 @@ public class ForkConfig {
 
 
     public int getForkCount(){
-        return workersConfig.getParallelismLevel();
+        return parallelismLevel;
     }
 
     public String getForkInputFile(Integer i, Dataset dataset, MeasurementDate measurementDate) {

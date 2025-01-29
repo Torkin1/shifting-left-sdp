@@ -21,7 +21,8 @@ public class WorkersConfig {
      * we use half of available cores to account for hyperthreading and to leave
      * some room for other processes
      */
-    private static final int DEFAULT_MAX_WORKERS = Runtime.getRuntime().availableProcessors() / 2;
+    // private static final int DEFAULT_MAX_WORKERS = Runtime.getRuntime().availableProcessors() / 2;
+    private static final int DEFAULT_MAX_WORKERS = 1;
     
     @PostConstruct
     private void init() {
