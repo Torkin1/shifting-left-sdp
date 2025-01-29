@@ -1,6 +1,8 @@
 package it.torkin.dataminer.entities.dataset.features;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
@@ -16,7 +18,7 @@ import lombok.NoArgsConstructor;
 @Inheritance(strategy = InheritanceType.JOINED)
 @NoArgsConstructor
 @Entity
-public abstract class Feature<T> {
+public abstract class Feature<T> implements Cloneable{
     
     @Id
     @GeneratedValue
@@ -25,11 +27,27 @@ public abstract class Feature<T> {
     /**
      * Name of feature
      */
-    private String name;
+    protected String name;
+
+    /**
+     * If the feature is aggregable, this field contains the aggregation strategy to apply.
+     */
+    @Enumerated(EnumType.STRING)
+    protected FeatureAggregation aggregation;
 
     protected Feature(String name) {
         this.name = name;
     }
 
+    protected Feature(String name, FeatureAggregation aggregation) {
+        this.name = name;
+        this.aggregation = aggregation;
+    }
+
+
     public abstract T getValue();
+
+    @Override
+    public abstract Feature<T> clone();
+
 }

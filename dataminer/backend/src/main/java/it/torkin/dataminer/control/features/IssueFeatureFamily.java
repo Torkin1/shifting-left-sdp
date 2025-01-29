@@ -46,6 +46,10 @@ public enum IssueFeatureFamily {
      * others.
      */
     INTRINSIC("Intrinsic"),
+    /**
+     * Features of the commits related to the issue.
+     */
+    JIT("JIT"),
     ;
 
     private final String name;

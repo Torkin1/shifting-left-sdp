@@ -19,5 +19,14 @@ public class IntegerFeature extends Feature<Integer> {
         super(name);
         this.value = value;
     }
+
+    public IntegerFeature(String name, Integer value, FeatureAggregation aggregation) {
+        super(name, aggregation);
+        this.value = value;
+    }
     
+    @Override
+    public Feature<Integer> clone() {
+        return new IntegerFeature(name, value, aggregation);
+    }
 }

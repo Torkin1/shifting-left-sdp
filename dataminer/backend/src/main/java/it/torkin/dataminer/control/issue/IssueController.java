@@ -365,12 +365,12 @@ public class IssueController implements IIssueController{
         // traverse changelog to find in progress timespans boundaries
         // NOTE: if issue is already in progress at the opening date, we do not count it.
         List<IssueHistory> histories = getHistories(new IssueBean(bean.getIssue(), bean.getMeasurementDate()), IssueField.STATUS);
-        TemporalSpan span = null;
+        Timespan span = null;
         for (IssueHistory history : histories){
             for (IssueHistoryItem item : history.getItems()){
                 
                 if (inProgressIssueStatuses.contains(item.getTo()) && !inProgressIssueStatuses.contains(item.getFrom())){
-                    span = new TemporalSpan();
+                    span = new Timespan();
                     span.setStart(history.getCreated());
                 }
                 else if (inProgressIssueStatuses.contains(item.getFrom()) && !inProgressIssueStatuses.contains(item.getTo())
@@ -507,5 +507,13 @@ public class IssueController implements IIssueController{
     @Override
     public List<IssueHistory> getHistories(IssueBean bean) {
         return getHistories(bean, null);
+    }
+
+    @Override
+    public List<Commit> getCommits(IssueCommitBean bean) {
+        return bean.getIssue().getCommits().stream()
+            .filter(commit -> commit.getDataset().getName().equals(bean.getDataset()))
+            .filter(commit -> !commit.getTimestamp().after(bean.getMeasurementDate()))
+            .toList();
     }
 }

@@ -15,7 +15,7 @@ import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueTemporalSpanBean;
-import it.torkin.dataminer.control.issue.TemporalSpan;
+import it.torkin.dataminer.control.issue.Timespan;
 import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
@@ -70,7 +70,7 @@ public class CommitsWhileInProgressMiner extends FeatureMiner{
             issueController.getInProgressTemporalSpans(issueTemporalSpanBean);
 
             // for each temporal span, get the commits submitted in it
-            for (TemporalSpan span : issueTemporalSpanBean.getTemporalSpans()){
+            for (Timespan span : issueTemporalSpanBean.getTemporalSpans()){
                 count += gitDao.getCommitCount(span.getStart(), span.getEnd());
                 churn += gitDao.getChurn(span.getStart(), span.getEnd());
             }

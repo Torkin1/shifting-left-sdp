@@ -19,5 +19,15 @@ public class LongFeature extends Feature<Long> {
         super(name);
         this.value = value;
     }
+
+    public LongFeature(String name, Long value, FeatureAggregation aggregation) {
+        super(name, aggregation);
+        this.value = value;
+    }
+
+    @Override
+    public Feature<Long> clone() {
+        return new LongFeature(name, value, aggregation);
+    }
     
 }

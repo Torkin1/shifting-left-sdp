@@ -19,5 +19,15 @@ public class DoubleFeature extends Feature<Double> {
         super(name);
         this.value = value;
     }
+
+    public DoubleFeature(String name, Double value, FeatureAggregation aggregation) {
+        super(name, aggregation);
+        this.value = value;
+    }
+
+    @Override
+    public Feature<Double> clone() {
+        return new DoubleFeature(name, value, aggregation);
+    }
     
 }

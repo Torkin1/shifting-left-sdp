@@ -77,6 +77,14 @@ public enum IssueFeature {
      * could bring new defects.
      */
     LATEST_COMMIT("latest_commit", IssueFeatureFamily.ENVIRONMENTAL_TEMPERATURE),
+    /**
+     * Just-In-Time issue commits features brough by the datasource
+     */
+    JIT("jit", IssueFeatureFamily.JIT),
+    /**
+     * Number of commits related to the issue from a given dataset
+     */
+    NUM_COMMITS("num_commits", IssueFeatureFamily.JIT),
     ;
 
     private final String name;

@@ -19,5 +19,15 @@ public class StringFeature extends Feature<String> {
         super(name);
         this.value = value;
     }
+
+    public StringFeature(String name, String value, FeatureAggregation aggregation) {
+        super(name, aggregation);
+        this.value = value;
+    }
+
+    @Override
+    public Feature<String> clone() {
+        return new StringFeature(name, value, aggregation);
+    }
     
 }
