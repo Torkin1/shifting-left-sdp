@@ -19,5 +19,15 @@ public class BooleanFeature extends Feature<Boolean> {
         super(name);
         this.value = value;
     }
+
+    public BooleanFeature(String name, Boolean value, FeatureAggregation aggregation) {
+        super(name, aggregation);
+        this.value = value;
+    }
+
+    @Override
+    public Feature<Boolean> clone() {
+        return new BooleanFeature(name, value, aggregation);
+    }
     
 }

@@ -38,6 +38,11 @@ public interface IIssueController {
     public Commit getFirstCommit(IssueCommitBean bean);
 
     /**
+     * Returns the list of commits of the issue prior to the given measurement date
+     */
+    public List<Commit> getCommits(IssueCommitBean bean);
+
+    /**
      * Returns the description of the issue according to the given
      * measurement date.
      * @param issue non null

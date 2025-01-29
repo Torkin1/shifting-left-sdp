@@ -24,4 +24,7 @@ public interface MeasurementDao extends JpaRepository<Measurement, Long> {
     @Query("SELECT m FROM Measurement m INNER JOIN m.commit.issues i JOIN i.measurements im WHERE m.commit.dataset.name = :dataset AND i.details.fields.project.key = :project AND im.measurementDateName = :measurementDateName ORDER BY m.measurementDate ASC")
     Stream<Measurement> findAllWithCommitByDatasetAndProjectAndMeasurementDate(String dataset, String project, String measurementDateName);
 
+    @Query("SELECT m FROM Measurement m WHERE m.commit.dataset.name = :dataset")
+    Measurement findAnyWithCommitByDataset(String dataset);
+
 }

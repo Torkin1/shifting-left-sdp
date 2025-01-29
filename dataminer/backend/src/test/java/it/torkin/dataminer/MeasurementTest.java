@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
@@ -18,8 +19,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import it.torkin.dataminer.config.features.ProjectCodeQualityConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.features.FeatureController;
+import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.PrintMeasurementsBean;
+import it.torkin.dataminer.control.features.miners.JITAggregatedMiner;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
@@ -148,9 +151,15 @@ public class MeasurementTest {
     // @Transactional
     public void testPrintMeasurements() throws Exception{
 
+        Set<Class<? extends FeatureMiner>> miners = Set.of(
+            JITAggregatedMiner.class
+        );
+        
         projectCodeQualityConfig.setPmdPath("/home/daniele/pmd-bin-7.7.0/bin/pmd");
             
         datasetController.createRawDataset();
+
+        featureController.getMiners().removeIf(m -> !miners.contains(m.getClass()));
         
         featureController.initMiners();
         featureController.mineFeatures();

@@ -11,6 +11,7 @@ import it.torkin.dataminer.entities.dataset.Measurement;
 import it.torkin.dataminer.entities.dataset.Repository;
 import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
+import it.torkin.dataminer.entities.dataset.features.FeatureAggregation;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
 import it.torkin.dataminer.entities.dataset.features.TimestampFeature;
 import it.torkin.dataminer.toolbox.csv.Resultset;
@@ -55,30 +56,34 @@ public class Apachejit implements Datasource{
                     commit.setRepository(new Repository(v, v.split("/")[1], v.split("/")[0]));
                     break;
                 case "fix":
-                    measurement.getFeatures().add(new BooleanFeature(featureName, booleanReader.read(v)));
+                    measurement.getFeatures().add(new BooleanFeature(featureName, booleanReader.read(v), FeatureAggregation.COUNT_TRUE));
                     break;
                 case "year":
                     v = String.format("%s-01-01 00:00:00", v);
                     measurement.getFeatures().add(new TimestampFeature(featureName, Timestamp.valueOf(v)));
                     break;
                 case "author_date":
-                    measurement.getFeatures().add(new TimestampFeature(featureName, Timestamp.from(Instant.ofEpochSecond(Long.parseLong(v)))));
+                    measurement.getFeatures().add(new TimestampFeature(featureName, Timestamp.from(Instant.ofEpochSecond(Long.parseLong(v))), FeatureAggregation.DURATION));
                     break;
                 case "la":
                 case "ld":
+                    measurement.getFeatures().add(new IntegerFeature(featureName, Integer.parseInt(v), FeatureAggregation.SUM));
+                    break;
                 case "nf":
                 case "nd":
                 case "ns":
-                    measurement.getFeatures().add(new IntegerFeature(featureName, Integer.parseInt(v)));
+                    measurement.getFeatures().add(new IntegerFeature(featureName, Integer.parseInt(v), FeatureAggregation.MAX));
                     break;
                 case "ent":
                 case "ndev":
-                case "age":
                 case "nuc":
+                    measurement.getFeatures().add(new DoubleFeature(featureName, Double.parseDouble(v), FeatureAggregation.MAX));
+                    break;
+                case "age":
                 case "aexp":
                 case "arexp":
                 case "asexp":
-                    measurement.getFeatures().add(new DoubleFeature(featureName, Double.parseDouble(v)));
+                    measurement.getFeatures().add(new DoubleFeature(featureName, Double.parseDouble(v), FeatureAggregation.MIN));
                     break;
                 default:
                     log.debug("Unknown feature from apachejit: {}={}", k, v);

@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.google.gson.stream.JsonWriter;
 
@@ -62,6 +64,8 @@ public class DatasetController implements IDatasetController {
     @Autowired private NLPFeaturesConfig nlpFeaturesConfig;
     @Autowired private IIssueController issueController;
     @Autowired private IMeasurementDateController measurementDateController;
+
+    @Autowired private PlatformTransactionManager transactionManager;
 
     private List<Datasource> datasources = new ArrayList<>();
     
@@ -158,19 +162,22 @@ public class DatasetController implements IDatasetController {
      */
     private void mapRepositoriesToProjects(){
 
-        List<Dataset> datasets = datasetDao.findAll();
-        datasets.removeIf(dataset -> !dataset.getGuessedRepoByProjects().isEmpty());
-
-        if(!datasets.isEmpty()){
-            List<CommitCount> commitCounts = commitDao.countByDatasetAndRepositoryAndProject();
-            guessProjectRepositories(datasets, commitCounts);
-            retainOnlyProjectWithMostIssuesForSameRepository(datasets, commitCounts);
-            datasetDao.saveAll(datasets);
-        }
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        transaction.setReadOnly(true);
+        transaction.executeWithoutResult((status) -> {
+            List<Dataset> datasets = datasetDao.findAll();
+            datasets.removeIf(dataset -> !dataset.getGuessedRepoByProjects().isEmpty());
+    
+            if(!datasets.isEmpty()){
+                List<CommitCount> commitCounts = commitDao.countByDatasetAndRepositoryAndProject();
+                guessProjectRepositories(datasets, commitCounts);
+                retainOnlyProjectWithMostIssuesForSameRepository(datasets, commitCounts);
+                datasetDao.saveAll(datasets);
+            }
+        });
     }
     
     @Override
-    @Transactional
     public void createRawDataset() throws UnableToCreateRawDatasetException {
 
         try {

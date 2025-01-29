@@ -11,6 +11,6 @@ import lombok.Data;
 public class IssueTemporalSpanBean {
 
     private final Issue issue;
-    private final List<TemporalSpan> temporalSpans = new ArrayList<>();
+    private final List<Timespan> temporalSpans = new ArrayList<>();
     private final Timestamp measurementDate;
 }

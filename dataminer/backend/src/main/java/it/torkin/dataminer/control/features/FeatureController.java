@@ -16,8 +16,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import it.torkin.dataminer.config.GitConfig;
-import it.torkin.dataminer.dao.git.GitDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -30,6 +28,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema.Column;
 
 import it.torkin.dataminer.config.ForkConfig;
+import it.torkin.dataminer.config.GitConfig;
 import it.torkin.dataminer.config.MeasurementConfig;
 import it.torkin.dataminer.config.MeasurementConfig.PredictionScope;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
@@ -37,6 +36,7 @@ import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.measurementdate.IMeasurementDateController;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
+import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.dao.local.MeasurementDao;
@@ -56,10 +56,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 
+
 @Service
 @Slf4j
 public class FeatureController implements IFeatureController{
 
+    @Getter
     @Autowired private List<FeatureMiner> miners;
 
     @Autowired private DatasetDao datasetDao;
@@ -74,8 +76,7 @@ public class FeatureController implements IFeatureController{
     @Autowired private ForkConfig forkConfig;
 
     @Autowired private PlatformTransactionManager transactionManager;
-    @Autowired
-    private GitConfig gitConfig;
+    @Autowired private GitConfig gitConfig;
 
     @RequiredArgsConstructor
     private class MeasureFeaturesThread extends Thread{
@@ -301,7 +302,7 @@ public class FeatureController implements IFeatureController{
                         else {
                             printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
                             printCommitMeasurements(dataset, project, measurementDate);
-                            printIssueCommitMeasurements(dataset, project, measurementDate);
+                            // printIssueCommitMeasurements(dataset, project, measurementDate);
                         }
                     } catch (IOException e) {
                         
@@ -373,70 +374,7 @@ public class FeatureController implements IFeatureController{
             }
          
     }
-
-    private void printIssueCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
-
-        String target = "isBuggy";
-        File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE_COMMIT));
-        CsvMapper mapper = new CsvMapper();
-        Holder<CsvSchema> schema = new Holder<>();
-        Holder<ObjectWriter> writer = new Holder<>();
-        Holder<SequenceWriter> sequenceWriter = new Holder<>();
-        Stream<Measurement> measurements = measurementDao.findAllWithCommitByDatasetAndProjectAndMeasurementDate(dataset.getName(), project.getKey(), measurementDate.getName())
-                // retain only commits with a single linked issue
-                .filter(m -> m.getCommit().getIssues().size() == 1);
-        try (measurements){
-            measurements.forEach(commitMeasurement -> {
-
-                Issue issue = commitMeasurement.getCommit().getIssues().get(0);
-                Commit commit = commitMeasurement.getCommit();
-                Measurement issueMeasurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
-
-                try {
-                    if (schema.getValue() == null){
-                        // Creates csv schema using a measurement as prototype
-                        Set<Feature<?>> features = new HashSet<>();
-                        features.addAll(issueMeasurement.getFeatures());
-                        features.addAll(commitMeasurement.getFeatures());
-                        features.removeIf(f -> f.getName().equals(IssueFeature.BUGGINESS.getFullName()));
-
-                        Set<String> featureNames = getFeatureNames(features);
-                        schema.setValue(createCsvSchema(featureNames, target));
-                        writer.setValue(mapper.writer(schema.getValue()));
-                        sequenceWriter.setValue(writer.getValue().writeValues(outputFile));
-                    }
-
-
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    issueMeasurement.getFeatures().forEach(f -> {
-                        if (!f.getName().equals(IssueFeature.BUGGINESS.getFullName())){
-                            String sValue;
-                            sValue = serializeFeature(f);
-                            row.put(f.getName(), sValue);
-                        }
-                    });
-                    commitMeasurement.getFeatures().forEach(f -> {
-                        String sValue;
-                        sValue = serializeFeature(f);
-                        row.put(f.getName(), sValue);
-                    });
-                    row.put(target, commit.isBuggy());
-
-
-                    sequenceWriter.getValue().write(row);
-                } catch (IOException e) {
-                    throw new RuntimeException("Cannot write row to CSV at " + outputFile.getAbsolutePath(), e);
-                }
-            });
-        } finally {
-            if (sequenceWriter.getValue() != null){
-                sequenceWriter.getValue().close();
-            }
-        }
-                    
-     
-    }
-
+ 
     private void printCommitMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate) throws IOException{
 
         String target = "isBuggy";

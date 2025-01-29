@@ -7,7 +7,9 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -18,11 +20,15 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import it.torkin.dataminer.config.DatasourceConfig;
+import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.config.features.NLPFeaturesConfig;
 import it.torkin.dataminer.control.dataset.DatasetController;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
+import it.torkin.dataminer.control.dataset.raw.datasources.Apachejit;
+import it.torkin.dataminer.control.dataset.raw.datasources.Datasource;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IFeatureController;
@@ -33,6 +39,7 @@ import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
 import it.torkin.dataminer.control.features.miners.CodeQualityMiner;
 import it.torkin.dataminer.control.features.miners.CodeSizeMiner;
 import it.torkin.dataminer.control.features.miners.CommitsWhileInProgressMiner;
+import it.torkin.dataminer.control.features.miners.JITAggregatedMiner;
 import it.torkin.dataminer.control.features.miners.LatestCommitMiner;
 import it.torkin.dataminer.control.features.miners.NLP4REMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
@@ -42,6 +49,7 @@ import it.torkin.dataminer.control.features.miners.UnableToInitNLPFeaturesMinerE
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
+import it.torkin.dataminer.control.measurementdate.impl.OneSecondAfterLastCommitDate;
 import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
@@ -398,5 +406,54 @@ public class FeatureMinerTest {
     @Test
     public void testNLP4REMiner() throws Exception{
         testMiner(nlp4reMiner);
+    }
+
+    @Autowired private JITAggregatedMiner jitAggregatedMiner;
+    @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
+
+    // TODO: run this test, then run a measurement print test
+    @Transactional
+    @Test
+    public void testJITFeaturesAggregator() throws Exception{
+        /**
+         * Create an issue with commits from datasource (limit MAX_COMMITS)
+         * and use it to test the miner
+         */
+
+        Issue issue = IssueTools.getIssueExample("AVRO-107");
+        String datasetName = "apachejit";
+        final int MAX_COMMITS = 3;
+
+        Dataset dataset = new Dataset();
+        dataset.setName(datasetName);
+
+        DatasourceConfig datasourceConfig = datasourceGlobalConfig.getSourcesMap().get(datasetName);
+        Datasource datasource = new Apachejit();
+        datasource.init(datasourceConfig);
+
+        List<Commit> commits = new ArrayList<>();
+        for (int i = 0; i < MAX_COMMITS; i ++){
+            if (datasource.hasNext()){
+                Commit commit = datasource.next();
+                commit.setDataset(dataset);
+                commit.setTimestamp(TimeTools.dawnOfTime());
+                commits.add(commit);
+            }
+        }
+        datasource.close();
+
+        issue.getCommits().addAll(commits);
+
+        MeasurementDate measurementDate = new OneSecondAfterLastCommitDate();
+        Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(datasetName, issue)).get();
+
+        Measurement measurement = new Measurement();
+        measurement.setMeasurementDate(measurementDateValue);
+        measurement.setMeasurementDateName(measurementDate.getName());
+        measurement.setIssue(issue);
+
+        jitAggregatedMiner.accept(new FeatureMinerBean(datasetName, issue, measurement, measurementDate, 0));
+        log.debug("measurement: {}", measurement);
+
     }
 }
