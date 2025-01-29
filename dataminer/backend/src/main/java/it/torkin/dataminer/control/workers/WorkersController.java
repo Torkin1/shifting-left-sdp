@@ -27,7 +27,7 @@ public class WorkersController implements IWorkersController{
     @PostConstruct
     @Override
     public void init(){
-        workers = Executors.newWorkStealingPool(workersConfig.getParallelismLevel());
+        workers = Executors.newWorkStealingPool(1);
     }
 
     @PreDestroy

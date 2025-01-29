@@ -37,6 +37,8 @@ import it.torkin.dataminer.toolbox.time.TimeTools;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
@@ -53,6 +55,8 @@ public class RawDatasetController implements IRawDatasetController{
 
     @Autowired private EntityMerger entityMerger;
     @Autowired private IWorkersController workers;
+
+    @Autowired private PlatformTransactionManager transactionManager;
 
     private JiraDao jiraDao;
 
@@ -80,7 +84,6 @@ public class RawDatasetController implements IRawDatasetController{
         gitdaoByProject.clear();
     }
     
-    @Transactional(rollbackOn = Exception.class)
     public void loadDatasource(Datasource datasource, DatasourceConfig config) throws UnableToLoadCommitsException{
         
         Dataset dataset;
@@ -149,16 +152,21 @@ public class RawDatasetController implements IRawDatasetController{
 
     private void saveCommits() {
 
-        log.debug("saving commit batch");
-        saveIssues();
-        
-        for (Commit commit : commits){
-            Repository repository = commit.getRepository();
-            commit.setRepository(repositoryDao.save(repository));
-        }
-        commitDao.saveAll(commits);
-        log.debug("Commit batch saved");
-        commits.clear();
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        transaction.executeWithoutResult(status -> {
+            log.debug("saving commit batch");
+            saveIssues();
+
+            for (Commit commit : commits){
+                Repository repository = commit.getRepository();
+                commit.setRepository(repositoryDao.save(repository));
+            }
+            commitDao.saveAll(commits);
+            log.debug("Commit batch saved");
+            commits.clear();
+        });
+
+
     }
 
     private void linkIssueCommit(Issue issue, Commit commit) {
