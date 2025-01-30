@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -302,7 +301,6 @@ public class FeatureController implements IFeatureController{
                         else {
                             printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
                             printCommitMeasurements(dataset, project, measurementDate);
-                            // printIssueCommitMeasurements(dataset, project, measurementDate);
                         }
                     } catch (IOException e) {
                         

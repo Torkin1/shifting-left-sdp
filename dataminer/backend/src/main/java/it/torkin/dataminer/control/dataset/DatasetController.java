@@ -163,7 +163,6 @@ public class DatasetController implements IDatasetController {
     private void mapRepositoriesToProjects(){
 
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
-        transaction.setReadOnly(true);
         transaction.executeWithoutResult((status) -> {
             List<Dataset> datasets = datasetDao.findAll();
             datasets.removeIf(dataset -> !dataset.getGuessedRepoByProjects().isEmpty());

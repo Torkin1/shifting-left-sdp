@@ -94,6 +94,7 @@ public class RawDatasetController implements IRawDatasetController{
             dataset.setLastUpdatedTime(TimeTools.now());
             dataset = datasetDao.save(dataset);
             loadCommits(datasource, dataset, config);
+            dataset = datasetDao.save(dataset);
         } finally { 
             cleanup();
         }       
