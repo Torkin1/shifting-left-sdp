@@ -17,7 +17,6 @@ import it.torkin.dataminer.config.StatsConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.IStatsController;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest()
@@ -31,7 +30,6 @@ public class StatsControllerTest {
     @Autowired private IStatsController statsController;
     @Autowired private StatsConfig statsConfig;
     
-    @Transactional
     @Test
     public void testPrintStatsToCSV() throws UnableToCreateRawDatasetException, IOException {
 

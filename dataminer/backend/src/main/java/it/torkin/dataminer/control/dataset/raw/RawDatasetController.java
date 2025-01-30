@@ -111,26 +111,27 @@ public class RawDatasetController implements IRawDatasetController{
     private void loadCommits(Datasource datasource, Dataset dataset, DatasourceConfig config) throws UnableToLoadCommitsException {
         
         progress = new ProgressBar("loading commits", config.getExpectedSize());
-        try {
-            while(datasource.hasNext()){
-                
-                Commit commit = datasource.next();
+        Commit commit = null;
+        while(datasource.hasNext()){
+            try {
+                commit = datasource.next();
                 commit.setDataset(dataset);
-                workers.submit(new Task<>(this::processCommit, new ProcessCommitBean(commit, dataset)));
-
-                // When we loaded enough commits from datasource,
-                // we wait the workers to finish processing the commits
-                // before collecting and saving them.
-                if (workers.isBatchFull() || !datasource.hasNext()){
-                    collectCommitsFromProcessingResults();
-                    saveCommits();
+                ProcessCommitBean processCommitBean = processCommit(new ProcessCommitBean(commit, dataset));
+                commits.add(processCommitBean.getCommit());
+                
+            } catch (Exception e) {
+                if (commit != null && (e instanceof UnableToFetchIssueException || e instanceof UnableToGetCommitDetailsException)){
+                    handleSkippedCommit(commit, dataset, e);
+                } else {
+                    throw new UnableToLoadCommitsException(e); 
                 }
+            } 
+            
+            if (commits.size() == workersConfig.getTaskBatchSize() || !datasource.hasNext()){
+                saveCommits();
             }
-        } catch (Exception e) {
-            throw new UnableToLoadCommitsException(e);
-        } finally {
-            progress.close();
         }
+        progress.close(); 
     }
 
     private void collectCommitsFromProcessingResults() throws Exception {
