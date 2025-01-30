@@ -26,7 +26,9 @@ public class ForkConfig {
     @Autowired private DataConfig dataConfig;
     @Autowired private WorkersConfig workersConfig;
 
-    private static final int DEFAULT_MAX_FORKS = Runtime.getRuntime().availableProcessors() / 2;
+    // we further limit number of cores usable since some miners can spawn processes and we could
+    // incur into an OutOfMemoryError
+    private static final int DEFAULT_MAX_FORKS = Runtime.getRuntime().availableProcessors() / 4;
     
     @PostConstruct
     public void init(){
@@ -35,7 +37,7 @@ public class ForkConfig {
         }
 
         if (parallelismLevel == null || parallelismLevel > DEFAULT_MAX_FORKS) {
-            log.warn("Max workers not set or set too high, using default value {}", DEFAULT_MAX_FORKS);
+            log.warn("Max forks not set or set too high, using default value {}", DEFAULT_MAX_FORKS);
             parallelismLevel = DEFAULT_MAX_FORKS;
         }
         
