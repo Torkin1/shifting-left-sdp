@@ -6,13 +6,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
@@ -20,14 +17,11 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 import it.torkin.dataminer.config.StatsConfig;
-import it.torkin.dataminer.config.WorkersConfig;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
-import it.torkin.dataminer.control.workers.Task;
-import it.torkin.dataminer.control.workers.WorkersController;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
@@ -48,10 +42,6 @@ public class StatsController implements IStatsController{
     @Autowired private IIssueController issueController;
     @Autowired private DatasetDao datasetDao;
     @Autowired private StatsConfig statsConfig;
-
-    @Autowired private PlatformTransactionManager transactionManager;
-    @Autowired private WorkersConfig workersConfig;
-    @Autowired private WorkersController workersController;
     
     @Override
     @Transactional
@@ -150,32 +140,6 @@ public class StatsController implements IStatsController{
         private Project project;
         private IssueCount issueCount;
     }
-
-    private CountIssuesBean countIssues(CountIssuesBean bean){
-        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
-        return transaction.execute(status -> {
-            Project project = bean.getIssue().getDetails().getFields().getProject();
-            bean.setProject(project);
-            IssueCount issueCount = new IssueCount();
-            issueCount.add(bean.getIssue(), bean.getDataset());
-            bean.setIssueCount(issueCount);
-            return bean;
-        });
-    }
-
-    private void collectIssueCounts(Map<String, IssueCount> countsByProject){
-        while(!workersController.isBatchEmpty()){
-            Task<CountIssuesBean> task;
-            try {
-                task = (Task<CountIssuesBean>) workersController.collect();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException("Cannot collect commit counts", e);
-            }
-            CountIssuesBean bean = task.getTaskBean();
-            countsByProject.putIfAbsent(bean.getProject().getKey(), bean.getIssueCount());
-            countsByProject.get(bean.getProject().getKey()).add(bean.getIssueCount());
-        }
-    }
     
     private void printProjectsStats(List<Dataset> datasets, ObjectWriter writer,
     File output) throws IOException{
@@ -199,10 +163,9 @@ public class StatsController implements IStatsController{
                     Iterator<Issue> issueIterator = issues.iterator();
                     while(issueIterator.hasNext()){
                         Issue issue = issueIterator.next();
-                        if (workersController.isBatchFull() || !issueIterator.hasNext()){
-                            collectIssueCounts(countByProject);
-                        }
-                        workersController.submit(new Task<>(this::countIssues, new CountIssuesBean(dataset, issue)));
+                        Project project = issue.getDetails().getFields().getProject();
+                        countByProject.putIfAbsent(project.getKey(), new IssueCount());
+                        countByProject.get(project.getKey()).add(issue, dataset);
                     }
                 }
                 // now we have filtered out issue counts by project and can proceed
