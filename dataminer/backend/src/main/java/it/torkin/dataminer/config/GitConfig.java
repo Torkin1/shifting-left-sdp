@@ -25,6 +25,9 @@ public class GitConfig {
         if (StringTools.isBlank(reposDir)){
             reposDir = dataConfig.getDir() + "/repositories";
         }
+        if (StringTools.isBlank(forksSubDirName)){
+            forksSubDirName = "/forks";
+        }
         new File(reposDir).mkdirs();
     }
     
@@ -38,6 +41,9 @@ public class GitConfig {
 
     /** Dir where repos will be stored */
     private String reposDir;
+
+    /** Subdir name where to store repo copies for forks */
+    private String forksSubDirName;
 
     /**Used to extract linked issue key in commit message
      */
@@ -64,7 +70,7 @@ public class GitConfig {
         clone.setHostname(hostname);
         clone.setLinkedIssueKeyRegexp(linkedIssueKeyRegexp);
         clone.setDefaultBranchCandidates(defaultBranchCandidates);
-        clone.setReposDir(reposDir + "/" + threadIndex);
+        clone.setReposDir(reposDir + forksSubDirName + "/" + threadIndex);
         clone.init();
         return clone;
     }

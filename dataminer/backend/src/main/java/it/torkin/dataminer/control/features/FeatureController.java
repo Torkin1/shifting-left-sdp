@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -35,7 +36,6 @@ import it.torkin.dataminer.control.dataset.processed.ProcessedIssuesBean;
 import it.torkin.dataminer.control.measurementdate.IMeasurementDateController;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
-import it.torkin.dataminer.dao.git.GitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
 import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.dao.local.MeasurementDao;
@@ -147,6 +147,26 @@ public class FeatureController implements IFeatureController{
             new File(forkConfig.getForkDir(i)).mkdirs();
         }
 
+        /**
+         * Copies repositories in each thread directory
+         */
+        for (int i = 0; i < forkConfig.getForkCount(); i ++){
+            GitConfig threadGitConfig = gitConfig.forThread(i);
+            File repoDir = new File(gitConfig.getReposDir());
+            File threadRepoDir = new File(threadGitConfig.getReposDir());
+            try {
+                // exclude forks subdirectory
+                FileUtils.copyDirectory(repoDir, threadRepoDir, pathname -> {
+                    String name = pathname.getName();
+                    String subDirName = gitConfig.getForksSubDirName();
+                    boolean accepted = !subDirName.contains(name);
+                    return accepted;
+                });                                     
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
         transaction.setReadOnly(true);
         transaction.executeWithoutResult(status -> {
@@ -163,8 +183,6 @@ public class FeatureController implements IFeatureController{
                     processedDatasetController.getFilteredIssues(processedIssuesBean);
                     Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
 
-                    Set<String> projects = new HashSet<>();
-                    
                     try(issues){
                                     
                         List<BufferedWriter> writers = new ArrayList<>();
@@ -177,24 +195,6 @@ public class FeatureController implements IFeatureController{
                         Holder<Integer> fork = new Holder<>(0);
                         issues.forEach(issue -> {
 
-                            /**
-                             * Clones one copy of guessed repository for each thread
-                             * */
-                            Project project = issue.getDetails().getFields().getProject();
-                            boolean repoCloned = !projects.add(project.getKey());
-                            if (!repoCloned){
-                                for (int i = 0; i < forkConfig.getForkCount(); i ++){
-                                    GitConfig threadGitConfig = gitConfig.forThread(i);
-                                    String repo = dataset.getGuessedRepoByProjects().get(project.getKey());
-                                    try (GitDao gitDao = new GitDao(threadGitConfig, repo)){
-                                        // opening the GitDao has the cloning of the repo as side-effect
-                                    } catch (Exception e) {
-                                        status.setRollbackOnly();
-                                        throw new RuntimeException(e);
-                                    }
-                                }
-                            }
-
                             /*
                             * Writes issues assigned to each thread in a corresponding file
                             * */
@@ -204,6 +204,7 @@ public class FeatureController implements IFeatureController{
                                 writer.newLine();
                                 fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
                             } catch (IOException e) {
+                                status.setRollbackOnly();
                                 throw new RuntimeException("Cannot write issue to miner input file", e);
                             }
                         });
