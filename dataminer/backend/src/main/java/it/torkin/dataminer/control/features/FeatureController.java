@@ -83,6 +83,9 @@ public class FeatureController implements IFeatureController{
         private final int index;
         private final TransactionTemplate transaction;
 
+        @Getter
+        private Exception exception;
+
         @Override
         public void run() {
             transaction.executeWithoutResult(status -> {
@@ -93,8 +96,10 @@ public class FeatureController implements IFeatureController{
                         File inputIssues = new File(forkConfig.getForkInputFile(index, dataset, measurementDate));
                         try (Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line))) {
                             mineFeatures(issues, dataset, measurementDate, index);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Cannot read issues from input file "+inputIssues.getAbsolutePath(), e);
+                        } catch (Exception e) {
+                            exception = e;
+                            status.setRollbackOnly();
+                            return;
                         }
                     } 
                 }
@@ -224,7 +229,7 @@ public class FeatureController implements IFeatureController{
         /**
          * Each thread processes its issues batch
          */
-        List<Thread> workers = new ArrayList<>();
+        List<MeasureFeaturesThread> workers = new ArrayList<>();
         for (int i = 0; i < forkConfig.getForkCount(); i++){
             workers.add(new MeasureFeaturesThread(i, transaction));
             workers.get(i).start();
@@ -232,8 +237,12 @@ public class FeatureController implements IFeatureController{
         }
         for (int i = 0; i < forkConfig.getForkCount(); i++){
             try {
-                workers.get(i).join();
-            } catch (InterruptedException e) {
+                MeasureFeaturesThread worker = workers.get(i);
+                worker.join();
+                if (worker.getException() != null){
+                    throw new RuntimeException("Error while measuring features", worker.getException());
+                }
+            } catch (Exception e) {
                 log.error("Error while waiting for fork {}", i, e);
             }
         }
