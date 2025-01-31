@@ -34,7 +34,7 @@ public class Commit {
     private boolean buggy;
     private Timestamp timestamp;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     private List<Issue> issues = new ArrayList<>();
 
     @ManyToOne(optional = false)
