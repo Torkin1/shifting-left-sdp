@@ -162,7 +162,7 @@ public class RawDatasetController implements IRawDatasetController{
                 Repository repository = commit.getRepository();
                 commit.setRepository(repositoryDao.save(repository));
             }
-            commitDao.saveAll(commits);
+            commits = commitDao.saveAll(commits);
             log.debug("Commit batch saved");
             commits.clear();
         });

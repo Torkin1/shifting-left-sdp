@@ -1,7 +1,9 @@
 package it.torkin.dataminer.dao.local;
 
+import java.util.List;
 import java.util.stream.Stream;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -25,6 +27,6 @@ public interface MeasurementDao extends JpaRepository<Measurement, Long> {
     Stream<Measurement> findAllWithCommitByDatasetAndProjectAndMeasurementDate(String dataset, String project, String measurementDateName);
 
     @Query("SELECT m FROM Measurement m WHERE m.commit.dataset.name = :dataset")
-    Measurement findAnyWithCommitByDataset(String dataset);
+    List<Measurement> findWithCommitByDatasetLimited(String dataset, Pageable pageable);
 
 }
