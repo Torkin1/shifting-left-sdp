@@ -171,9 +171,9 @@ public class FeatureController implements IFeatureController{
                 throw new RuntimeException(e);
             }
         }
+        log.debug("Repositories copied to thread directories");
 
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
-        transaction.setReadOnly(true);
         transaction.executeWithoutResult(status -> {
             ProcessedIssuesBean processedIssuesBean;
 
@@ -340,7 +340,7 @@ public class FeatureController implements IFeatureController{
                                             
         } else {
             // feature is not numeric, we print it as is
-            sValue = f.getValue().toString();
+            sValue = f.getValue() != null? f.getValue().toString() : measurementConfig.getPrintNanReplacement();
         }
         return sValue;
 }

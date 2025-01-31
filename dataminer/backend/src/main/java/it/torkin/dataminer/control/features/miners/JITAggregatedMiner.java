@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import it.torkin.dataminer.control.features.FeatureMiner;
@@ -17,8 +19,12 @@ import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
+import it.torkin.dataminer.dao.local.DatasetDao;
+import it.torkin.dataminer.dao.local.MeasurementDao;
 import it.torkin.dataminer.entities.dataset.Commit;
+import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.dataset.Measurement;
 import it.torkin.dataminer.entities.dataset.features.Feature;
 import it.torkin.dataminer.entities.dataset.features.FeatureAggregation;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
@@ -27,8 +33,22 @@ import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
 public class JITAggregatedMiner extends FeatureMiner {
     
     @Autowired private IIssueController issueController;
+    @Autowired private DatasetDao datasetDao;
+    @Autowired private MeasurementDao measurementDao;
+
+    private Map<String, Set<String>> aggregatedFeatureNamesByDataset = new HashMap<>();
     
-    private String buildAggregateJITFearureName(Feature<?> aggregatedFeature, String featureName, FeatureAggregation aggregation){
+    @Override
+    public void init(){
+        List<Dataset> datasets = datasetDao.findAll();
+        for (Dataset dataset : datasets){
+            Measurement prototype = measurementDao.findWithCommitByDatasetLimited(dataset.getName(), PageRequest.of(0, 1)).get(0);
+            Set<String> featureNames = prototype.getFeatures().stream().map(f -> buildAggregateJITFearureName(f.getName(), f.getAggregation())).collect(Collectors.toSet());
+            aggregatedFeatureNamesByDataset.put(dataset.getName(), featureNames);
+        }
+    }
+    
+    private String buildAggregateJITFearureName(String featureName, FeatureAggregation aggregation){
         return featureName + "-" + ((aggregation != null) ? aggregation.toString() : "");
     }
     
@@ -98,7 +118,7 @@ public class JITAggregatedMiner extends FeatureMiner {
                 Feature<?> prototype = featureRow.get(0);
                 FeatureAggregation aggregation = prototype.getAggregation();
                 Feature<?> aggregatedFeature = aggregate(featureRow, prototype.getValue(), aggregation);
-                aggregatedFeature.setName(buildAggregateJITFearureName(aggregatedFeature, featureName, aggregation));
+                aggregatedFeature.setName(buildAggregateJITFearureName(featureName, aggregation));
                 aggregatedFeatures.add(aggregatedFeature);
             }
 
@@ -110,12 +130,18 @@ public class JITAggregatedMiner extends FeatureMiner {
     @Override
     public void mine(FeatureMinerBean bean) {
         Issue issue = bean.getIssue();
-        String Dataset = bean.getDataset();
+        String dataset = bean.getDataset();
         Timestamp measurementDate = bean.getMeasurement().getMeasurementDate();
 
-        List<Commit> issueCommits = issueController.getCommits(new IssueCommitBean(issue, Dataset, measurementDate));
-        Set<Feature<?>> aggregatedFeatures = aggregateCommitFeatures(issueCommits); 
+        List<Commit> issueCommits = issueController.getCommits(new IssueCommitBean(issue, dataset, measurementDate));
+        Set<Feature<?>> aggregatedFeatures = aggregateCommitFeatures(issueCommits);
+        Set<String> minedAggregatedFeatureNames = aggregatedFeatures.stream().map(Feature::getName).collect(Collectors.toSet()); 
 
+        for (String featureName : aggregatedFeatureNamesByDataset.get(dataset)){
+            if (!minedAggregatedFeatureNames.contains(featureName)){
+                aggregatedFeatures.add(new IntegerFeature(featureName, null));
+            }
+        }
         bean.getMeasurement().getFeatures().addAll(aggregatedFeatures);
         bean.getMeasurement().getFeatures().add(new IntegerFeature(IssueFeature.NUM_COMMITS.getFullName(), issueCommits.size()));
 
