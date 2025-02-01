@@ -10,8 +10,10 @@ import it.torkin.dataminer.config.filters.SelectedProjectFilterConfig;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.entities.jira.project.Project;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class SelectedProjectsFilter extends IssueFilter{
 
     @Autowired private SelectedProjectFilterConfig config;
@@ -20,10 +22,13 @@ public class SelectedProjectsFilter extends IssueFilter{
     
     private void init(){
         selectedProjects = new HashSet<>();
-        if (config.getSelectedProjects() != null && config.getSelectedProjects().length > 0){
-            for (String project : config.getSelectedProjects()){
+        if (config.getKeys() != null){
+            for (String project : config.getKeys()){
                 selectedProjects.add(project);
             }
+        }
+        if (selectedProjects.isEmpty()){
+            log.warn("No projects selected for processing, will not exclude any projectb by key");
         }
     }
     
@@ -31,6 +36,7 @@ public class SelectedProjectsFilter extends IssueFilter{
     protected Boolean applyFilter(IssueFilterBean bean) {
         if (selectedProjects == null) init();
 
+        if (selectedProjects.isEmpty()) return true;
         Project project = bean.getIssue().getDetails().getFields().getProject();
         return selectedProjects.contains(project.getKey());
     }

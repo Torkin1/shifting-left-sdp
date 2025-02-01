@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.FileNotFoundException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -22,6 +23,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+
 import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.config.filters.LinkageFilterConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
@@ -32,6 +36,7 @@ import it.torkin.dataminer.control.dataset.processed.filters.impl.FirstCommitAft
 import it.torkin.dataminer.control.dataset.processed.filters.impl.LinkageFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.MeasurementAfterOpeningDateFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.NotMostRecentFilter;
+import it.torkin.dataminer.control.dataset.processed.filters.impl.SelectedProjectsFilter;
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
 import it.torkin.dataminer.control.dataset.stats.LinkageBean;
@@ -282,6 +287,19 @@ public class IssueFilterTest {
         issue.getDetails().getFields().setCreated(Timestamp.from(openingDate));
         
         assertFalse(measurementAfterOpeningDateFilter.apply(new IssueFilterBean(issue, "", Timestamp.from(measurementDate), false)));
+    }
+
+    @Autowired private SelectedProjectsFilter selectedProjectsFilter;
+
+    @Test
+    @Transactional
+    public void testSelectedProjectsFilter() throws JsonIOException, JsonSyntaxException, FileNotFoundException{
+        Issue issue = IssueTools.getIssueExample("AVRO-107");
+        Issue issue2 = IssueTools.getIssueExample("GROOVY-4182");
+        String dataset = "apachejit";
+
+        assertFalse(selectedProjectsFilter.apply(new IssueFilterBean(issue, dataset, null, false)));
+        assertTrue(selectedProjectsFilter.apply(new IssueFilterBean(issue2, dataset, null, false)));
     }
     
 }

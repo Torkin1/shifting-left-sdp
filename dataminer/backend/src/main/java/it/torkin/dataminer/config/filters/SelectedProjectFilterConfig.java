@@ -15,6 +15,6 @@ public class SelectedProjectFilterConfig {
     /**
      * If set, only selected projects keys will be processed
      */
-    private String[] selectedProjects;
+    private String[] keys;
 
 }
