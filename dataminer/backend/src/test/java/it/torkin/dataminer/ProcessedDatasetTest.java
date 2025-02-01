@@ -11,6 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import it.torkin.dataminer.control.dataset.IDatasetController;
 import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
@@ -21,6 +23,7 @@ import it.torkin.dataminer.control.dataset.raw.UnableToLoadCommitsException;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
+import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
 import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -34,19 +37,24 @@ public class ProcessedDatasetTest {
 
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private IDatasetController datasetController;
-    
+    @Autowired private PlatformTransactionManager transactionManager;
     @Test
-    @Transactional
+    // @Transactional
     public void getFilteredIssuesTest() throws UnableToLoadCommitsException, UnableToInitDatasourceException, UnableToCreateRawDatasetException {
 
         datasetController.createRawDataset();
         
-        ProcessedIssuesBean bean = new ProcessedIssuesBean("leveragingjit", new FirstCommitDate());
-        processedDatasetController.getFilteredIssues(bean);
+        ProcessedIssuesBean bean = new ProcessedIssuesBean("apachejit", new OneSecondBeforeFirstCommitDate());
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(status -> {
+            processedDatasetController.getFilteredIssues(bean);
         
-        log.info(bean.toString());
-        log.info("Processed issues count: " + bean.getProcessedIssues().count());
-        log.info(bean.toString());
+            log.info(bean.toString());
+            log.info("Processed issues count: " + bean.getProcessedIssues().count());
+            log.info(bean.toString());
+    
+        });
     }
 
     @Test

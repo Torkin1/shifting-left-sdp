@@ -30,6 +30,14 @@ public interface IIssueController {
     public Boolean isBuggy(IssueCommitBean bean);
 
     /**
+     * Return true if issue has at least one commit belonging to the
+     * given dataset.
+     * A measurement date can be specified to consider only the commits
+     * strictly before that date.
+     */
+    public Boolean fromDataset(IssueCommitBean bean);
+
+    /**
      * Returns the first commit of the issue according to the given
      * dataset, or null if no commits of such dataset are found on this issue.
      * @param bean

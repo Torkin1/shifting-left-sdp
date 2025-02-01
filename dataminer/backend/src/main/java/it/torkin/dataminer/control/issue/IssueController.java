@@ -120,9 +120,12 @@ public class IssueController implements IIssueController{
                 
         Issue issue = bean.getIssue();
         String dataset = bean.getDataset();
+
+        Timestamp measurementDate = bean.getMeasurementDate() != null? bean.getMeasurementDate() : TimeTools.now();
         
         return issue.getCommits().stream().anyMatch(commit -> {          
             return commit.isBuggy()
+             && !commit.getTimestamp().after(measurementDate)
              && commit.getDataset().getName().equals(dataset);
         });
     }
@@ -515,5 +518,18 @@ public class IssueController implements IIssueController{
             .filter(commit -> commit.getDataset().getName().equals(bean.getDataset()))
             .filter(commit -> !commit.getTimestamp().after(bean.getMeasurementDate()))
             .toList();
+    }
+
+    @Override
+    public Boolean fromDataset(IssueCommitBean bean) {
+        Issue issue = bean.getIssue();
+        String dataset = bean.getDataset();
+
+        Timestamp measurementDate = bean.getMeasurementDate() != null? bean.getMeasurementDate() : TimeTools.now();
+        
+        return issue.getCommits().stream().anyMatch(commit -> {          
+            return !commit.getTimestamp().after(measurementDate)
+             && commit.getDataset().getName().equals(dataset);
+        });
     }
 }

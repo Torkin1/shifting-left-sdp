@@ -18,5 +18,5 @@ import lombok.RequiredArgsConstructor;
 public class IssueCommitBean {
     @NonNull private final Issue issue;
     @NonNull private final String dataset;
-    private Timestamp measurementDate;
+    private Timestamp measurementDate = null;
 }

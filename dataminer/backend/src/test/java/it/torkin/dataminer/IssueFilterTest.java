@@ -80,7 +80,7 @@ public class IssueFilterTest {
     @Transactional
     public void testNotMostRecentFilter() throws UnableToCreateRawDatasetException{
         
-
+        // test only with available measurement dates
         datasetController.createRawDataset();
 
         List<Dataset> datasets = datasetDao.findAll();
@@ -101,6 +101,7 @@ public class IssueFilterTest {
             
             Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
                 .filter((issue) -> {
+
                     issueFilterBean.setIssue(issue);
                     issueFilterBean.setDatasetName(dataset.getName());
                     issueFilterBean.setApplyAnyway(false);
