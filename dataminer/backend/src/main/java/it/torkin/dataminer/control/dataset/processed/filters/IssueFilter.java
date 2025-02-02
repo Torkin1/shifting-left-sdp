@@ -3,6 +3,7 @@ package it.torkin.dataminer.control.dataset.processed.filters;
 import java.util.function.Function;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -11,6 +12,7 @@ import jakarta.transaction.Transactional;
  * flagged to be filtered out, in order to allow filters to update their internal state
  * (e.g. counters).
  */
+@Slf4j
 public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
     
     /**
@@ -22,8 +24,18 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
      */
     protected Object createState(IssueFilterBean bean){
         return null;
-    } 
+    }
     
+    public void init(){
+        _init();
+    }
+
+    /**
+     * Implementations can override this method to perform initialization
+     */
+    protected void _init(){};
+
+
     @Override
     @Transactional
     public final Boolean apply(IssueFilterBean bean){

@@ -20,7 +20,8 @@ public class SelectedProjectsFilter extends IssueFilter{
     
     private Set<String> selectedProjects = null;
     
-    private void init(){
+    @Override
+    protected void _init(){
         selectedProjects = new HashSet<>();
         if (config.getKeys() != null){
             for (String project : config.getKeys()){
@@ -34,7 +35,6 @@ public class SelectedProjectsFilter extends IssueFilter{
     
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
-        if (selectedProjects == null) init();
 
         if (selectedProjects.isEmpty()) return true;
         Project project = bean.getIssue().getDetails().getFields().getProject();

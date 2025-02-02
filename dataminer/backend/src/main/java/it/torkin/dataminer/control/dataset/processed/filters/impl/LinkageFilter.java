@@ -52,9 +52,7 @@ public class LinkageFilter extends IssueFilter {
         
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
-                
-        if (state.getBuggyLinkageThreshold() == null) init(state);
-        
+                        
         LinkageBean linkageBean = state.getBuggyLinkagesByDataset().get(bean.getDatasetName());
         Double buggyLinkage;
         Project project = bean.getIssue().getDetails().getFields().getProject();
@@ -93,7 +91,8 @@ public class LinkageFilter extends IssueFilter {
         return buggyLinkages;
     }
 
-    private void init(LinkageFilter.State state){
+    @Override
+    protected void _init(){
 
         datasetDao.findAll().forEach(dataset -> state.getDatasets().put(dataset.getName(), dataset));
         List<Double> buggyLinkages = loadLinkages(state);

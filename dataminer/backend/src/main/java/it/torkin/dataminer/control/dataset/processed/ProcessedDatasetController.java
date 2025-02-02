@@ -86,4 +86,9 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
                 return passesFilters(issueFilterBean, bean);
             }));
     }
+
+    @Override
+    public void initFilters() {
+        issueFilters.forEach(IssueFilter::init);
+    }
 }

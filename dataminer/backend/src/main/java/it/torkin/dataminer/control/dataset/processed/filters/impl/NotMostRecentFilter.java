@@ -99,7 +99,7 @@ public class NotMostRecentFilter extends IssueFilter{
     }
     
     @Override
-    protected void beforeApply(IssueFilterBean bean) {
+    protected void _init() {
         
         // we cache set of snoring issues to avoid multiple queries        
         if (snoringIssuesByMeasurementDateByProjectByDataset.isEmpty()){

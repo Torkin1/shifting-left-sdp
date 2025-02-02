@@ -249,6 +249,7 @@ public class DatasetController implements IDatasetController {
     @Override
     @Transactional
     public void getProcessedIssues(ProcessedIssuesBean bean) {
+        processedDatasetController.initFilters();
         processedDatasetController.getFilteredIssues(bean);
     }
 

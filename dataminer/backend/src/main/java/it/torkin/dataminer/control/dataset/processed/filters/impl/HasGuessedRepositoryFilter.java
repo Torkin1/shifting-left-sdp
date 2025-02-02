@@ -30,13 +30,16 @@ public class HasGuessedRepositoryFilter extends IssueFilter{
      * Read-only state, do not modify it unless we are initializing the filter.
      */
     private HasGuessedRepositoryFilter.State state = new HasGuessedRepositoryFilter.State();
-        
+
     @Override
-    protected Boolean applyFilter(IssueFilterBean bean) {
-        
+    protected void _init(){
         if (state.getDatasets().isEmpty()) {
             datasetDao.findAll().forEach(dataset -> state.getDatasets().put(dataset.getName(), dataset));        
         }
+    }
+        
+    @Override
+    protected Boolean applyFilter(IssueFilterBean bean) {
         
         Map<String, Dataset> datasets = state.getDatasets();
 
