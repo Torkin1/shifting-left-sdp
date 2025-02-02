@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -144,7 +145,10 @@ public class NotMostRecentFilter extends IssueFilter{
                         for (MeasurementDate measurementDate : measurementDates){
                             List<SnoringIssueEntry> snoringIssues = snoringIssuesByMeasurementDate.get(measurementDate.getName());
                             String issueKey = i.getKey();
-                            Timestamp issueMeasurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), i)).get();
+                            Optional<Timestamp> issueMeasurementDateValueOptional = measurementDate.apply(new MeasurementDateBean(dataset.getName(), i));
+                            // ignore issues with no measurement date (the processed dataset controller will discard them before firing the filters) 
+                            if (issueMeasurementDateValueOptional.isEmpty()) continue;
+                            Timestamp issueMeasurementDateValue = issueMeasurementDateValueOptional.get();
                             addToSnoringIssues(
                                 snoringIssues,
                                 new SnoringIssueEntry(issueKey, issueMeasurementDateValue),
