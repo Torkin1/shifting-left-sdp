@@ -49,7 +49,6 @@ import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.Holder;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
 import jakarta.transaction.Transactional;
-import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +81,7 @@ public class FeatureController implements IFeatureController{
         @Getter
         private final int index;
         private final TransactionTemplate transaction;
+        private final ProgressBar progressBar;
 
         @Getter
         private Exception exception;
@@ -95,7 +95,7 @@ public class FeatureController implements IFeatureController{
                     for (MeasurementDate measurementDate : measurementDates){
                         File inputIssues = new File(forkConfig.getForkInputFile(index, dataset, measurementDate));
                         try (Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line))) {
-                            mineFeatures(issues, dataset, measurementDate, index);
+                            mineFeatures(issues, dataset, measurementDate, index, progressBar);
                         } catch (Exception e) {
                             exception = e;
                             status.setRollbackOnly();
@@ -130,16 +130,7 @@ public class FeatureController implements IFeatureController{
         measurementDao.save(bean.getMeasurement());
         issueDao.save(bean.getIssue());
     }
-    
-    @Data
-    private class IssueCount{
-        private Long count = 0L;
-
-        public void add(){
-            count++;
-        }
-    }
-    
+        
     @Override
     public void mineFeatures(){
 
@@ -160,13 +151,17 @@ public class FeatureController implements IFeatureController{
             File repoDir = new File(gitConfig.getReposDir());
             File threadRepoDir = new File(threadGitConfig.getReposDir());
             try {
-                // exclude forks subdirectory
-                FileUtils.copyDirectory(repoDir, threadRepoDir, pathname -> {
-                    String name = pathname.getName();
-                    String subDirName = gitConfig.getForksSubDirName();
-                    boolean accepted = !subDirName.contains(name);
-                    return accepted;
-                });                                     
+                
+                if (!threadRepoDir.exists()){
+                    
+                    // exclude forks subdirectory
+                    FileUtils.copyDirectory(repoDir, threadRepoDir, pathname -> {
+                        String name = pathname.getName();
+                        String subDirName = gitConfig.getForksSubDirName();
+                        boolean accepted = !subDirName.contains(name);
+                        return accepted;
+                    });                                     
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -230,8 +225,9 @@ public class FeatureController implements IFeatureController{
          * Each thread processes its issues batch
          */
         List<MeasureFeaturesThread> workers = new ArrayList<>();
+        ProgressBar progressBar = new ProgressBar("Measuring issues", -1);
         for (int i = 0; i < forkConfig.getForkCount(); i++){
-            workers.add(new MeasureFeaturesThread(i, transaction));
+            workers.add(new MeasureFeaturesThread(i, transaction, progressBar));
             workers.get(i).start();
             
         }
@@ -247,19 +243,16 @@ public class FeatureController implements IFeatureController{
             }
         }
 
-
+        log.info("measured {} issues", progressBar.getCurrent());
+        progressBar.close();
         
     }
 
-    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate, int threadIndex){
-        try( issues;
-        ProgressBar progressBar = new ProgressBar("Measuring issues", -1)){
+    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate, int threadIndex, ProgressBar progressBar){
+        try(issues){
         
-        IssueCount issueCount = new IssueCount();
         issues.forEach( issue -> {
             
-            progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
-
             // at this point we are measuring issues with an available measurement date
             Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
 
@@ -278,18 +271,13 @@ public class FeatureController implements IFeatureController{
             saveMeasurement(bean);
 
             progressBar.step();
-            issueCount.add();
+            progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
 
 
         });
         
-        log.info("measured {} issues", issueCount.getCount());
     }
 }
-
-    private boolean measurementPrintExists(){
-        return new File(measurementConfig.getDir()).listFiles().length > 0;
-    }
 
     private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate){
         return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.ISSUE)).exists();
