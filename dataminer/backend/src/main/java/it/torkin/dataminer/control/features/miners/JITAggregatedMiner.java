@@ -43,7 +43,9 @@ public class JITAggregatedMiner extends FeatureMiner {
         List<Dataset> datasets = datasetDao.findAll();
         for (Dataset dataset : datasets){
             Measurement prototype = measurementDao.findWithCommitByDatasetLimited(dataset.getName(), PageRequest.of(0, 1)).get(0);
-            Set<String> featureNames = prototype.getFeatures().stream().map(f -> buildAggregateJITFearureName(f.getName(), f.getAggregation())).collect(Collectors.toSet());
+            Set<String> featureNames = prototype.getFeatures().stream()
+                .filter(f -> f.getAggregation() != null)
+                .map(f -> buildAggregateJITFearureName(f.getName(), f.getAggregation())).collect(Collectors.toSet());
             aggregatedFeatureNamesByDataset.put(dataset.getName(), featureNames);
         }
     }
