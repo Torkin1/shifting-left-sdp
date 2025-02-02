@@ -20,10 +20,11 @@ public class PriorityMiner extends FeatureMiner{
 
     @Autowired private IIssueController issueController;
 
-    
+    private final String FEATURE_NAME = IssueFeature.PRIORITY.getFullName("value");
+
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.PRIORITY.getFullName());
+        return Set.of(FEATURE_NAME);
     }
 
     @Override
@@ -36,7 +37,7 @@ public class PriorityMiner extends FeatureMiner{
             .map(IssuePriority::getName)
             .orElse("");
         
-        bean.getMeasurement().getFeatures().add(new StringFeature(IssueFeature.PRIORITY.getFullName(), priority));
+        bean.getMeasurement().getFeatures().add(new StringFeature(FEATURE_NAME, priority));
 
     }
     

@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TemporalLocalityMiner extends FeatureMiner{
 
     private static final String WEIGHTED = IssueFeature.TEMPORAL_LOCALITY.getFullName("weighted");
+    private static final String TEMPERATURE = IssueFeature.TEMPORAL_LOCALITY.getFullName("temperature");
     
     private Map<String, Map<String, Long>> issuesInWindowByProjectByDataset = new HashMap<>();
     private Map<String, Map<String, Long>> issuesCountByProjectByDataset = new HashMap<>();
@@ -114,7 +115,7 @@ public class TemporalLocalityMiner extends FeatureMiner{
         
         // store temperature in measurement
         bean.getMeasurement().getFeatures().add(new DoubleFeature(
-            IssueFeature.TEMPORAL_LOCALITY.getFullName(),
+            TEMPERATURE,
             temperature.getValue()));
         bean.getMeasurement().getFeatures().add(new DoubleFeature(
             WEIGHTED,
@@ -124,7 +125,7 @@ public class TemporalLocalityMiner extends FeatureMiner{
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.TEMPORAL_LOCALITY.getFullName(), WEIGHTED);
+        return Set.of(TEMPERATURE, WEIGHTED);
     }
 
     @Override

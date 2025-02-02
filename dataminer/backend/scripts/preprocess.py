@@ -17,9 +17,9 @@ def preprocess(inputs):
         # List of columns to keep
         # List of columns to keep (updated header name included)
         columns_to_keep = [
-            "MaxSimilarity_Levenshtein_Title",
-            "AvgSimilarity_TFIDFCosine_Title",  # Updated header name
-            "AvgSimilarity_BagOfWords_Cosine_Text"
+            "R2R:MaxSimilarity_Levenshtein_Title",
+            "R2R:AvgSimilarity_TFIDFCosine_Title",  # Updated header name
+            "R2R:AvgSimilarity_BagOfWords_Cosine_Text"
         ]
 
         # Read the CSV
@@ -33,19 +33,6 @@ def preprocess(inputs):
         prediction_target = input_file_tokens[-1]
 
         if prediction_target != "JIT":
-
-            # Rename the specified column
-            df.rename(columns={"AvgSimilarity_TF-IDF_Cosine_Title": "AvgSimilarity_TFIDFCosine_Title"}, inplace=True)
-
-            # Add prefix to all headers containing "Similarity"
-            df.columns = [
-                f"R2R:buggy_similarity-{col}" if "Similarity" in col else col for col in df.columns
-            ]
-
-            # Update the columns_to_keep with the prefixed names
-            columns_to_keep_prefixed = [
-                f"R2R:buggy_similarity-{col}" if "Similarity" in col else col for col in columns_to_keep
-            ]
 
             # Filter out columns containing "Similarity" that are not in columns_to_keep
             columns_to_remove = [

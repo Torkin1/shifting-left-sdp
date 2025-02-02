@@ -20,6 +20,8 @@ public class TypeMiner extends FeatureMiner{
 
     @Autowired private IIssueController issueController;
 
+    private final String FEATURE_NAME = IssueFeature.TYPE.getFullName("value");
+
     @Override
     public void mine(FeatureMinerBean bean) {
 
@@ -30,12 +32,12 @@ public class TypeMiner extends FeatureMiner{
             .map(IssueType::getName)
             .orElse("");
         
-        bean.getMeasurement().getFeatures().add(new StringFeature(IssueFeature.TYPE.getFullName(), type));
+        bean.getMeasurement().getFeatures().add(new StringFeature(FEATURE_NAME, type));
     }
 
     @Override
     protected Set<String> getFeatureNames() {
-        return Set.of(IssueFeature.TYPE.getFullName());
+        return Set.of(FEATURE_NAME);
     }
     
 }
