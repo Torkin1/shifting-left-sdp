@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * #193: Project Code Quality Miner.
- * We resort to a remote miner since PMD library has incompatible dependencies
+ * We resort to an external binary since PMD library has incompatible dependencies
  * with hibernate.
  */
 @Slf4j
@@ -77,7 +77,6 @@ public class CodeQualityMiner extends FeatureMiner{
         String dataset = bean.getDataset();
         String repository = repoByProjectByDataset.get(dataset).get(project);
 
-        // fetch smells count from remote miner
         CodeSmellsCountRequest request = CodeSmellsCountRequest.newBuilder()
             .setMeasurementDate(com.google.protobuf.Timestamp.newBuilder()
                 .setSeconds(measurementDate.getTime() / 1000)
@@ -145,7 +144,6 @@ public class CodeQualityMiner extends FeatureMiner{
             smellsCount = -1;
         }
 
-        System.out.println("smellscount: "+smellsCount);
         return CodeSmellsCountResponse.newBuilder()
             .setSmellsCount(smellsCount)
             .build();
