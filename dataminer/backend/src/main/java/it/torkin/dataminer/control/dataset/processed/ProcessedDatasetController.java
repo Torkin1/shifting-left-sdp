@@ -24,6 +24,8 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     
     @Autowired private IssueDao issueDao;
     @Autowired private IssueFilterConfig filterConfig;
+
+    private boolean filtersInitialized = false;
     
     @Autowired(required = false)
     private List<IssueFilter> issueFilters = new ArrayList<>();
@@ -63,6 +65,11 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     @Override
     @Transactional
     public void getFilteredIssues(ProcessedIssuesBean bean) {
+        
+        if (!filtersInitialized) {
+            initFilters();
+            filtersInitialized = true;
+        }
         
         // bean object is shared among filter invocations on all issues
         // for this query
