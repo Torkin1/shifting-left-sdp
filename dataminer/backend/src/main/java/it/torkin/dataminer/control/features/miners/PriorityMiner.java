@@ -20,7 +20,7 @@ public class PriorityMiner extends FeatureMiner{
 
     @Autowired private IIssueController issueController;
 
-    private final String FEATURE_NAME = IssueFeature.PRIORITY.getFullName("value");
+    private final String FEATURE_NAME = IssueFeature.PRIORITY.getFullName();
 
     @Override
     protected Set<String> getFeatureNames() {

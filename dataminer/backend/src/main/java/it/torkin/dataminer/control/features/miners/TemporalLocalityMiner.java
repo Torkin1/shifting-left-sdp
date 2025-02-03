@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TemporalLocalityMiner extends FeatureMiner{
 
     private static final String WEIGHTED = IssueFeature.TEMPORAL_LOCALITY.getFullName("weighted");
-    private static final String TEMPERATURE = IssueFeature.TEMPORAL_LOCALITY.getFullName("temperature");
+    private static final String TEMPERATURE = IssueFeature.TEMPORAL_LOCALITY.getFullName();
     
     private Map<String, Map<String, Long>> issuesInWindowByProjectByDataset = new HashMap<>();
     private Map<String, Map<String, Long>> issuesCountByProjectByDataset = new HashMap<>();

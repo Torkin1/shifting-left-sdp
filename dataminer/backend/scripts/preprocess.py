@@ -17,9 +17,9 @@ def preprocess(inputs):
         # List of columns to keep
         # List of columns to keep (updated header name included)
         columns_to_keep = [
-            "R2R:MaxSimilarity_Levenshtein_Title",
-            "R2R:AvgSimilarity_TFIDFCosine_Title",  # Updated header name
-            "R2R:AvgSimilarity_BagOfWords_Cosine_Text"
+            "R2R:buggy_similarity-MaxSimilarity_Levenshtein_Title",
+            "R2R:buggy_similarity-AvgSimilarity_TFIDFCosine_Title", 
+            "R2R:buggy_similarity-AvgSimilarity_BagOfWords_Cosine_Text"
         ]
 
         # Read the CSV
@@ -36,7 +36,7 @@ def preprocess(inputs):
 
             # Filter out columns containing "Similarity" that are not in columns_to_keep
             columns_to_remove = [
-                col for col in df.columns if "Similarity" in col and col not in columns_to_keep_prefixed
+                col for col in df.columns if "Similarity" in col and col not in columns_to_keep
             ]
             df_filtered = df.drop(columns=columns_to_remove)
 

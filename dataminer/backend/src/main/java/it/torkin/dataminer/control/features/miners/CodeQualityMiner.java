@@ -116,7 +116,6 @@ public class CodeQualityMiner extends FeatureMiner{
             Date measurementDate = Date.from(Instant.ofEpochSecond(
                 request.getMeasurementDate().getSeconds(),
                 request.getMeasurementDate().getNanos()));
-            System.out.println("requested to measure code quality of repo "+request.getRepoCoordinates().getName()+ " at " +measurementDate);
             gitDao.checkout(measurementDate);
 
             File repository = new File(threadGitConfig.getReposDir() + "/" + request.getRepoCoordinates().getName());

@@ -20,7 +20,7 @@ public class TypeMiner extends FeatureMiner{
 
     @Autowired private IIssueController issueController;
 
-    private final String FEATURE_NAME = IssueFeature.TYPE.getFullName("value");
+    private final String FEATURE_NAME = IssueFeature.TYPE.getFullName();
 
     @Override
     public void mine(FeatureMinerBean bean) {
