@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,22 +89,21 @@ public class FeatureController implements IFeatureController{
 
         @Override
         public void run() {
-            transaction.executeWithoutResult(status -> {
                 List<Dataset> datasets = datasetDao.findAll();
                 List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
                 for (Dataset dataset : datasets){
                     for (MeasurementDate measurementDate : measurementDates){
                         File inputIssues = new File(forkConfig.getForkInputFile(index, dataset, measurementDate));
                         try (Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line))) {
-                            mineFeatures(issues, dataset, measurementDate, index, progressBar);
+                            transaction.executeWithoutResult(status ->{
+                                mineFeatures(issues, dataset, measurementDate, index, progressBar, transaction);
+                            });
                         } catch (Exception e) {
                             exception = e;
-                            status.setRollbackOnly();
                             return;
                         }
                     } 
                 }
-            });
         }
 
         
@@ -248,34 +248,38 @@ public class FeatureController implements IFeatureController{
         
     }
 
-    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate, int threadIndex, ProgressBar progressBar){
+    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate, int threadIndex, ProgressBar progressBar, TransactionTemplate transaction){
         try(issues){
         
-        issues.forEach( issue -> {
-            
-            // at this point we are measuring issues with an available measurement date
-            Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
+            Iterator<Issue> iterator = issues.iterator();
+            while (iterator.hasNext()){                
 
-            // update already existing measurements instead of replacing it with a new one
-            Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
-            if (measurement == null){
-                measurement = new Measurement();
-                measurement.setMeasurementDate(measurementDateValue);
-                measurement.setMeasurementDateName(measurementDate.getName());
-                measurement.setIssue(issue);
-                measurement.setDataset(dataset);
+                    Issue issue = iterator.next();
+                
+                    // at this point we are measuring issues with an available measurement date
+                    Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
+
+                    // update already existing measurements instead of replacing it with a new one
+                    Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
+                    if (measurement == null){
+                        measurement = new Measurement();
+                        measurement.setMeasurementDate(measurementDateValue);
+                        measurement.setMeasurementDateName(measurementDate.getName());
+                        measurement.setIssue(issue);
+                        measurement.setDataset(dataset);
+                    }
+
+                    FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, threadIndex);
+                    try{
+                        doMeasurements(bean);
+                        saveMeasurement(bean);                    
+                    } catch (Exception e) {
+                        throw new RuntimeException("Cannot measure features", e);
+                    }
+
+                    progressBar.step();
+                    progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
             }
-
-            FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, threadIndex);
-            doMeasurements(bean);
-            saveMeasurement(bean);
-
-            progressBar.step();
-            progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
-
-
-        });
-        
     }
 }
 
@@ -284,26 +288,29 @@ public class FeatureController implements IFeatureController{
     }
 
     @Override
-    @Transactional
     public void printMeasurements(PrintMeasurementsBean bean){
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        transaction.setReadOnly(true);
         List<Dataset> datasets = datasetDao.findAll();
         List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
         for (Dataset dataset : datasets){
-            Set<Project> projects = projectDao.findAllByDataset(dataset.getName());
+            Set<Project> projects = transaction.execute(status -> projectDao.findAllByDataset(dataset.getName()) );
             for (Project project : projects){
                 for (MeasurementDate measurementDate : measurementDates){
-                    try {
-                        if (measurementPrintExists(dataset, project, measurementDate)){
-                            log.info("Measurements already printed for {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName());
+                    transaction.executeWithoutResult(status -> {
+                        try {
+                            if (measurementPrintExists(dataset, project, measurementDate)){
+                                log.info("Measurements already printed for {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName());
+                            }
+                            else {
+                                printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
+                                printCommitMeasurements(dataset, project, measurementDate);
+                            }
+                        } catch (IOException e) {
+                            
+                            throw new RuntimeException("Cannot print measurements", e);
                         }
-                        else {
-                            printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
-                            printCommitMeasurements(dataset, project, measurementDate);
-                        }
-                    } catch (IOException e) {
-                        
-                        throw new RuntimeException("Cannot print measurements", e);
-                    }
+                    });
                 }
             }
         }
