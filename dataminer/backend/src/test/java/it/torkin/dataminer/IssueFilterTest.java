@@ -29,6 +29,7 @@ import com.google.gson.JsonSyntaxException;
 import it.torkin.dataminer.config.DatasourceGlobalConfig;
 import it.torkin.dataminer.config.filters.LinkageFilterConfig;
 import it.torkin.dataminer.control.dataset.IDatasetController;
+import it.torkin.dataminer.control.dataset.processed.IProcessedDatasetController;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.dataset.processed.filters.impl.ExclusiveBuggyCommitsOnlyFilter;
@@ -75,6 +76,7 @@ public class IssueFilterTest {
 
     @Autowired private DatasourceGlobalConfig datasourceGlobalConfig;
     @Autowired private LinkageFilterConfig linkageFilterConfig;
+    @Autowired private IProcessedDatasetController processedDatasetController;
 
     @Test
     @Transactional
@@ -82,6 +84,7 @@ public class IssueFilterTest {
         
         // test only with available measurement dates
         datasetController.createRawDataset();
+        processedDatasetController.initFilters();
 
         List<Dataset> datasets = datasetDao.findAll();
         for (Dataset dataset : datasets){
