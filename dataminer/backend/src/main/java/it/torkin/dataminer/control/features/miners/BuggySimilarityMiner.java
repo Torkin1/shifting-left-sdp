@@ -20,7 +20,6 @@ import it.torkin.dataminer.nlp.Request.NlpIssueRequest;
 import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityScores;
 import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityVariantsRequest;
 import it.torkin.dataminer.nlp.Similarity.NlpIssueSimilarityVariantsResponse;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -38,7 +37,6 @@ public class BuggySimilarityMiner extends FeatureMiner{
 
 
     @Override
-    @Transactional
     public void init() throws UnableToInitNLPFeaturesMinerException {
 
         // disable miner if remote is not available

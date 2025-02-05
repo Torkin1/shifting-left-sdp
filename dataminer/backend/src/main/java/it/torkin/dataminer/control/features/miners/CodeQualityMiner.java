@@ -52,7 +52,6 @@ public class CodeQualityMiner extends FeatureMiner{
     @Autowired private ProjectCodeQualityConfig projectCodeQualityConfig;
     
     @Override
-    @Transactional
     public void init() throws Exception {
         
         // caches all project-repo mappings for every dataset
@@ -67,7 +66,6 @@ public class CodeQualityMiner extends FeatureMiner{
     }
 
     @Override
-    @Transactional
     public void mine(FeatureMinerBean bean) {
         
         Integer smellsCount;

@@ -19,7 +19,6 @@ import it.torkin.dataminer.control.issue.IssueMeasurementDateBean;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.toolbox.Holder;
-import jakarta.transaction.Transactional;
 
 /**
  * Implements feature tracked by #148
@@ -36,7 +35,6 @@ public class AssigneeMiner extends FeatureMiner{
     @Autowired private ProcessedDatasetController processedDatasetController;
 
     @Override
-    @Transactional
     public void mine(FeatureMinerBean bean) {
 
         Double anfic;
