@@ -64,6 +64,8 @@ public class NotMostRecentFilter extends IssueFilter{
     @Autowired private DatasetDao datasetDao;
     @Autowired private ProjectDao projectDao;
 
+    @Autowired private SelectedProjectsFilter selectedProjectsFilter;
+
     /**
      * The following attributes are the shared state of the filter.
      * They must be initialized before the filter is applied and
@@ -84,11 +86,11 @@ public class NotMostRecentFilter extends IssueFilter{
             snoringIssues.add(snoringIssue);
             added = true;
         } 
-        if (!snoringIssue.getTimestamp().after(snoringIssues.get(0).getTimestamp())) {
+        if (snoringIssue.getTimestamp().after(snoringIssues.get(0).getTimestamp())) {
             snoringIssues.set(0, snoringIssue);
             added = true;
         };
-        if (added == true){
+        if (added){
             snoringIssues.sort((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()));
         }
         return added;
@@ -134,7 +136,10 @@ public class NotMostRecentFilter extends IssueFilter{
                              
                 }
 
-                Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
+                // applies measurement date to all issues
+                selectedProjectsFilter._init();
+                Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
+                        .filter(i -> selectedProjectsFilter.applyFilter(new IssueFilterBean(i, null, null, true)));
                 try(issues){
                     Map<String, Map<String, List<SnoringIssueEntry>>> snoringIssuesByMeasurementDateByProject = 
                         snoringIssuesByMeasurementDateByProjectByDataset.get(dataset.getName());

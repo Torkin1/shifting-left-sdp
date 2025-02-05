@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -94,10 +95,8 @@ public class FeatureController implements IFeatureController{
                 for (Dataset dataset : datasets){
                     for (MeasurementDate measurementDate : measurementDates){
                         File inputIssues = new File(forkConfig.getForkInputFile(index, dataset, measurementDate));
-                        try (Stream<Issue> issues = Files.lines(inputIssues.toPath()).map(line -> issueDao.findByKey(line))) {
-                            transaction.executeWithoutResult(status ->{
-                                mineFeatures(issues, dataset, measurementDate, index, progressBar, transaction);
-                            });
+                        try (Stream<String> issuekeys = Files.lines(inputIssues.toPath())) {
+                            mineFeatures(issuekeys, dataset, measurementDate, index, progressBar, transaction);
                         } catch (Exception e) {
                             exception = e;
                             return;
@@ -166,9 +165,10 @@ public class FeatureController implements IFeatureController{
                 throw new RuntimeException(e);
             }
         }
-        log.debug("Repositories copied to thread directories");
+        log.info("Repositories copied to thread directories");
 
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        transaction.setReadOnly(true);
         transaction.executeWithoutResult(status -> {
             ProcessedIssuesBean processedIssuesBean;
 
@@ -219,6 +219,7 @@ public class FeatureController implements IFeatureController{
                 }
             }
         });
+        log.info("Issues divided among threads");
 
 
         /**
@@ -231,6 +232,7 @@ public class FeatureController implements IFeatureController{
             workers.get(i).start();
             
         }
+        log.info("Threads started");
         for (int i = 0; i < forkConfig.getForkCount(); i++){
             try {
                 MeasureFeaturesThread worker = workers.get(i);
@@ -248,13 +250,20 @@ public class FeatureController implements IFeatureController{
         
     }
 
-    private void mineFeatures(Stream<Issue> issues, Dataset dataset, MeasurementDate measurementDate, int threadIndex, ProgressBar progressBar, TransactionTemplate transaction){
-        try(issues){
-        
-            Iterator<Issue> iterator = issues.iterator();
+    private void mineFeatures(Stream<String> issuekeys, Dataset dataset, MeasurementDate measurementDate, int threadIndex, ProgressBar progressBar, TransactionTemplate transaction){
+
+        TransactionTemplate saveMeasurementTransaction = new TransactionTemplate(transactionManager);
+        saveMeasurementTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
+
+        log.info("Thread {} mining issues of {} at {}", threadIndex, dataset.getName(), measurementDate.getName());
+        Iterator<String> iterator = issuekeys.iterator();
+        transaction.executeWithoutResult(status -> {
+
             while (iterator.hasNext()){                
 
-                    Issue issue = iterator.next();
+
+                    String issuekey = iterator.next();
+                    Issue issue =  issueDao.findByKey(issuekey);
                 
                     // at this point we are measuring issues with an available measurement date
                     Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
@@ -272,15 +281,17 @@ public class FeatureController implements IFeatureController{
                     FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, threadIndex);
                     try{
                         doMeasurements(bean);
-                        saveMeasurement(bean);                    
+                        saveMeasurementTransaction.executeWithoutResult(s -> saveMeasurement(bean) );
                     } catch (Exception e) {
                         throw new RuntimeException("Cannot measure features", e);
                     }
 
                     progressBar.step();
                     progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
+
+
             }
-    }
+        });
 }
 
     private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate){

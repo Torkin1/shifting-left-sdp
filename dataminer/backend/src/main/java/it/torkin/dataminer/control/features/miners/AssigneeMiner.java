@@ -51,12 +51,12 @@ public class AssigneeMiner extends FeatureMiner{
         processedDatasetController.getFilteredIssues(processedIssuesBean);
         try(Stream<Issue> issues =  processedIssuesBean.getProcessedIssues()){
             issues
+            // only pick issues of same dataset and project
+            .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
             // exclude the issue to be measured
             .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
             // only pick issues with measurement date before or equal the measurement date of this issue
             .filter(i -> !issueController.isAfter(new IssueMeasurementDateBean(bean.getDataset(), i, bean.getIssue(), bean.getMeasurementDate())))
-            // only pick issues of same dataset and project
-            .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
             .forEach(i -> {
                 // count total project issues in dataset prior to measurement date
                 totalIssues.setValue(totalIssues.getValue() + 1);

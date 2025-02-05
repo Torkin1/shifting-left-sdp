@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import it.torkin.dataminer.entities.dataset.Measurement;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Mines a set of features from a given issue using the provided measurement
@@ -16,6 +17,7 @@ import it.torkin.dataminer.entities.dataset.Measurement;
  * Feature is mined only if it has not been already mined for the
  * related measurement date.
  */
+@Slf4j
 public abstract class FeatureMiner implements Consumer<FeatureMinerBean>{
 
     public void init() throws Exception{}
@@ -43,6 +45,7 @@ public abstract class FeatureMiner implements Consumer<FeatureMinerBean>{
         measurement.getFeatures().forEach(f -> measurementFeatureNames.add(f.getName()));
         if (!measurementFeatureNames.containsAll(featureNames)){
             measurement.getFeatures().removeIf(f -> featureNames.contains(f.getName()));
+            // log.info("{} on issue {}", getClass().getSimpleName(), bean.getIssue().getKey());
             this.mine(bean);
         }
     }

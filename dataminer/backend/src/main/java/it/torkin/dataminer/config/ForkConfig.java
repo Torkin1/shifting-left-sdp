@@ -28,8 +28,9 @@ public class ForkConfig {
 
     // we further limit number of cores usable since some miners can spawn processes and we could
     // incur into an OutOfMemoryError
-    private static final int DEFAULT_MAX_FORKS = Runtime.getRuntime().availableProcessors() / 4;
-    
+    // private static final int DEFAULT_MAX_FORKS = Runtime.getRuntime().availableProcessors() / 4;
+    private static final int DEFAULT_MAX_FORKS = Runtime.getRuntime().availableProcessors() / 2;
+
     @PostConstruct
     public void init(){
         if (StringTools.isBlank(dir)){
