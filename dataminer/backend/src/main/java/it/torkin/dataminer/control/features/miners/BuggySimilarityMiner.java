@@ -90,6 +90,9 @@ public class BuggySimilarityMiner extends FeatureMiner{
             });
         } catch (Exception e){
             log.error("cannot mine buggy similarity for issue {}", bean.getIssue().getKey(), e);
+            for (String name : featureNames){
+                bean.getMeasurement().getFeatures().add(new DoubleFeature(name, Double.NaN));
+            }
         }
 
 
