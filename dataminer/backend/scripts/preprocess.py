@@ -15,7 +15,6 @@ def preprocess(inputs):
         input_file = os.path.join(INPUT_DIR, input_file)
 
         # List of columns to keep
-        # List of columns to keep (updated header name included)
         columns_to_keep = [
             "R2R:buggy_similarity-MaxSimilarity_Levenshtein_Title",
             "R2R:buggy_similarity-AvgSimilarity_TFIDFCosine_Title", 
@@ -41,7 +40,7 @@ def preprocess(inputs):
             df_filtered = df.drop(columns=columns_to_remove)
 
             # Delete the specified column
-            df_filtered.drop(columns=["Internal_Temperature:activities-work_items_Count"], errors='ignore', inplace=True)
+            # df_filtered.drop(columns=["Internal_Temperature:activities-work_items_Count"], errors='ignore', inplace=True)
 
             # Save the resulting dataframe to a new CSV
             df_filtered.to_csv(output_file, index=False)

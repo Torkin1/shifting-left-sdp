@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+# 
+# Denormalize the preprocessed data by reversing the log transformation.
 
 import csv
 import math
