@@ -94,6 +94,7 @@ public class FeatureController implements IFeatureController{
                 List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
                 for (Dataset dataset : datasets){
                     for (MeasurementDate measurementDate : measurementDates){
+                        log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
                         File inputIssues = new File(forkConfig.getForkInputFile(index, dataset, measurementDate));
                         try (Stream<String> issuekeys = Files.lines(inputIssues.toPath())) {
                             mineFeatures(issuekeys, dataset, measurementDate, index, progressBar, transaction);
@@ -175,9 +176,7 @@ public class FeatureController implements IFeatureController{
             // prepare inputs for forks
             for (Dataset dataset : datasets) {
                 for (MeasurementDate measurementDate : measurementDates) {
-                    
-                    log.info("Measuring issues according to {} at {}", dataset.getName(), measurementDate.getName());
-    
+
                     // collect processed issue
                     processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
                     processedDatasetController.getFilteredIssues(processedIssuesBean);
@@ -294,8 +293,8 @@ public class FeatureController implements IFeatureController{
         });
 }
 
-    private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate){
-        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.ISSUE)).exists();
+    private boolean measurementPrintExists(Dataset dataset, Project project, MeasurementDate measurementDate, PredictionScope predictionScope){
+        return new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), predictionScope)).exists();
     }
 
     @Override
@@ -310,11 +309,16 @@ public class FeatureController implements IFeatureController{
                 for (MeasurementDate measurementDate : measurementDates){
                     transaction.executeWithoutResult(status -> {
                         try {
-                            if (measurementPrintExists(dataset, project, measurementDate)){
-                                log.info("Measurements already printed for {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName());
+                            if (measurementPrintExists(dataset, project, measurementDate, PredictionScope.ISSUE)){
+                                log.info("Measurements already printed for {} {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.ISSUE);
                             }
                             else {
                                 printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
+                            }
+                            if (measurementPrintExists(dataset, project, measurementDate, PredictionScope.COMMIT)){
+                                log.info("Measurements already printed for {} {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.COMMIT);
+                            }
+                            else {
                                 printCommitMeasurements(dataset, project, measurementDate);
                             }
                         } catch (IOException e) {
