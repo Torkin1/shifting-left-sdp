@@ -357,18 +357,20 @@ public class FeatureController implements IFeatureController{
     
         private void printIssueMeasurements(Dataset dataset, Project project, MeasurementDate measurementDate, IssueFeature target) throws IOException{
                             
-            File outputFile = new File(measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE));
+        String outputFileName = measurementConfig.getOutputFileName(dataset.getName(), project.getKey(), measurementDate.getName(), MeasurementConfig.PredictionScope.ISSUE);
+        File outputFile = new File(outputFileName);
             CsvMapper mapper = new CsvMapper();
             Holder<CsvSchema> schema = new Holder<>();
             Holder<ObjectWriter> writer = new Holder<>();
             Holder<SequenceWriter> sequenceWriter = new Holder<>();
+            Set<String> featureNames = new HashSet<>();
             try (Stream<Measurement> measurements = measurementDao.findAllByProjectAndDatasetAndMeasurementDateName(project.getKey(), dataset.getName(), measurementDate.getName())){
                 measurements.forEach(measurement -> {
 
                     try {
                         if (schema.getValue() == null){
                             // Creates csv schema using a measurement as prototype 
-                            Set<String> featureNames = getFeatureNames(measurement.getFeatures());
+                            featureNames.addAll(getFeatureNames(measurement.getFeatures()));
                             schema.setValue(createCsvSchema(featureNames, target));
                             writer.setValue(mapper.writer(schema.getValue()));
                             sequenceWriter.setValue(writer.getValue().writeValues(outputFile));
@@ -376,6 +378,10 @@ public class FeatureController implements IFeatureController{
 
                         Map<String, Object> row = new LinkedHashMap<>();
                         measurement.getFeatures().forEach(f -> {
+                            if (!featureNames.contains(f.getName())){
+                                log.warn("skipping feature with name {} not in prototype for {}", f.getName(), outputFileName);
+                                return;
+                            }
                             String sValue;
                             sValue = serializeFeature(f);
                             row.put(f.getName(), sValue);
