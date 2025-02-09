@@ -28,6 +28,13 @@ def preprocess(inputs):
         df.columns = [
             col if col.startswith("JIT:") else col.replace(" ", "_") for col in df.columns
         ]
+        
+        # Convert all columns to string dtype to ensure compatibility with "?"
+        df = df.astype(str)
+        
+        # Fill empty cells with "?"
+        df.fillna("?", inplace=True)
+
         input_file_tokens = input_file.split("_")
         prediction_target = input_file_tokens[-1]
 
