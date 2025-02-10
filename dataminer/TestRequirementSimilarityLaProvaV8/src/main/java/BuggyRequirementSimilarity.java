@@ -14,7 +14,7 @@ public class BuggyRequirementSimilarity {
 
     public static final String JSON_FILE_PATH = "./data/requirements.json";
     
-    public static final Set<String> METHODS = Set.of("TFIDFCosine", "Jaccard", "EuclideanDistance");
+    public static final Set<String> METHODS = Set.of("TF-IDF_Cosine", "Jaccard", "EuclideanDistance", "BagOfWords_Cosine", "ExactMatch", "DiceCoefficient", "Hamming", "OverlappingCoefficient", "Levenshtein", "CommonTokenOverlap");
     public static final Set<String> FIELDS = Set.of("Title", "Text");
     public static final Set<String> AGGREGATION = Set.of("MaxSimilarity", "AvgSimilarity");
 
@@ -35,7 +35,7 @@ public class BuggyRequirementSimilarity {
     ));
 
     private static String buildVariantName(String method, String field, String aggregation) {
-        return method + "_" + field + "_" + aggregation;
+        return aggregation + "_" + method + "_" + field;
     }
 
     public static List<String> getVariantNames(){
