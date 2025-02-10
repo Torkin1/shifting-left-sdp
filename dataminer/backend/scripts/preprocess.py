@@ -17,7 +17,7 @@ def preprocess(inputs):
         # List of columns to keep
         columns_to_keep = [
             "R2R:buggy_similarity-MaxSimilarity_Levenshtein_Title",
-            "R2R:buggy_similarity-AvgSimilarity_TFIDFCosine_Title", 
+            "R2R:buggy_similarity-AvgSimilarity_TF-IDF_Cosine_Title", 
             "R2R:buggy_similarity-AvgSimilarity_BagOfWords_Cosine_Text"
         ]
 
