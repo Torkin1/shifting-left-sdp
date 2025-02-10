@@ -44,6 +44,31 @@ public class JITAggregatedMiner extends FeatureMiner {
         for (Dataset dataset : datasets){
             Measurement prototype = measurementDao.findWithCommitByDatasetLimited(dataset.getName(), PageRequest.of(0, 1)).get(0);
             Set<String> featureNames = prototype.getFeatures().stream()
+                    // DELETE ME
+                    /*
+                    .peek(feature -> {
+                        if(feature.getName().contains("fix")){
+                            feature.setAggregation(FeatureAggregation.COUNT_TRUE);
+                        } else if (feature.getName().contains("author_date")){
+                            feature.setAggregation(FeatureAggregation.DURATION);
+                        } else if (feature.getName().contains("la")
+                                || feature.getName().contains("ld")){
+                            feature.setAggregation(FeatureAggregation.SUM);
+                        } else if (feature.getName().contains("nf")
+                                || feature.getName().contains("nd")
+                                || feature.getName().contains("ns")
+                                || feature.getName().contains("ent")
+                                || feature.getName().contains("ndev")
+                                || feature.getName().contains("nuc")){
+                            feature.setAggregation(FeatureAggregation.MAX);
+                        } else if (feature.getName().contains("age")
+                                || feature.getName().contains("aexp")
+                                || feature.getName().contains("arexp")
+                                || feature.getName().contains("asexp")){
+                            feature.setAggregation(FeatureAggregation.MIN);
+                        }
+                    })
+                     */
                 .filter(f -> f.getAggregation() != null)
                 .map(f -> buildAggregateJITFearureName(f.getName(), f.getAggregation())).collect(Collectors.toSet());
             aggregatedFeatureNamesByDataset.put(dataset.getName(), featureNames);
@@ -100,6 +125,30 @@ public class JITAggregatedMiner extends FeatureMiner {
         for (Commit commit : commits){
             for (Feature<?> feature : commit.getMeasurement().getFeatures()){
                 
+                // DELETE ME
+                /*
+                if(feature.getName().contains("fix")){
+                    feature.setAggregation(FeatureAggregation.COUNT_TRUE);
+                } else if (feature.getName().contains("author_date")){
+                    feature.setAggregation(FeatureAggregation.DURATION);
+                } else if (feature.getName().contains("la")
+                    || feature.getName().contains("ld")){
+                    feature.setAggregation(FeatureAggregation.SUM);
+                } else if (feature.getName().contains("nf")
+                    || feature.getName().contains("nd")
+                    || feature.getName().contains("ns")
+                    || feature.getName().contains("ent")
+                    || feature.getName().contains("ndev")
+                    || feature.getName().contains("nuc")){
+                    feature.setAggregation(FeatureAggregation.MAX);
+                } else if (feature.getName().contains("age")
+                || feature.getName().contains("aexp")
+                    || feature.getName().contains("arexp")
+                    || feature.getName().contains("asexp")){
+                    feature.setAggregation(FeatureAggregation.MIN);
+                }
+                 */
+
                 // skip features with no aggregation method specified
                 if (feature.getAggregation() != null) {
 
@@ -151,11 +200,10 @@ public class JITAggregatedMiner extends FeatureMiner {
 
     @Override
     protected Set<String> getFeatureNames() {
-        /**
-         * We check only for the num of commits feature since it is the only one shared
-         * among all datasets
-         */
-        return Set.of(IssueFeature.NUM_COMMITS.getFullName());
+        // dummy feature name to always trigger re-measurement
+        // since each dataset comes with its own feature names
+        // and here we cannot know which datasets we are measuring
+        return Set.of("MEASURE_ALWAYS");
     }
     
 }
