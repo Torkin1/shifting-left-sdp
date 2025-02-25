@@ -315,12 +315,12 @@ public class FeatureController implements IFeatureController{
                             else {
                                 printIssueMeasurements(dataset, project, measurementDate, bean.getTarget());
                             }
-                            if (measurementPrintExists(dataset, project, measurementDate, PredictionScope.COMMIT)){
-                                log.info("Measurements already printed for {} {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.COMMIT);
-                            }
-                            else {
-                                printCommitMeasurements(dataset, project, measurementDate);
-                            }
+                            // if (measurementPrintExists(dataset, project, measurementDate, PredictionScope.COMMIT)){
+                            //     log.info("Measurements already printed for {} {} {} {}", dataset.getName(), project.getKey(), measurementDate.getName(), PredictionScope.COMMIT);
+                            // }
+                            // else {
+                            //     printCommitMeasurements(dataset, project, measurementDate);
+                            // }
                         } catch (IOException e) {
                             
                             throw new RuntimeException("Cannot print measurements", e);
@@ -460,13 +460,22 @@ public class FeatureController implements IFeatureController{
     private CsvSchema createCsvSchema(Set<String> featureNames, String targetName){
         CsvSchema.Builder schemaBuilder = new CsvSchema.Builder();
         int i = 0;
+
+        // first column is the issue key
+        schemaBuilder = schemaBuilder.addColumn(new Column(i, IssueFeature.KEY.getFullName()));
+        i++;
+
+        // add one column for each feature
         for (String featureName : featureNames){
-            if (!featureName.equals(targetName)){
+            if (!featureName.equals(targetName)
+                && !featureName.equals(IssueFeature.KEY.getFullName())){
                 schemaBuilder = schemaBuilder.addColumn(new Column(i, featureName));
                 i++;
             }
         }
+        // last column is the target to predict
         schemaBuilder = schemaBuilder.addColumn(new Column(i, targetName));
+
         schemaBuilder = schemaBuilder.setUseHeader(true)
             .setColumnSeparator(',');
         return schemaBuilder.build().withHeader();

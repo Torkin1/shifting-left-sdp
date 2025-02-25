@@ -13,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 public enum IssueFeature {
     
     /**
+     * Special feature that represents the issue key.
+     */
+    KEY("key", null),
+    /**
      * similarity score of this ticket among other tickets known as buggy before the measurement date
      */
     BUGGY_SIMILARITY("buggy_similarity", IssueFeatureFamily.R2R),
