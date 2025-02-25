@@ -20,6 +20,7 @@ import it.torkin.dataminer.dao.local.IssueStatusDao;
 import it.torkin.dataminer.dao.local.IssueTypeDao;
 import it.torkin.dataminer.entities.dataset.Commit;
 import it.torkin.dataminer.entities.dataset.Issue;
+import it.torkin.dataminer.entities.jira.Developer;
 import it.torkin.dataminer.entities.jira.issue.IssueAttachment;
 import it.torkin.dataminer.entities.jira.issue.IssueComment;
 import it.torkin.dataminer.entities.jira.issue.IssueFields;
@@ -30,6 +31,7 @@ import it.torkin.dataminer.entities.jira.issue.IssueStatus;
 import it.torkin.dataminer.entities.jira.issue.IssueType;
 import it.torkin.dataminer.entities.jira.issue.IssueWorkItem;
 import it.torkin.dataminer.rest.UnableToGetResourceException;
+import it.torkin.dataminer.toolbox.string.StringTools;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -204,9 +206,10 @@ public class IssueController implements IIssueController{
         ).apply(new IssueFieldBean(bean, IssueField.ASSIGNEE));
     }
 
-    private boolean changelogContains(Issue issue, HistoryEntry example, Timestamp measurementDate, boolean and){
+    private boolean changelogContains(Issue issue, HistoryEntry example, Timestamp measurementDate, IssueField issueField, boolean and){
         return issue.getDetails().getChangelog().getHistories().stream()
             .filter(h -> !h.getCreated().after(measurementDate))
+            .filter(h -> h.getItems().stream().anyMatch(i -> i.getField().equals(issueField.getName())))
             .anyMatch(h -> h.getItems().stream().anyMatch(i -> {
                 if (and){
                     return i.getFrom() == example.getValue() && i.getTo() == example.getValue();
@@ -220,13 +223,14 @@ public class IssueController implements IIssueController{
     @Override
     public boolean hasBeenAssigned(HasBeenAssignedBean bean) {
 
-        String assigneeKey = getAssigneeKey(new IssueBean(bean.getIssue(), bean.getMeasurementDate()));
-        if (assigneeKey == null) return false;
-        if (assigneeKey.equals(bean.getAssigneeKey())) return true;
+        Developer assignee = bean.getIssue().getDetails().getFields().getAssignee();
+        if (assignee == null) return false;
+        else if (assignee.getKey().equals(bean.getAssigneeKey())) return true;
         else return changelogContains(
             bean.getIssue(),
             new HistoryEntry(bean.getAssigneeKey(), null), 
-            bean.getMeasurementDate(), 
+            bean.getMeasurementDate(),
+            IssueField.ASSIGNEE, 
             false);
         
                 

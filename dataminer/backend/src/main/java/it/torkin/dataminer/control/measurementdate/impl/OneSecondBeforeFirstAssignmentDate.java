@@ -19,6 +19,10 @@ import it.torkin.dataminer.entities.jira.issue.IssueHistoryItem;
 import it.torkin.dataminer.toolbox.string.StringTools;
 import it.torkin.dataminer.toolbox.time.TimeTools;
 
+/**
+ * Returns one second after the first assignment date of the issue, with
+ * the left bound being one second after the opening date of the issue.
+ */
 @Component
 public class OneSecondBeforeFirstAssignmentDate implements MeasurementDate{
 

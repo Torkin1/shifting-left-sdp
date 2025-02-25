@@ -23,8 +23,11 @@ import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.features.PrintMeasurementsBean;
 import it.torkin.dataminer.control.features.miners.AssigneeMiner;
+import it.torkin.dataminer.control.features.miners.BugginessMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
+import it.torkin.dataminer.control.features.miners.IssueKeyMiner;
 import it.torkin.dataminer.control.features.miners.JITAggregatedMiner;
+import it.torkin.dataminer.control.features.miners.PriorityMiner;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
@@ -150,11 +153,14 @@ public class MeasurementTest {
     @Autowired private ProjectCodeQualityConfig projectCodeQualityConfig;
 
     @Test
-    // @Transactional
     public void testPrintMeasurements() throws Exception{
 
         Set<Class<? extends FeatureMiner>> miners = Set.of(
-            BuggySimilarityMiner.class
+            AssigneeMiner.class,
+            IssueKeyMiner.class,
+            BugginessMiner.class,
+            PriorityMiner.class,
+            JITAggregatedMiner.class
         );
         
         projectCodeQualityConfig.setPmdPath("/home/daniele/pmd-bin-7.7.0/bin/pmd");
