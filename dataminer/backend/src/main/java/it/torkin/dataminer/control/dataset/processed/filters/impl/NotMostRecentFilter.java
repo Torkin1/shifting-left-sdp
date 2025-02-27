@@ -170,12 +170,16 @@ public class NotMostRecentFilter extends IssueFilter{
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
                 
-        List<SnoringIssueEntry> snoringIssues = snoringIssuesByMeasurementDateByProjectByDataset.get(bean.getDatasetName())
-            .get(bean.getIssue().getDetails().getFields().getProject().getKey())
-            .get(bean.getMeasurementDateName());
+        Map<String, List<SnoringIssueEntry>> snoringIssuesByMeasurementDate = snoringIssuesByMeasurementDateByProjectByDataset.get(bean.getDatasetName())
+            .get(bean.getIssue().getDetails().getFields().getProject().getKey());
         
-        boolean accepted = !isSnoring(bean.getIssue(), snoringIssues);
-        return accepted;
+        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+        for (MeasurementDate measurementDate : measurementDates){
+            List<SnoringIssueEntry> snoringIssues = snoringIssuesByMeasurementDate.get(measurementDate.getName());
+            if (isSnoring(bean.getIssue(), snoringIssues)){
+                return false;
+            }
+        }
+        return true;
     }
-
 }

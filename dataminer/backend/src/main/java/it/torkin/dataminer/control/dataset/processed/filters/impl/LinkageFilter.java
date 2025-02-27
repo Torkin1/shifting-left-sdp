@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * repositories could share the same linkage).
  * 
  */
-@Component
+// @Component
 @Slf4j
 public class LinkageFilter extends IssueFilter {
 
