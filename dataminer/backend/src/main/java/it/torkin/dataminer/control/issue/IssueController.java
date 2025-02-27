@@ -389,9 +389,9 @@ public class IssueController implements IIssueController{
             }
             
         }
-        // if last in progress transition never ended in changelog, we can assume it is still in progress
+        // if last in progress transition never ended in this changelog view, we can assume it is still in progress
         // at the measurement date
-        // NOTE: Issue could be transitioned from in progress to another state before the measurement date actually
+        // NOTE: Issue could be transitioned from in progress to another state after the measurement date actually
         if (span != null){
             span.setEnd(bean.getMeasurementDate());
             bean.getTemporalSpans().add(span);

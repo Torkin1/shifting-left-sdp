@@ -25,6 +25,7 @@ import it.torkin.dataminer.control.features.PrintMeasurementsBean;
 import it.torkin.dataminer.control.features.miners.AssigneeMiner;
 import it.torkin.dataminer.control.features.miners.BugginessMiner;
 import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
+import it.torkin.dataminer.control.features.miners.CommitsWhileInProgressMiner;
 import it.torkin.dataminer.control.features.miners.IssueKeyMiner;
 import it.torkin.dataminer.control.features.miners.JITAggregatedMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
@@ -160,7 +161,8 @@ public class MeasurementTest {
             IssueKeyMiner.class,
             BugginessMiner.class,
             PriorityMiner.class,
-            JITAggregatedMiner.class
+            JITAggregatedMiner.class,
+            CommitsWhileInProgressMiner.class
         );
         
         projectCodeQualityConfig.setPmdPath("/home/daniele/pmd-bin-7.7.0/bin/pmd");
