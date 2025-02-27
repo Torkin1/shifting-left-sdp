@@ -1,7 +1,6 @@
 package it.torkin.dataminer.control.measurementdate.impl;
 
 import java.sql.Timestamp;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +12,6 @@ import it.torkin.dataminer.control.issue.IssueBean;
 import it.torkin.dataminer.control.issue.IssueField;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
-import it.torkin.dataminer.entities.jira.Developer;
 import it.torkin.dataminer.entities.jira.issue.IssueHistory;
 import it.torkin.dataminer.entities.jira.issue.IssueHistoryItem;
 import it.torkin.dataminer.toolbox.string.StringTools;
@@ -41,9 +39,9 @@ public class OneSecondBeforeFirstAssignmentDate implements MeasurementDate{
         if (assigneeHistories.isEmpty()) {
 
             // Changelog of assignee field is empty. 
-            // If there is an assignee in ticket details, we return the opening date
-            Developer assignee = bean.getIssue().getDetails().getFields().getAssignee();
-            date = assignee != null? new OpeningDate().apply(bean) : Optional.empty();
+            // We return one second after opening date in both cases when the assignee is set or not
+            date = new OpeningDate().apply(bean);
+            date = Optional.of(TimeTools.plusOneSecond(date.get()));
 
         } else {
             IssueHistory firstHistory = assigneeHistories.get(0);
@@ -54,10 +52,9 @@ public class OneSecondBeforeFirstAssignmentDate implements MeasurementDate{
                 
             // if the `from` field of the item is set, we return the opening date, else we return the
             // history creation date
-            date = StringTools.isBlank(firstItem.getFrom())? Optional.of(firstHistory.getCreated()) : new OpeningDate().apply(bean);
+            date = StringTools.isBlank(firstItem.getFrom())? Optional.of(TimeTools.minusOneSecond(firstHistory.getCreated())) : Optional.of(TimeTools.plusOneSecond(new OpeningDate().apply(bean).get()));
         }
-        if (!date.isPresent()) return date;
-        return Optional.of(Timestamp.from(date.get().toInstant().minus(1, ChronoUnit.SECONDS)));
+        return date;
     }
     
 }

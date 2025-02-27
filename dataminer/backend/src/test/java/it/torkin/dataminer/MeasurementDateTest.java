@@ -128,9 +128,9 @@ public class MeasurementDateTest {
         /**
          * test the following cases:
          * 
-         * 1) no developer assigned, no measurement date available
-         * 2) developer assigned but not present in changelog, measurement date is opening date
-         * 3) developer assigned and present in changelog, measurement date is one second before history creation date
+         * 1) no developer assigned, no measurement date available --> One second after opening date
+         * 2) developer assigned but not present in changelog --> one second after opening date
+         * 3) developer assigned and present in changelog --> one second before history creation date
          */
 
         Issue issue1 = IssueTools.getIssueExample("AVRO-2064");
@@ -141,12 +141,13 @@ public class MeasurementDateTest {
         Optional<Timestamp> firstAssignementDate2 = oneSecondBeforeFirstAssignmentDate.apply(new MeasurementDateBean(null, issue2));
         Optional<Timestamp> firstAssignementDate3 = oneSecondBeforeFirstAssignmentDate.apply(new MeasurementDateBean(null, issue3));
 
-        Timestamp expected2 = Timestamp.from(Instant.parse("2012-07-11T03:46:40.557Z")); 
-        Timestamp expected3 = Timestamp.from(Instant.parse("2009-08-27T22:25:13.112Z"));
+        Timestamp oneSecondAfterCreated1 = Timestamp.from(Instant.parse("2017-08-07T23:31:03.326Z"));
+        Timestamp oneSecondAfterCreated2 = Timestamp.from(Instant.parse("2012-07-11T03:46:42.557Z")); 
+        Timestamp oneSecondBeforeAssignement3 = Timestamp.from(Instant.parse("2009-08-27T22:25:13.112Z"));
 
-        assertTrue(firstAssignementDate1.isEmpty());
-        assertEquals(expected2, firstAssignementDate2.get());
-        assertEquals(expected3, firstAssignementDate3.get());
+        assertEquals(oneSecondAfterCreated1, firstAssignementDate1.get());
+        assertEquals(oneSecondAfterCreated2, firstAssignementDate2.get());
+        assertEquals(oneSecondBeforeAssignement3, firstAssignementDate3.get());
 
     }
     
