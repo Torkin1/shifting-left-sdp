@@ -71,13 +71,7 @@ public class BuggySimilarityMiner extends FeatureMiner{
 
         NlpIssueRequest request = NlpIssueRequest.newBuilder()
             .setDataset(bean.getDataset())
-            /**
-             * TODO: already generated json uses project names instead of keys.
-             *       As soon as the json sending to the remote miner
-             *       is implemented, this should be changed to use project key since
-             *       names are not guaranteed to be unique.
-             */
-            .setProject(bean.getIssue().getDetails().getFields().getProject().getName())
+            .setProject(bean.getIssue().getDetails().getFields().getProject().getKey())
             .setKey(bean.getIssue().getKey())
             .setMeasurementDateName(bean.getMeasurementDate().getName())
             .build();
