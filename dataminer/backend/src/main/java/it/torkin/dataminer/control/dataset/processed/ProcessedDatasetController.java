@@ -1,10 +1,6 @@
 package it.torkin.dataminer.control.dataset.processed;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,16 +8,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import it.torkin.dataminer.config.ProcessedIssuesConfig;
-import it.torkin.dataminer.entities.dataset.Issue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import it.torkin.dataminer.config.ProcessedIssuesConfig;
 import it.torkin.dataminer.config.filters.IssueFilterConfig;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilter;
 import it.torkin.dataminer.control.dataset.processed.filters.IssueFilterBean;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.dao.local.IssueDao;
+import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +30,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     @Autowired private IssueFilterConfig filterConfig;
 
     private boolean filtersInitialized = false;
-
-    @Autowired private ProcessedIssuesConfig processedIssuesConfig;
 
     @Autowired(required = false)
     private List<IssueFilter> issueFilters = new ArrayList<>();
@@ -85,25 +79,12 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
         // for this query
         IssueFilterBean issueFilterBean = new IssueFilterBean();
 
-        File cache = processedIssuesConfig.getCacheFile(bean.getDatasetName(), bean.getMeasurementDate().getName());
         Stream<Issue> issues;
-        /*
-        if (!cache.exists()){
-            BufferedWriter writer;
-            try {
-                writer = new BufferedWriter(new FileWriter(cache));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-         */
             issues = issueDao.findAllByDataset(bean.getDatasetName())
                     // we filter out issues that do not pass the filters
                     .filter((issue) -> {
                         Optional<Timestamp> measurementDateOptional = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
                         // filter away issues that do not have the measurement date available
-                        if (measurementDateOptional.isEmpty()) {
-                            return false;
-                        }
                         Timestamp measurementDate = measurementDateOptional.get();
                         issueFilterBean.setIssue(issue);
                         issueFilterBean.setDatasetName(bean.getDatasetName());
@@ -113,30 +94,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
                         issueFilterBean.setMeasurementDateName(bean.getMeasurementDate().getName());
                         return passesFilters(issueFilterBean, bean);
                     });
-            // caches issue keys on disk
-        /*
-            issues = issues.peek(i -> {
-                try {
-                    writer.write(i.getKey());
-                    writer.newLine();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            *
-         */
-        //}
-        //else {
-            // we already have processed issues cached on disk
-        /*
-            try {
-                issues = Files.lines(cache.toPath()).map(issuekey -> issueDao.findByKey(issuekey));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            *
-         */
-        //}
         
         bean.setProcessedIssues(issues);
     }
