@@ -10,7 +10,6 @@ services:
   backend:
     depends_on:
       - db
-      - buggy-similarity
     build:
       context: ./backend
       additional_contexts:
