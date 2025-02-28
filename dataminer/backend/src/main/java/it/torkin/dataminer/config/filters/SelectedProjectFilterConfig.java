@@ -17,4 +17,9 @@ public class SelectedProjectFilterConfig {
      */
     private String[] keys;
 
+    /**
+     * If set, only selected jit dataset will be considered
+     */
+    private String[] jitDatasets;
+
 }

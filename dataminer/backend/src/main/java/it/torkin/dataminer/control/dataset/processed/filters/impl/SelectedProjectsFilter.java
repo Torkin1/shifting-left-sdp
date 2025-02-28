@@ -19,6 +19,7 @@ public class SelectedProjectsFilter extends IssueFilter{
     @Autowired private SelectedProjectFilterConfig config;
     
     private Set<String> selectedProjects = null;
+    private Set<String> selectedJitDatasets = null;
     
     @Override
     protected void _init(){
@@ -29,16 +30,28 @@ public class SelectedProjectsFilter extends IssueFilter{
             }
         }
         if (selectedProjects.isEmpty()){
-            log.warn("No projects selected for processing, will not exclude any projectb by key");
+            log.warn("No projects selected for processing, will not exclude any project by key");
         }
+        selectedJitDatasets = new HashSet<>();
+        if (config.getJitDatasets() != null){
+            for (String jitDataset : config.getJitDatasets()){
+                selectedJitDatasets.add(jitDataset);
+            }
+        }
+        if (selectedJitDatasets.isEmpty()){
+            log.warn("No jit datasets selected for processing, will not exclude any project by jit dataset");
+        }
+
     }
     
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
 
-        if (selectedProjects.isEmpty()) return true;
         Project project = bean.getIssue().getDetails().getFields().getProject();
-        return selectedProjects.contains(project.getKey());
+        String jitDataset = bean.getDatasetName();
+        boolean datasetOk = selectedJitDatasets.isEmpty() || selectedJitDatasets.contains(jitDataset);
+        boolean projectOk = selectedProjects.isEmpty() || selectedProjects.contains(project.getKey());
+        return datasetOk && projectOk; 
     }
     
 }
