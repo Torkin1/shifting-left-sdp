@@ -157,12 +157,9 @@ public class MeasurementTest {
     public void testPrintMeasurements() throws Exception{
 
         Set<Class<? extends FeatureMiner>> miners = Set.of(
-            AssigneeMiner.class,
             IssueKeyMiner.class,
             BugginessMiner.class,
-            PriorityMiner.class,
-            JITAggregatedMiner.class,
-            CommitsWhileInProgressMiner.class
+            BuggySimilarityMiner.class
         );
         
         projectCodeQualityConfig.setPmdPath("/home/daniele/pmd-bin-7.7.0/bin/pmd");

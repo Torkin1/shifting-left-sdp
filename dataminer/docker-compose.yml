@@ -22,12 +22,6 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
 
-      - GRPC_HOSTNAME_BUGGY_SIMILARITY=buggy-similarity
-      - GRPC_PORT_BUGGY_SIMILARITY=8080
-      
-      - GRPC_HOSTNAME_PROJECT_CODE_QUALITY=project-code-quality
-      - GRPC_PORT_PROJECT_CODE_QUALITY=8080
-
       # tune the following lines according to the target machine capabilities
       # - JDK_JAVA_OPTIONS=-Xms16G -Xmx16G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
       - JAVA_OPTS=-Xms2G -Xmx2G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
@@ -49,17 +43,3 @@ services:
       
       PGDATA: /var/lib/postgresql/data
     command: postgres -c 'max_connections=1000'
-  
-  # Remote miners
-  buggy-similarity:
-    build:
-      context: ./TestRequirementSimilarityLaProvaV8
-      additional_contexts:
-        proto: ./proto
-      dockerfile: src/main/resources/Dockerfile.buggysimilarity
-    environment:
-      - GRPC_PORT=8080
-    expose:
-      - 8080
-    volumes:
-      - ./TestRequirementSimilarityLaProvaV8/data:/buggy-similarity/data/
