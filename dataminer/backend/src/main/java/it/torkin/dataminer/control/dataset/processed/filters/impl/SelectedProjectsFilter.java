@@ -23,25 +23,28 @@ public class SelectedProjectsFilter extends IssueFilter{
     
     @Override
     protected void _init(){
-        selectedProjects = new HashSet<>();
-        if (config.getKeys() != null){
-            for (String project : config.getKeys()){
-                selectedProjects.add(project);
+        if (selectedProjects == null){
+            selectedProjects = new HashSet<>();
+            if (config.getKeys() != null){
+                for (String project : config.getKeys()){
+                    selectedProjects.add(project);
+                }
+            }
+            if (selectedProjects.isEmpty()){
+                log.warn("No projects selected for processing, will not exclude any project by key");
             }
         }
-        if (selectedProjects.isEmpty()){
-            log.warn("No projects selected for processing, will not exclude any project by key");
-        }
-        selectedJitDatasets = new HashSet<>();
-        if (config.getJitDatasets() != null){
-            for (String jitDataset : config.getJitDatasets()){
-                selectedJitDatasets.add(jitDataset);
+        if (selectedJitDatasets == null){
+            selectedJitDatasets = new HashSet<>();
+            if (config.getJitDatasets() != null){
+                for (String jitDataset : config.getJitDatasets()){
+                    selectedJitDatasets.add(jitDataset);
+                }
+            }
+            if (selectedJitDatasets.isEmpty()){
+                log.warn("No jit datasets selected for processing, will not exclude any project by jit dataset");
             }
         }
-        if (selectedJitDatasets.isEmpty()){
-            log.warn("No jit datasets selected for processing, will not exclude any project by jit dataset");
-        }
-
     }
     
     @Override
