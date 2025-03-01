@@ -42,7 +42,7 @@ public class StatsController implements IStatsController{
     @Autowired private IIssueController issueController;
     @Autowired private DatasetDao datasetDao;
     @Autowired private StatsConfig statsConfig;
-    
+
     @Override
     @Transactional
     public void printStatsToCSV() throws IOException {

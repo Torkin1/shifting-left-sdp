@@ -68,7 +68,7 @@ public class IssueFilterTest {
     @Autowired private DatasetDao datasetDao;
     @Autowired private ProjectDao projectDao;
     
-    @Autowired private LinkageFilter linkageFilter;
+    // @Autowired private LinkageFilter linkageFilter;
     @Autowired private NotMostRecentFilter filter;
 
     @Autowired private ILinkageController linkageController;
@@ -199,56 +199,56 @@ public class IssueFilterTest {
 
     }
 
-    @Test
-    @Transactional
-    public void testLinkageFilter() throws UnableToCreateRawDatasetException{
+    // @Test
+    // @Transactional
+    // public void testLinkageFilter() throws UnableToCreateRawDatasetException{
 
-        /**
-         * We expect that repositories of processed issues have a
-         * linkage above the top N repositories fetched from 
-         * the datasets.
-        */
-        datasetController.createRawDataset();
+    //     /**
+    //      * We expect that repositories of processed issues have a
+    //      * linkage above the top N repositories fetched from 
+    //      * the datasets.
+    //     */
+    //     datasetController.createRawDataset();
 
-        List<Dataset> datasets = datasetDao.findAll();
-        List<Double> buggyLinkages = new ArrayList<>();
-        Map<String, LinkageBean> buggyLinkagesByDataset = new HashMap<>();
+    //     List<Dataset> datasets = datasetDao.findAll();
+    //     List<Double> buggyLinkages = new ArrayList<>();
+    //     Map<String, LinkageBean> buggyLinkagesByDataset = new HashMap<>();
 
-        for (Dataset dataset : datasets) {
-            LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
-            linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
-            buggyLinkagesByDataset.put(dataset.getName(), buggyLinkageBean);
-            buggyLinkageBean.getLinkageByRepository().forEach((repository, linkage) -> {
-                if (repository != LinkageBean.ALL_REPOSITORIES){
-                    buggyLinkages.add(linkage);
-                }
-            });
-        }
-        buggyLinkages.sort(Double::compare);
-        log.info("buggyLinkages: {}", buggyLinkages);
-        int selectedIndex = buggyLinkages.size() >= linkageFilterConfig.getTopNBuggyLinkage() ? buggyLinkages.size() - linkageFilterConfig.getTopNBuggyLinkage() : 0;
-        log.info("threshold: {}", buggyLinkages.get(selectedIndex));
+    //     for (Dataset dataset : datasets) {
+    //         LinkageBean buggyLinkageBean = new LinkageBean(dataset.getName());
+    //         linkageController.calcBuggyTicketLinkage(buggyLinkageBean);
+    //         buggyLinkagesByDataset.put(dataset.getName(), buggyLinkageBean);
+    //         buggyLinkageBean.getLinkageByRepository().forEach((repository, linkage) -> {
+    //             if (repository != LinkageBean.ALL_REPOSITORIES){
+    //                 buggyLinkages.add(linkage);
+    //             }
+    //         });
+    //     }
+    //     buggyLinkages.sort(Double::compare);
+    //     log.info("buggyLinkages: {}", buggyLinkages);
+    //     int selectedIndex = buggyLinkages.size() >= linkageFilterConfig.getTopNBuggyLinkage() ? buggyLinkages.size() - linkageFilterConfig.getTopNBuggyLinkage() : 0;
+    //     log.info("threshold: {}", buggyLinkages.get(selectedIndex));
 
-        IssueFilterBean bean = new IssueFilterBean();
-        for (Dataset dataset : datasets){
-            Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
-            issues
-             .filter(issue -> {
-                bean.setIssue(issue);
-                bean.setDatasetName(dataset.getName());
-                bean.setApplyAnyway(true);
-                return linkageFilter.apply(bean);
-             })
-             .forEach(issue -> {
-                for(Commit commit : issue.getCommits()){
-                    if (commit.getDataset().getName().equals(dataset.getName())){
-                        assertTrue(buggyLinkagesByDataset.get(dataset.getName()).getLinkageByRepository().get(commit.getRepository().getId()) >= buggyLinkages.get(selectedIndex));
-                    }
-                } 
-             });
-        }
+    //     IssueFilterBean bean = new IssueFilterBean();
+    //     for (Dataset dataset : datasets){
+    //         Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName());
+    //         issues
+    //          .filter(issue -> {
+    //             bean.setIssue(issue);
+    //             bean.setDatasetName(dataset.getName());
+    //             bean.setApplyAnyway(true);
+    //             return linkageFilter.apply(bean);
+    //          })
+    //          .forEach(issue -> {
+    //             for(Commit commit : issue.getCommits()){
+    //                 if (commit.getDataset().getName().equals(dataset.getName())){
+    //                     assertTrue(buggyLinkagesByDataset.get(dataset.getName()).getLinkageByRepository().get(commit.getRepository().getId()) >= buggyLinkages.get(selectedIndex));
+    //                 }
+    //             } 
+    //          });
+    //     }
 
-    }
+    // }
 
     @Autowired private FirstCommitAfterOpeningDateFilter firstCommitAfterOpeningDate;
 

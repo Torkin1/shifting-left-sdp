@@ -82,6 +82,7 @@ public class NotMostRecentFilter extends IssueFilter{
 
     private boolean addToSnoringIssues(List<SnoringIssueEntry> snoringIssues, SnoringIssueEntry snoringIssue, long snoringIssuesCount){
         boolean added = false;
+        if (snoringIssuesCount == 0) return false;
         if (snoringIssues.size() < snoringIssuesCount){
             snoringIssues.add(snoringIssue);
             added = true;
