@@ -137,10 +137,19 @@ public class FeatureController implements IFeatureController{
         /**
          * Main process divides issues among threads
          */
-        List<Dataset> datasets = datasetDao.findAll();
-        List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
-        for (int i = 0; i < forkConfig.getForkCount(); i ++){
-            new File(forkConfig.getForkDir(i)).mkdirs();
+        List<Dataset> datasets;
+        List<MeasurementDate> measurementDates;
+        try {
+            datasets = datasetDao.findAll();
+            measurementDates = measurementDateController.getMeasurementDates();
+            for (int i = 0; i < forkConfig.getForkCount(); i ++){
+                File forkDir = new File(forkConfig.getForkDir(i));
+                forkDir.mkdirs();
+                FileUtils.cleanDirectory(forkDir);
+            }
+        } catch (IOException e) {
+            
+            throw new RuntimeException("Cannot clean fork directories", e);
         }
 
         /**
@@ -167,6 +176,9 @@ public class FeatureController implements IFeatureController{
             }
         }
         log.info("Repositories copied to thread directories");
+
+        // cleans content of fork directories before dividing the issues
+       
 
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
         transaction.setReadOnly(true);
