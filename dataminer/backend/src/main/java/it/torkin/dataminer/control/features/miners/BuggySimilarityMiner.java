@@ -1,6 +1,7 @@
 package it.torkin.dataminer.control.features.miners;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +39,11 @@ public class BuggySimilarityMiner extends FeatureMiner{
     public static final Set<String> AGGREGATION = Set.of("MaxSimilarity", "AvgSimilarity");
 
     private Set<String> featureNames;
+    private Set<String> variants = Set.of(getVariantNames().toArray(new String[0]));
+    private Set<String> selectedR2rDistances;
 
-    public static String getOutputFileName(String dataset, String project){
-        // TODO: account for measurement date
-        return "./src/main/resources/buggy-similarity/"+dataset + "_" + project + "_similarity_results.csv";
+    public String getSimilarityDistancesFilePath(String dataset, String project, String measurementDate){
+        return Paths.get(config.getBuggySimilarityR2rDistancesDir(), "issue-beans_" + measurementDate, dataset + "_" + project + "_similarities.csv").toAbsolutePath().toString();
     }
 
     public static List<String> getVariantNames(){
@@ -63,6 +65,7 @@ public class BuggySimilarityMiner extends FeatureMiner{
     @Override
     public void init(){
         featureNames = getVariantNames().stream().map(name -> IssueFeature.BUGGY_SIMILARITY.getFullName(name)).collect(Collectors.toSet());
+        selectedR2rDistances = Set.of(config.getBuggySimilaritySelectedR2rDistances());
     }
 
     @Override
@@ -82,8 +85,8 @@ public class BuggySimilarityMiner extends FeatureMiner{
             });
         } catch (Exception e){
             log.error("cannot mine buggy similarity for issue {}", bean.getIssue().getKey(), e);
-            for (String name : featureNames){
-                bean.getMeasurement().getFeatures().add(new DoubleFeature(name, Double.NaN));
+            for (String name : !selectedR2rDistances.isEmpty()? selectedR2rDistances : variants){
+                bean.getMeasurement().getFeatures().add(new DoubleFeature(IssueFeature.BUGGY_SIMILARITY.getFullName(name), Double.NaN));
             }
         }
 
@@ -91,16 +94,17 @@ public class BuggySimilarityMiner extends FeatureMiner{
     }
 
     private NlpIssueSimilarityScores getSimilarityScores(NlpIssueRequest request){
-        // TODO: Open the right file according to the measurement date
-        try (Resultset<Map<String, String>> records = new Resultset<>(getOutputFileName(request.getDataset(), request.getProject()), Map.class)) {
+        String similarityDistancesFilePath = getSimilarityDistancesFilePath(request.getDataset(), request.getProject(), request.getMeasurementDateName());
+        try (Resultset<Map<String, String>> records = new Resultset<>(similarityDistancesFilePath, Map.class)) {
             while(records.hasNext()){
                 Map<String, String> record = records.next();
 
-                String dataset = record.get("ProjectName").split("_")[0];
-                String project = record.get("ProjectName").split("_")[1];
+                String dataset = request.getDataset();
+                String project = request.getProject();
                 String key = record.get("RequirementID");
 
-                if (request.getDataset().equals(dataset) && request.getProject().equals(project) && request.getKey().equals(key)){
+                // if (request.getDataset().equals(dataset) && request.getProject().equals(project) && request.getKey().equals(key)){
+                if (request.getKey().equals(key)){
                     NlpIssueSimilarityScores.Builder similarityScoresBuilder = NlpIssueSimilarityScores.newBuilder()
                         .setRequest(
                             NlpIssueRequest.newBuilder()
@@ -109,7 +113,8 @@ public class BuggySimilarityMiner extends FeatureMiner{
                                 .setKey(key)
                         );
                         record.forEach((k, v) -> {
-                            if (!k.equals("ProjectName") && !k.equals("RequirementID") && !k.equals("Buggy")){
+                            if ((!selectedR2rDistances.isEmpty() && selectedR2rDistances.contains(k) 
+                            || selectedR2rDistances.isEmpty() && variants.contains(k))){
                                 similarityScoresBuilder.putScoreByName(k, StringTools.isBlank(v) ? Double.NaN : Double.parseDouble(v));
                             }
                         });
@@ -122,12 +127,13 @@ public class BuggySimilarityMiner extends FeatureMiner{
         } catch (UnableToGetResultsetException | IOException e) {
             throw new RuntimeException("error while reading csv scores", e);
         }
-        throw Status.NOT_FOUND.withDescription("request has no correspondence in registered nlp beans: " + request.getDataset() + " " + request.getProject() + " " + request.getKey() ).asRuntimeException();
+        throw Status.NOT_FOUND.withDescription("request has no correspondence in registered nlp beans: " + request.getDataset() + " " + request.getProject() + " " + request.getKey() + " at " + request.getMeasurementDateName() ).asRuntimeException();
     }
 
 
     @Override
     protected Set<String> getFeatureNames() {
-        return featureNames;
+        
+        return selectedR2rDistances.isEmpty()? featureNames : selectedR2rDistances;
     }
 }

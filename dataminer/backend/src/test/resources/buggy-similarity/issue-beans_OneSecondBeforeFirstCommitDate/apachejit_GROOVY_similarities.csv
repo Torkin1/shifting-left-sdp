@@ -1,0 +1,2 @@
+RequirementID,ProjectName,Buggy,MaxSimilarity_TF-IDF_Cosine_Title,AvgSimilarity_TF-IDF_Cosine_Title,MaxSimilarity_Jaccard_Title,AvgSimilarity_Jaccard_Title,MaxSimilarity_EuclideanDistance_Title,AvgSimilarity_EuclideanDistance_Title,MaxSimilarity_TF-IDF_Cosine_Text,AvgSimilarity_TF-IDF_Cosine_Text,MaxSimilarity_Jaccard_Text,AvgSimilarity_Jaccard_Text,MaxSimilarity_EuclideanDistance_Text,AvgSimilarity_EuclideanDistance_Text
+GROOVY-20,GROOVY,0.0,1.0000,1.0000,0.0833,0.0833,0.0051,0.0051,0.0000,0.0000,0.0000,0.0000,0.0026,0.0026

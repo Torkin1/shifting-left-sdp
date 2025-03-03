@@ -41,5 +41,15 @@ public class NLPFeaturesConfig {
 
     private String buggySimilarityGrpcTarget;
 
+    /**
+     * If specified, only the selected distances will be included in the output datasets.
+     */
+    private String[] buggySimilaritySelectedR2rDistances;
+
+    /**
+     * Path containing r2r distances data
+     */
+    private String buggySimilarityR2rDistancesDir;
+
     
 }
