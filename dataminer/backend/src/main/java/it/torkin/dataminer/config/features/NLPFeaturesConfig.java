@@ -51,5 +51,10 @@ public class NLPFeaturesConfig {
      */
     private String buggySimilarityR2rDistancesDir;
 
+    /**
+     * Path containing NLP4RE variants data
+     */
+    private String nlp4reVariantsDir;
+
     
 }

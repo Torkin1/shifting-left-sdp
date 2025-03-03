@@ -28,6 +28,7 @@ import it.torkin.dataminer.control.features.miners.BuggySimilarityMiner;
 import it.torkin.dataminer.control.features.miners.CommitsWhileInProgressMiner;
 import it.torkin.dataminer.control.features.miners.IssueKeyMiner;
 import it.torkin.dataminer.control.features.miners.JITAggregatedMiner;
+import it.torkin.dataminer.control.features.miners.NLP4REMiner;
 import it.torkin.dataminer.control.features.miners.PriorityMiner;
 import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
@@ -159,7 +160,7 @@ public class MeasurementTest {
         Set<Class<? extends FeatureMiner>> miners = Set.of(
             IssueKeyMiner.class,
             BugginessMiner.class,
-            BuggySimilarityMiner.class
+            NLP4REMiner.class
         );
         
         projectCodeQualityConfig.setPmdPath("/home/daniele/pmd-bin-7.7.0/bin/pmd");

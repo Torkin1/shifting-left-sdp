@@ -1,15 +1,19 @@
 package it.torkin.dataminer.control.features.miners;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import it.torkin.dataminer.config.features.NLPFeaturesConfig;
 import it.torkin.dataminer.control.features.FeatureMiner;
 import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IssueFeature;
+import it.torkin.dataminer.entities.dataset.features.BooleanFeature;
 import it.torkin.dataminer.entities.dataset.features.DoubleFeature;
 import it.torkin.dataminer.toolbox.csv.Resultset;
 import it.torkin.dataminer.toolbox.csv.UnableToGetResultsetException;
@@ -19,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 @Component
 public class NLP4REMiner extends FeatureMiner{
 
+    @Autowired private NLPFeaturesConfig config;
+    
     @RequiredArgsConstructor
     @Getter
     private enum NLP4REFeatures {
@@ -42,8 +48,7 @@ public class NLP4REMiner extends FeatureMiner{
         NUMBER_OF_ENTITIES("EX_ENT"),
         SENTIMENT_POLARITY("IT_POL"),
         SENTIMENT_SUBJECTIVITY("IT_SUB"),
-        // TODO: uncomment when EX_CODE results are available
-        // HAS_CODE("EX_COD"),
+        HAS_CODE("EX_COD"),
         NUM_NEGATIVE_SENTIMENT("CM_NNS"),
         PERC_NEGATIVE_SENTIMENT("CM_PNS"),
         ONE_NEGATIVE_SENTIMENT("CM_ONS"),
@@ -69,24 +74,30 @@ public class NLP4REMiner extends FeatureMiner{
         NLP4REFeatures.DESCRIPTION_ATTRIBUTE_SOURCES,
         NLP4REFeatures.DESCRIPTION_ATTRIBUTE_WEAK_PHRASES);
     
-    @Override
+    private String getVariantsfileName(String measurementDateName){
+        return Paths.get(config.getNlp4reVariantsDir(), "issue-beans_" + measurementDateName + ".csv").toAbsolutePath().toString();
+    }
+    
+        @Override
     public void mine(FeatureMinerBean bean) {
         
         // read result file with features and find the corresponding issue.
-        // TODO: result file should be generated on demand by communicating with the
-        // NLP4RE service. For now, we use a pre-generated file.
+        String variantsFileName = getVariantsfileName(bean.getMeasurementDate().getName());
         try (
-        Resultset<Map<String, String>> rows = new Resultset<>("./src/main/resources/nlp4re/result.csv", Map.class)) {
+        Resultset<Map<String, String>> rows = new Resultset<>(variantsFileName, Map.class)) {
             Map<String, String> row = null;
             while (rows.hasNext()) {
                 row = rows.next();
-                if (bean.getIssue().getKey().equals(row.get("Requirement ID"))
-                 && bean.getIssue().getDetails().getFields().getProject().getKey().equals(row.get("Project name"))
-                 && bean.getMeasurementDate().getName().equals(row.get("measurementDateName"))){
+                if (bean.getMeasurementDate().getName().equals(row.get("measurementDateName"))
+                && bean.getDataset().equals(row.get("dataset"))
+                && bean.getIssue().getDetails().getFields().getProject().getKey().equals(row.get("Project name"))
+                && bean.getIssue().getKey().equals(row.get("Requirement ID"))
+                ) {
+                 
                     for (NLP4REFeatures feature : NLP4REFeatures.values()) {
                         
-                        String fName = buildFullFeatureName(feature);
-                        
+                    String fName = buildFullFeatureName(feature);
+                    
                         switch(feature){
                             case DESCRIPTION_ATTRIBUTE_RISK_LEVEL:
                                 Double riskLevel = 0.0;
@@ -95,14 +106,17 @@ public class NLP4REMiner extends FeatureMiner{
                                 }
                                 bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, riskLevel));
                                 break;
+                            case HAS_CODE:
+                                Boolean hasCode = Boolean.parseBoolean(row.get((feature.getName())));
+                                bean.getMeasurement().getFeatures().add(new BooleanFeature(fName, hasCode));
+                                break;
                             default:
                                 String fValueString = row.get(feature.getName());
                                 Double fValue = fValueString == null ? Double.NaN : Double.parseDouble(fValueString);
                                 bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, fValue));
-    
                         }                        
                     }
-                    return;
+                    break;
                 }
             }
 
