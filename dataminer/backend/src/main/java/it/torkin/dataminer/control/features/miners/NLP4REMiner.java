@@ -110,7 +110,21 @@ public class NLP4REMiner extends FeatureMiner{
                                 Boolean hasCode = Boolean.parseBoolean(row.get((feature.getName())));
                                 bean.getMeasurement().getFeatures().add(new BooleanFeature(fName, hasCode));
                                 break;
+                            // #281: adjust interval for features to avoid negative values while preserving the feature meaning
+                            case READABILITY_SCORE:
+                                Double readabilityScore = Double.parseDouble(row.get(feature.getName()));
+                                // (x - 100) * -1
+                                readabilityScore = - (readabilityScore - 100);
+                                bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, readabilityScore));
+                                break;
+                            case SENTIMENT_POLARITY:
+                                Double sentimentPolarity = Double.parseDouble(row.get(feature.getName()));
+                                // x + 1
+                                sentimentPolarity += 1;
+                                bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, sentimentPolarity));
+                                break;
                             default:
+                                // all other features are just parsed as double. When they are not available, they are parsed as NaN.
                                 String fValueString = row.get(feature.getName());
                                 Double fValue = fValueString == null ? Double.NaN : Double.parseDouble(fValueString);
                                 bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, fValue));
