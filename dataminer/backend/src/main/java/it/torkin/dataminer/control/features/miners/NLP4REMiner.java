@@ -116,11 +116,12 @@ public class NLP4REMiner extends FeatureMiner{
                                 bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, fValue));
                         }                        
                     }
-                    break;
+                    return;
                 }
             }
 
-            // if issue is not found, put all features as NaNs.
+            // if we reach this point, it means that no nlp4re features were found for the issue.
+            // We put all features as NaNs.
             for (NLP4REFeatures feature : NLP4REFeatures.values()) {
                 String fName = buildFullFeatureName(feature);
                 bean.getMeasurement().getFeatures().add(new DoubleFeature(fName, Double.NaN));
