@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -129,6 +130,7 @@ public class TemporalLocalityMiner extends FeatureMiner{
     }
 
     @Override
+    @Transactional
     public void init() throws Exception{
 
         issuesInWindowByProjectByDataset.clear();

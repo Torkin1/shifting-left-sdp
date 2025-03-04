@@ -110,10 +110,11 @@ public class FeatureController implements IFeatureController{
     }
 
     @Override
-    @Transactional
+    // @Transactional
     public void initMiners() throws Exception{
         miners.forEach(miner -> {
             try {
+                log.debug("about to init {}", miner.getClass().getSimpleName());
                 miner.init();
             } catch (Exception e) {
                 throw new RuntimeException(e);

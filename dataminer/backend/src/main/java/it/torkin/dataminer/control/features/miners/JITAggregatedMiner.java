@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import it.torkin.dataminer.control.features.FeatureMiner;
@@ -30,6 +30,7 @@ import it.torkin.dataminer.entities.dataset.features.FeatureAggregation;
 import it.torkin.dataminer.entities.dataset.features.IntegerFeature;
 
 @Component
+@Slf4j
 public class JITAggregatedMiner extends FeatureMiner {
     
     @Autowired private IIssueController issueController;
@@ -42,14 +43,18 @@ public class JITAggregatedMiner extends FeatureMiner {
     public void init(){
         List<Dataset> datasets = datasetDao.findAll();
         for (Dataset dataset : datasets){
-            Measurement prototype = measurementDao.findWithCommitByDatasetLimited(dataset.getName(), PageRequest.of(0, 1)).get(0);
-            Set<String> featureNames = prototype.getFeatures().stream()
-                .filter(f -> f.getAggregation() != null)
-                .map(f -> buildAggregateJITFearureName(f.getName(), f.getAggregation())).collect(Collectors.toSet());
+            List<Map<String, String>> prototype = measurementDao.findFeaturesPrototypeByDataset(dataset.getName());
+            Set<String> featureNames = prototype.stream()
+                .filter(row -> row.get("aggregation") != null)
+                .map(row -> buildAggregateJITFearureName(row.get("aggregation"), row.get("name"))).collect(Collectors.toSet());
             aggregatedFeatureNamesByDataset.put(dataset.getName(), featureNames);
         }
     }
     
+    private String buildAggregateJITFearureName(String featureName, String aggregation){
+        return featureName + "-" + ((aggregation != null) ? aggregation : "");
+    }
+
     private String buildAggregateJITFearureName(String featureName, FeatureAggregation aggregation){
         return featureName + "-" + ((aggregation != null) ? aggregation.toString() : "");
     }
