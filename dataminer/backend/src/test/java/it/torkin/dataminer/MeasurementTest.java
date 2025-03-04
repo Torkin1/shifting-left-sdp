@@ -160,7 +160,7 @@ public class MeasurementTest {
         Set<Class<? extends FeatureMiner>> miners = Set.of(
             IssueKeyMiner.class,
             BugginessMiner.class,
-            NLP4REMiner.class
+            JITAggregatedMiner.class
         );
         
         projectCodeQualityConfig.setPmdPath("/home/daniele/pmd-bin-7.7.0/bin/pmd");
