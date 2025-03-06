@@ -15,7 +15,7 @@ public enum IssueFeatureFamily {
      * Features that take into account differences and similarities
      * among (buggy) issues.
      */
-    R2R("R2R"),
+    R2R("T2T"),
     /**
      * Features that take into account how often an issue is touched
      * during its lifecycle, or how often it is involved in debates 
