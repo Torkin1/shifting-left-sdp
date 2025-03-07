@@ -146,7 +146,7 @@ public class FeatureController implements IFeatureController{
             for (int i = 0; i < forkConfig.getForkCount(); i ++){
                 File forkDir = new File(forkConfig.getForkDir(i));
                 forkDir.mkdirs();
-                // FileUtils.cleanDirectory(forkDir);
+                FileUtils.cleanDirectory(forkDir);
             }
         } catch (Exception e) {
             
@@ -171,7 +171,7 @@ public class FeatureController implements IFeatureController{
                         boolean accepted = !subDirName.contains(name);
                         return accepted;
                     });
-                log.info("Repositories copied to thread directories");
+                log.info("Repositories copied to thread directory {}", threadRepoDir.getAbsolutePath());
                                      
                 }
             } catch (Exception e) {
@@ -190,9 +190,6 @@ public class FeatureController implements IFeatureController{
             for (Dataset dataset : datasets) {
                 for (MeasurementDate measurementDate : measurementDates) {
                     try{
-                    
-                        if (FileUtils.isEmptyDirectory(new File(forkConfig.getDir()))){
-
 
                             // collect processed issue
                             processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
@@ -226,8 +223,7 @@ public class FeatureController implements IFeatureController{
                             for (Writer writer : writers){
                                 writer.close();
                             }
-                        }
-                        
+
                     } catch (IOException e) {
                         status.setRollbackOnly();
                         throw new RuntimeException("Cannot write issue to miner input file", e);
