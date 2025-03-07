@@ -33,6 +33,7 @@ public class ProcessedIssuesConfig {
     }
 
     public File getCacheFile(String dataset, String measurementDate){
-        return new File(cachedir + "_" + dataset + "_" + measurementDate);
+        return new File(cachedir + File.separator + dataset + "_" + measurementDate);
     }
+
 }

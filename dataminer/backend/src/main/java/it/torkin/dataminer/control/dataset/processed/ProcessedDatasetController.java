@@ -1,6 +1,10 @@
 package it.torkin.dataminer.control.dataset.processed;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +32,8 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     
     @Autowired private IssueDao issueDao;
     @Autowired private IssueFilterConfig filterConfig;
+
+    @Autowired private ProcessedIssuesConfig processedIssuesConfig;
 
     private boolean filtersInitialized = false;
 
@@ -66,34 +72,66 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
         return !issueFilterBean.isFiltered();
     }
 
+    private File initCache(ProcessedIssuesBean bean){
+
+        Stream<Issue> issues = null;
+        File cacheFile = processedIssuesConfig.getCacheFile(bean.getDatasetName(), bean.getMeasurementDate().getName());
+
+        if (!cacheFile.exists()){
+            IssueFilterBean issueFilterBean = new IssueFilterBean();
+            try(BufferedWriter writer = new BufferedWriter(new FileWriter(cacheFile));){
+                issues = issueDao.findAllByDataset(bean.getDatasetName())
+                // we filter out issues that do not pass the filters
+                .filter((issue) -> {
+                    Optional<Timestamp> measurementDateOptional = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
+                    // filter away issues that do not have the measurement date available
+                    Timestamp measurementDate = measurementDateOptional.get();
+                    issueFilterBean.setIssue(issue);
+                    issueFilterBean.setDatasetName(bean.getDatasetName());
+                    issueFilterBean.setMeasurementDate(measurementDate);
+                    issueFilterBean.setApplyAnyway(filterConfig.getApplyAnyway());
+                    issueFilterBean.setFiltered(false);
+                    issueFilterBean.setMeasurementDateName(bean.getMeasurementDate().getName());
+                    return passesFilters(issueFilterBean, bean);
+                });
+                issues.forEach(issue -> {
+                    try {
+                        writer.write(issue.getKey());
+                        writer.newLine();
+                    } catch (IOException e) {
+                        throw new RuntimeException("unable to write to cache file at " + cacheFile.getAbsolutePath(), e);
+                    }
+                });
+    
+            } catch (IOException e) {
+                throw new RuntimeException("unable to load cached filtered issues file at " + cacheFile.getAbsolutePath(), e);
+            } finally {
+                if (issues != null) issues.close();
+            }
+        }
+        
+        return cacheFile;
+    }
+    
     @Override
     @Transactional
     public void getFilteredIssues(ProcessedIssuesBean bean) {
+        
+        Stream<Issue> issues;
         
         if (!filtersInitialized) {
             initFilters();
             filtersInitialized = true;
         }
-        
-        // bean object is shared among filter invocations on all issues
-        // for this query
-        IssueFilterBean issueFilterBean = new IssueFilterBean();
 
-        Stream<Issue> issues;
-            issues = issueDao.findAllByDataset(bean.getDatasetName())
-                    // we filter out issues that do not pass the filters
-                    .filter((issue) -> {
-                        Optional<Timestamp> measurementDateOptional = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
-                        // filter away issues that do not have the measurement date available
-                        Timestamp measurementDate = measurementDateOptional.get();
-                        issueFilterBean.setIssue(issue);
-                        issueFilterBean.setDatasetName(bean.getDatasetName());
-                        issueFilterBean.setMeasurementDate(measurementDate);
-                        issueFilterBean.setApplyAnyway(filterConfig.getApplyAnyway());
-                        issueFilterBean.setFiltered(false);
-                        issueFilterBean.setMeasurementDateName(bean.getMeasurementDate().getName());
-                        return passesFilters(issueFilterBean, bean);
-                    });
+        File cacheFile = initCache(bean);
+        log.info("loading processed issues from cache: {}", cacheFile);
+        try {
+            issues = Files.lines(cacheFile.toPath())
+                .map(issueDao::findByKey);
+        } catch (IOException e) {
+            throw new RuntimeException("unable to load cached filtered issues file at " + cacheFile.getAbsolutePath(), e);
+        }        
         
         bean.setProcessedIssues(issues);
     }
