@@ -146,9 +146,9 @@ public class FeatureController implements IFeatureController{
             for (int i = 0; i < forkConfig.getForkCount(); i ++){
                 File forkDir = new File(forkConfig.getForkDir(i));
                 forkDir.mkdirs();
-                FileUtils.cleanDirectory(forkDir);
+                // FileUtils.cleanDirectory(forkDir);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             
             throw new RuntimeException("Cannot clean fork directories", e);
         }
@@ -162,7 +162,7 @@ public class FeatureController implements IFeatureController{
             File threadRepoDir = new File(threadGitConfig.getReposDir());
             try {
                 
-                if (!threadRepoDir.exists()){
+                if (!threadRepoDir.exists() || FileUtils.isEmptyDirectory(threadRepoDir)){
                     
                     // exclude forks subdirectory
                     FileUtils.copyDirectory(repoDir, threadRepoDir, pathname -> {
@@ -170,63 +170,71 @@ public class FeatureController implements IFeatureController{
                         String subDirName = gitConfig.getForksSubDirName();
                         boolean accepted = !subDirName.contains(name);
                         return accepted;
-                    });                                     
+                    });
+                log.info("Repositories copied to thread directories");
+                                     
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }
-        log.info("Repositories copied to thread directories");
-
-        // cleans content of fork directories before dividing the issues
-       
+        }       
 
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
         transaction.setReadOnly(true);
         transaction.executeWithoutResult(status -> {
             ProcessedIssuesBean processedIssuesBean;
 
+            Stream<Issue> issues = null;
+
             // prepare inputs for forks
             for (Dataset dataset : datasets) {
                 for (MeasurementDate measurementDate : measurementDates) {
+                    try{
+                    
+                        if (FileUtils.isEmptyDirectory(new File(forkConfig.getDir()))){
 
-                    // collect processed issue
-                    processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
-                    processedDatasetController.getFilteredIssues(processedIssuesBean);
-                    Stream<Issue> issues = processedIssuesBean.getProcessedIssues();
 
-                    try(issues){
-                                    
-                        List<BufferedWriter> writers = new ArrayList<>();
-                        for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
-                            File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
-                            BufferedWriter writer = new BufferedWriter(new FileWriter(minerInputFile));
-                            writers.add(writer);
-                        }
-    
-                        Holder<Integer> fork = new Holder<>(0);
-                        issues.forEach(issue -> {
+                            // collect processed issue
+                            processedIssuesBean = new ProcessedIssuesBean(dataset.getName(), measurementDate);
+                            processedDatasetController.getFilteredIssues(processedIssuesBean);
+                            issues = processedIssuesBean.getProcessedIssues();
 
-                            /*
-                            * Writes issues assigned to each thread in a corresponding file
-                            * */
-                            BufferedWriter writer = writers.get(fork.getValue());
-                            try {
-                                writer.write(issue.getKey());
-                                writer.newLine();
-                                fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
-                            } catch (IOException e) {
-                                status.setRollbackOnly();
-                                throw new RuntimeException("Cannot write issue to miner input file", e);
+                                        
+                            List<BufferedWriter> writers = new ArrayList<>();
+                            for (Integer i = 0; i < forkConfig.getForkCount(); i ++){
+                                File minerInputFile = new File(forkConfig.getForkInputFile(i, dataset, measurementDate));
+                                BufferedWriter writer = new BufferedWriter(new FileWriter(minerInputFile));
+                                writers.add(writer);
                             }
-                        });
-                        for (Writer writer : writers){
-                            writer.close();
+        
+                            Holder<Integer> fork = new Holder<>(0);
+                            issues.forEach(issue -> {
+
+                                /*
+                                * Writes issues assigned to each thread in a corresponding file
+                                * */
+                                BufferedWriter writer = writers.get(fork.getValue());
+                                try {
+                                    writer.write(issue.getKey());
+                                    writer.newLine();
+                                    fork.setValue((fork.getValue() + 1) % forkConfig.getForkCount());
+                                } catch (IOException e) {
+                                    status.setRollbackOnly();
+                                    throw new RuntimeException("Cannot write issue to miner input file", e);
+                                }
+                            });
+                            for (Writer writer : writers){
+                                writer.close();
+                            }
                         }
                         
                     } catch (IOException e) {
                         status.setRollbackOnly();
                         throw new RuntimeException("Cannot write issue to miner input file", e);
+                    } finally {
+                        if (issues != null){
+                            issues.close();
+                        }
                     }
                 }
             }
@@ -267,7 +275,7 @@ public class FeatureController implements IFeatureController{
         TransactionTemplate saveMeasurementTransaction = new TransactionTemplate(transactionManager);
         saveMeasurementTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
 
-        log.info("Thread {} mining issues of {} at {}", threadIndex, dataset.getName(), measurementDate.getName());
+        // log.info("Thread {} mining issues of {} at {}", threadIndex, dataset.getName(), measurementDate.getName());
         Iterator<String> iterator = issuekeys.iterator();
         transaction.executeWithoutResult(status -> {
 
