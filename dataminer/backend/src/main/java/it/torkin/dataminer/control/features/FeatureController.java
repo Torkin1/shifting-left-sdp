@@ -50,7 +50,6 @@ import it.torkin.dataminer.entities.dataset.features.Feature;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.Holder;
 import it.torkin.dataminer.toolbox.math.normalization.LogNormalizer;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -110,7 +109,6 @@ public class FeatureController implements IFeatureController{
     }
 
     @Override
-    // @Transactional
     public void initMiners() throws Exception{
         miners.forEach(miner -> {
             try {
@@ -124,15 +122,13 @@ public class FeatureController implements IFeatureController{
 
     private void doMeasurements(FeatureMinerBean bean){
         miners.forEach(miner -> {
-            log.info("about to mine with {}", miner.getClass().getSimpleName());
+            log.info("Measuring with {}", miner.getClass().getSimpleName());
             miner.accept(bean);
         });
     }
 
     private void saveMeasurement(FeatureMinerBean bean){
-        bean.getIssue().getMeasurements().add(bean.getMeasurement());
         measurementDao.save(bean.getMeasurement());
-        issueDao.save(bean.getIssue());
     }
         
     @Override
@@ -284,7 +280,7 @@ public class FeatureController implements IFeatureController{
                     String issuekey = iterator.next();
                     Issue issue =  issueDao.findByKey(issuekey);
                     log.info("at issue {}", issue.getKey());
-                
+
                     // at this point we are measuring issues with an available measurement date
                     Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
                     log.info("got measurement date {}", measurementDateValue);
