@@ -125,7 +125,7 @@ public class CodeQualityMiner extends FeatureMiner{
                     .directory(repository)
                     .redirectOutput(Redirect.DISCARD)
                     .redirectError(Redirect.INHERIT);
-            pmdProcess.environment().remove("JAVA_OPTS");
+            pmdProcess.environment().remove("JDK_JAVA_OPTIONS");
             pmdProcess.start().waitFor();
 
 

@@ -22,8 +22,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
 
       # tune the following lines according to the target machine capabilities
-      # - JDK_JAVA_OPTIONS=-Xms16G -Xmx16G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
-      - JAVA_OPTS=-Xms2G -Xmx2G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
+      #- JDK_JAVA_OPTIONS=-Xms20G -Xmx20G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
+      - JDK_JAVA_OPTIONS= -XX:MaxRAMPercentage=90 -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
     volumes:
       - backend_data:/backend/data/
     
