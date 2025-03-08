@@ -121,12 +121,12 @@ public class CodeQualityMiner extends FeatureMiner{
             root.mkdirs();
             File violationsFile = new File(root.getAbsolutePath()+"/violations"+threadIndex+".csv");
             File cacheFile = new File(root.getAbsolutePath()+"/cache"+threadIndex+".pmd");
-            (new ProcessBuilder(projectCodeQualityConfig.getPmdPath(), "check", "--cache", cacheFile.getAbsolutePath(), "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
+            ProcessBuilder pmdProcess = (new ProcessBuilder(projectCodeQualityConfig.getPmdPath(), "check", "--cache", cacheFile.getAbsolutePath(), "-t", "0", "-d", ".", "-R", "rulesets/java/quickstart.xml", "-f", "csv", "-r", violationsFile.getAbsolutePath()))
                     .directory(repository)
                     .redirectOutput(Redirect.DISCARD)
-                    .redirectError(Redirect.INHERIT)
-                    .start()
-                    .waitFor();
+                    .redirectError(Redirect.INHERIT);
+            pmdProcess.environment().remove("JAVA_OPTS");
+            pmdProcess.start().waitFor();
 
 
             try (BufferedReader reader = new BufferedReader(new FileReader(violationsFile))) {
