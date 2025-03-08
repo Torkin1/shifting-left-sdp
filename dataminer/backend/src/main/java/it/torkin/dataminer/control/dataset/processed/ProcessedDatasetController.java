@@ -108,6 +108,8 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
             } finally {
                 if (issues != null) issues.close();
             }
+
+            log.info("cache initialized at {}", cacheFile.getAbsolutePath());
         }
         
         return cacheFile;
