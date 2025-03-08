@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,14 +73,14 @@ public class ComponentsMiner extends FeatureMiner{
             issues
             // only pick issues with measurement date before or equal the measurement date of this issue
             .filter(i -> !issueController.isAfter(new IssueMeasurementDateBean(bean.getDataset(), i, issue, bean.getMeasurementDate())))
-            // only pick issues of same dataset and project
+            // only pick issues of same project
             .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
             // exclude the issue to be measured
             .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))
             // count occurrences of component in issues
             .forEach(i -> {
                 // calculate intersection of current and past issue components sets
-                Set<String> iComponentsIds = issueController.getComponentsIds(new IssueBean(i, measurementDate));
+                Set<String> iComponentsIds = i.getDetails().getFields().getComponents().stream().map(c -> c.getJiraId()).collect(Collectors.toSet());
                 iComponentsIds.retainAll(componentsIds);
                 for (String componentId : iComponentsIds){
                     // count issues and buggy issues for each component
