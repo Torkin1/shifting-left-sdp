@@ -56,7 +56,7 @@ public class AssigneeMiner extends FeatureMiner{
                 processedDatasetController.getFilteredIssues(processedIssuesBean);
                 try(Stream<Issue> issues =  processedIssuesBean.getProcessedIssues()){
                     issues
-                    // only pick issues of same dataset and project
+                    // only pick issues of same project
                     .filter(i -> i.getDetails().getFields().getProject().getKey().equals(bean.getIssue().getDetails().getFields().getProject().getKey()))
                     // exclude the issue to be measured
                     .filter(i -> !i.getKey().equals(bean.getIssue().getKey()))

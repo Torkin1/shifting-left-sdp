@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,10 +17,7 @@ import it.torkin.dataminer.control.features.FeatureMinerBean;
 import it.torkin.dataminer.control.features.IssueFeature;
 import it.torkin.dataminer.control.issue.IIssueController;
 import it.torkin.dataminer.control.issue.IssueCommitBean;
-import it.torkin.dataminer.dao.local.DatasetDao;
-import it.torkin.dataminer.dao.local.MeasurementDao;
 import it.torkin.dataminer.entities.dataset.Commit;
-import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.dataset.features.Feature;
 import it.torkin.dataminer.entities.dataset.features.FeatureAggregation;
@@ -33,26 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 public class JITAggregatedMiner extends FeatureMiner {
     
     @Autowired private IIssueController issueController;
-    @Autowired private DatasetDao datasetDao;
-    @Autowired private MeasurementDao measurementDao;
-
-    // private Map<String, Set<String>> aggregatedFeatureNamesByDataset = new HashMap<>();
-    
-    // @Override
-    // public void init(){
-    //     List<Dataset> datasets = datasetDao.findAll();
-    //     for (Dataset dataset : datasets){
-    //         List<Map<String, String>> prototype = measurementDao.findFeaturesPrototypeByDataset(dataset.getName());
-    //         Set<String> featureNames = prototype.stream()
-    //             .filter(row -> row.get("aggregation") != null)
-    //             .map(row -> buildAggregateJITFearureName(row.get("aggregation"), row.get("name"))).collect(Collectors.toSet());
-    //         aggregatedFeatureNamesByDataset.put(dataset.getName(), featureNames);
-    //     }
-    // }
-    
-    // private String buildAggregateJITFearureName(String featureName, String aggregation){
-    //     return featureName + "-" + ((aggregation != null) ? aggregation : "");
-    // }
 
     private String buildAggregateJITFearureName(String featureName, FeatureAggregation aggregation){
         return featureName + "-" + ((aggregation != null) ? aggregation.toString() : "");

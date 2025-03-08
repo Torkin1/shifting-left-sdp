@@ -158,16 +158,17 @@ public class MeasurementTest {
     public void testPrintMeasurements() throws Exception{
 
         Set<Class<? extends FeatureMiner>> miners = Set.of(
-            IssueKeyMiner.class,
-            BugginessMiner.class,
-            JITAggregatedMiner.class
+            // IssueKeyMiner.class,
+            // BugginessMiner.class,
+            // JITAggregatedMiner.class
         );
         
         projectCodeQualityConfig.setPmdPath("/home/daniele/pmd-bin-7.7.0/bin/pmd");
             
         datasetController.createRawDataset();
 
-        featureController.getMiners().removeIf(m -> !miners.contains(m.getClass()));
+        if (!miners.isEmpty())
+            featureController.getMiners().removeIf(m -> !miners.contains(m.getClass()));
         
         featureController.initMiners();
         featureController.mineFeatures();

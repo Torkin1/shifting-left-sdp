@@ -134,6 +134,6 @@ public class BuggySimilarityMiner extends FeatureMiner{
     @Override
     protected Set<String> getFeatureNames() {
         
-        return selectedR2rDistances.isEmpty()? featureNames : selectedR2rDistances;
+        return selectedR2rDistances.isEmpty()? featureNames : selectedR2rDistances.stream().map(name -> IssueFeature.BUGGY_SIMILARITY.getFullName(name)).collect(Collectors.toSet());
     }
 }
