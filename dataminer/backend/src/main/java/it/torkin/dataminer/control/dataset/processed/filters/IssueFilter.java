@@ -26,7 +26,7 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
         return null;
     }
     
-    public void init(){
+    public final void init(){
         _init();
     }
 

@@ -23,7 +23,7 @@ services:
 
       # tune the following lines according to the target machine capabilities
       #- JDK_JAVA_OPTIONS=-Xms20G -Xmx20G -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
-      - JDK_JAVA_OPTIONS= -XX:MaxRAMPercentage=90 -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
+      - JDK_JAVA_OPTIONS= -XX:MaxRAMPercentage=50 -XX:NewRatio=1 -XX:-UseAdaptiveSizePolicy
     volumes:
       - backend_data:/backend/data/
     
