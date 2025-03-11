@@ -3,6 +3,7 @@ package it.torkin.dataminer;
 import static org.junit.Assert.assertFalse;
 
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +25,7 @@ import it.torkin.dataminer.control.measurementdate.MeasurementDate;
 import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.FirstCommitDate;
 import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
+import it.torkin.dataminer.dao.local.IssueDao;
 import it.torkin.dataminer.entities.dataset.Issue;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ public class ProcessedDatasetTest {
     @Autowired private IProcessedDatasetController processedDatasetController;
     @Autowired private IDatasetController datasetController;
     @Autowired private PlatformTransactionManager transactionManager;
+    @Autowired private IssueDao issueDao;
     @Test
     // @Transactional
     public void getFilteredIssuesTest() throws UnableToLoadCommitsException, UnableToInitDatasourceException, UnableToCreateRawDatasetException {
@@ -45,6 +48,7 @@ public class ProcessedDatasetTest {
         datasetController.createRawDataset();
         
         ProcessedIssuesBean bean = new ProcessedIssuesBean("apachejit", new OneSecondBeforeFirstCommitDate());
+        long unfilteredCount = issueDao.countByDataset("apachejit");
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(status -> {
@@ -53,6 +57,7 @@ public class ProcessedDatasetTest {
         
             log.info(bean.toString());
             log.info("Processed issues count: " + bean.getProcessedIssues().count());
+            log.info("Unfiltered issues count: " + unfilteredCount);
             log.info(bean.toString());
     
         });
