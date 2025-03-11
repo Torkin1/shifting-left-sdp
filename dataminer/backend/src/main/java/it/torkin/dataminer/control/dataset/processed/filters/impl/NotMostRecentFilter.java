@@ -25,6 +25,7 @@ import it.torkin.dataminer.entities.dataset.Dataset;
 import it.torkin.dataminer.entities.dataset.Issue;
 import it.torkin.dataminer.entities.jira.project.Project;
 import it.torkin.dataminer.toolbox.math.SafeMath;
+import it.torkin.dataminer.toolbox.time.TimeTools;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -42,19 +43,6 @@ public class NotMostRecentFilter extends IssueFilter{
         private final String key;
         private final Timestamp timestamp;
 
-        @Override
-        public boolean equals(Object o){
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SnoringIssueEntry that = (SnoringIssueEntry) o;
-            return key.equals(that.key);
-        }
-
-        @Override
-        public int hashCode(){
-            return key.hashCode();
-        }
-
     }
     
     @Autowired private MeasurementDateController measurementDateController;
@@ -71,7 +59,8 @@ public class NotMostRecentFilter extends IssueFilter{
      * They must be initialized before the filter is applied and
      * stay read-only afterwards.
      */
-    private Map<String, Map<String, Map<String, List<SnoringIssueEntry>>>> snoringIssuesByMeasurementDateByProjectByDataset = new HashMap<>();
+    private Map<String, Map<String, Map<String, Timestamp>>> snoringTimestampByMeasurementDateByProjectByDataset = new HashMap<>();
+    
     private Map<String, Map<String, Long>> snoringIssuesCountByProjectByDataset = new HashMap<>();
 
     private Long calcSnoringIssuesCount(Dataset dataset, Project project, DatasourceGlobalConfig config) {
@@ -87,7 +76,7 @@ public class NotMostRecentFilter extends IssueFilter{
             snoringIssues.add(snoringIssue);
             added = true;
         } 
-        if (snoringIssue.getTimestamp().after(snoringIssues.get(0).getTimestamp())) {
+        else if (snoringIssue.getTimestamp().after(snoringIssues.get(0).getTimestamp())) {
             snoringIssues.set(0, snoringIssue);
             added = true;
         };
@@ -97,24 +86,26 @@ public class NotMostRecentFilter extends IssueFilter{
         return added;
     }
 
-    private boolean isSnoring(Issue issue, List<SnoringIssueEntry> snoringIssues){
-        String issuekey = issue.getKey();
-        return snoringIssues.stream().anyMatch(sie -> sie.getKey().equals(issuekey));
+    private boolean isSnoring(Timestamp measurementDate, Timestamp snoringTimestamp){
+        return !measurementDate.before(snoringTimestamp);
     }
     
     @Override
     protected void _init() {
         
         // we cache set of snoring issues to avoid multiple queries        
-        if (snoringIssuesByMeasurementDateByProjectByDataset.isEmpty()){
+        if (snoringTimestampByMeasurementDateByProjectByDataset.isEmpty()){
             
             List<Dataset> datasets = datasetDao.findAll();
             Set<Project> projects;
             List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
+
+            Map<String, Map<String, Map<String, List<SnoringIssueEntry>>>> snoringIssuesByMeasurementDateByProjectByDataset = new HashMap<>();
             
             for (Dataset dataset : datasets){
 
                 snoringIssuesByMeasurementDateByProjectByDataset.put(dataset.getName(), new HashMap<>());
+                snoringTimestampByMeasurementDateByProjectByDataset.put(dataset.getName(), new HashMap<>());
                 snoringIssuesCountByProjectByDataset.put(dataset.getName(), new HashMap<>());                
                 projects = projectDao.findAllByDataset(dataset.getName());
 
@@ -126,6 +117,9 @@ public class NotMostRecentFilter extends IssueFilter{
                     Map<String, Map<String, List<SnoringIssueEntry>>> snoringIssuesByMeasurementDateByProject = 
                         snoringIssuesByMeasurementDateByProjectByDataset.get(dataset.getName());
                     snoringIssuesByMeasurementDateByProject.put(project.getKey(), new HashMap<>());
+                    Map<String, Map<String, Timestamp>> snoringTimestampByMeasurementDateByProject = 
+                        snoringTimestampByMeasurementDateByProjectByDataset.get(dataset.getName());
+                        snoringTimestampByMeasurementDateByProject.put(project.getKey(), new HashMap<>());
 
                     for (MeasurementDate measurementDate : measurementDates){
                         Map<String, List<SnoringIssueEntry>> snoringIssuesByMeasurementDate = 
@@ -140,7 +134,7 @@ public class NotMostRecentFilter extends IssueFilter{
                 // applies measurement date to all issues
                 selectedProjectsFilter._init();
                 Stream<Issue> issues = issueDao.findAllByDataset(dataset.getName())
-                        .filter(i -> selectedProjectsFilter.applyFilter(new IssueFilterBean(i, null, null, true)));
+                        .filter(i -> selectedProjectsFilter.applyFilter(new IssueFilterBean(i, dataset.getName(), null, true)));
                 try(issues){
                     Map<String, Map<String, List<SnoringIssueEntry>>> snoringIssuesByMeasurementDateByProject = 
                         snoringIssuesByMeasurementDateByProjectByDataset.get(dataset.getName());
@@ -152,8 +146,6 @@ public class NotMostRecentFilter extends IssueFilter{
                             List<SnoringIssueEntry> snoringIssues = snoringIssuesByMeasurementDate.get(measurementDate.getName());
                             String issueKey = i.getKey();
                             Optional<Timestamp> issueMeasurementDateValueOptional = measurementDate.apply(new MeasurementDateBean(dataset.getName(), i));
-                            // ignore issues with no measurement date (the processed dataset controller will discard them before firing the filters) 
-                            if (issueMeasurementDateValueOptional.isEmpty()) continue;
                             Timestamp issueMeasurementDateValue = issueMeasurementDateValueOptional.get();
                             addToSnoringIssues(
                                 snoringIssues,
@@ -163,21 +155,41 @@ public class NotMostRecentFilter extends IssueFilter{
                     });
                 }
 
+                // calcs snoring timestamps
+                for (Project project : projects){
+                    Map<String, Timestamp> snoringTimestampByMeasurementDate = snoringTimestampByMeasurementDateByProjectByDataset.get(dataset.getName()).get(project.getKey());
+                    Map<String, List<SnoringIssueEntry>> snoringIssuesByMeasurementDate = snoringIssuesByMeasurementDateByProjectByDataset.get(dataset.getName()).get(project.getKey());
+                    for (MeasurementDate measurementDate : measurementDates){
+                        Timestamp snoringTimestamp = calculateSnoringTimestamp(snoringIssuesByMeasurementDate.get(measurementDate.getName()));
+                        snoringTimestampByMeasurementDate.put(measurementDate.getName(), snoringTimestamp);
+                    }
+                }
+
             }
 
         }
+    }
+
+    private Timestamp calculateSnoringTimestamp(List<SnoringIssueEntry> snoringIssues){
+        Timestamp earliest = TimeTools.now();
+        for (SnoringIssueEntry snoringIssue : snoringIssues){
+            if (snoringIssue.getTimestamp().before(earliest)){
+                earliest = snoringIssue.getTimestamp();
+            }
+        }
+        return earliest;
     }
     
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {
                 
-        Map<String, List<SnoringIssueEntry>> snoringIssuesByMeasurementDate = snoringIssuesByMeasurementDateByProjectByDataset.get(bean.getDatasetName())
+        Map<String, Timestamp> snoringTimestampByMeasurementDate = snoringTimestampByMeasurementDateByProjectByDataset.get(bean.getDatasetName())
             .get(bean.getIssue().getDetails().getFields().getProject().getKey());
         
         List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
         for (MeasurementDate measurementDate : measurementDates){
-            List<SnoringIssueEntry> snoringIssues = snoringIssuesByMeasurementDate.get(measurementDate.getName());
-            if (isSnoring(bean.getIssue(), snoringIssues)){
+            Timestamp snoringDate = snoringTimestampByMeasurementDate.get(measurementDate.getName());
+            if (isSnoring(bean.getMeasurementDate(), snoringDate)){
                 return false;
             }
         }

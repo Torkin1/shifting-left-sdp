@@ -43,8 +43,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
             // disable workers since they aren't used anymore to recycle resources
             workersController.cleanup();
 
-            //printStats();
-            //printNLPIssueBeans();
+            // printStats();
+            // printNLPIssueBeans();
             mineFeatures();
             printMeasurements();
 

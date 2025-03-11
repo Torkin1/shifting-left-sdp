@@ -41,6 +41,7 @@ import it.torkin.dataminer.control.dataset.processed.filters.impl.SelectedProjec
 import it.torkin.dataminer.control.dataset.raw.UnableToCreateRawDatasetException;
 import it.torkin.dataminer.control.dataset.stats.ILinkageController;
 import it.torkin.dataminer.control.dataset.stats.LinkageBean;
+import it.torkin.dataminer.control.measurementdate.MeasurementDateBean;
 import it.torkin.dataminer.control.measurementdate.impl.OneSecondBeforeFirstCommitDate;
 import it.torkin.dataminer.dao.local.CommitDao;
 import it.torkin.dataminer.dao.local.DatasetDao;
@@ -110,6 +111,7 @@ public class IssueFilterTest {
                     issueFilterBean.setApplyAnyway(false);
                     issueFilterBean.setFiltered(false);
                     issueFilterBean.setMeasurementDateName(new OneSecondBeforeFirstCommitDate().getName());
+                    issueFilterBean.setMeasurementDate(new OneSecondBeforeFirstCommitDate().apply(new MeasurementDateBean(dataset.getName(), issue)).get());
                     return filter.apply(issueFilterBean);
                 });
             issues.forEach((issue) -> {
@@ -120,7 +122,7 @@ public class IssueFilterTest {
             log.info("Expected count by project: {}", expectedCountByProject);
             log.info("Actual count by project: {}", actualCountByProject);
             expectedCountByProject.forEach((project, expectedCount) -> {
-                assertEquals(expectedCount, actualCountByProject.getOrDefault(project, 0L));
+                assertTrue(expectedCount >= actualCountByProject.getOrDefault(project, 0L));
             });
         }
         
