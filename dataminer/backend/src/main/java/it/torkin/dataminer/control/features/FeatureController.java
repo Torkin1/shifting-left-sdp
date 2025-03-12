@@ -122,7 +122,7 @@ public class FeatureController implements IFeatureController{
 
     private void doMeasurements(FeatureMinerBean bean){
         miners.forEach(miner -> {
-            log.info("Measuring with {}", miner.getClass().getSimpleName());
+            log.debug("Measuring with {}", miner.getClass().getSimpleName());
             miner.accept(bean);
         });
     }
@@ -270,7 +270,6 @@ public class FeatureController implements IFeatureController{
         TransactionTemplate saveMeasurementTransaction = new TransactionTemplate(transactionManager);
         saveMeasurementTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
 
-        // log.info("Thread {} mining issues of {} at {}", threadIndex, dataset.getName(), measurementDate.getName());
         Iterator<String> iterator = issuekeys.iterator();
         transaction.executeWithoutResult(status -> {
 
@@ -279,11 +278,11 @@ public class FeatureController implements IFeatureController{
 
                     String issuekey = iterator.next();
                     Issue issue =  issueDao.findByKey(issuekey);
-                    log.info("at issue {}", issue.getKey());
+                    log.debug("at issue {}", issue.getKey());
 
                     // at this point we are measuring issues with an available measurement date
                     Timestamp measurementDateValue = measurementDate.apply(new MeasurementDateBean(dataset.getName(), issue)).get();
-                    log.info("got measurement date {}", measurementDateValue);
+                    log.debug("got measurement date {}", measurementDateValue);
 
                     // update already existing measurements instead of replacing it with a new one
                     Measurement measurement = issue.getMeasurementByMeasurementDateName(measurementDate.getName());
@@ -294,21 +293,21 @@ public class FeatureController implements IFeatureController{
                         measurement.setIssue(issue);
                         measurement.setDataset(dataset);
                     }
-                    log.info("measurement ready");
+                    log.debug("measurement ready");
 
                     FeatureMinerBean bean = new FeatureMinerBean(dataset.getName(), issue, measurement, measurementDate, threadIndex);
                     try{
                         doMeasurements(bean);
-                        log.info("measurements done");
+                        log.debug("measurements done");
                         saveMeasurementTransaction.executeWithoutResult(s -> saveMeasurement(bean) );
-                        log.info("measurement saved");
+                        log.debug("measurement saved");
                     } catch (Exception e) {
                         throw new RuntimeException("Cannot measure features", e);
                     }
 
                     progressBar.step();
                     progressBar.setExtraMessage(issue.getKey()+" from "+issue.getDetails().getFields().getProject().getKey());
-                    log.info("progress bar updated");
+                    log.debug("progress bar updated");
 
 
             }

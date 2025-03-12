@@ -1,5 +1,6 @@
 package it.torkin.dataminer.control.dataset.processed.filters.impl;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,15 +21,19 @@ public class SelectedProjectsFilter extends IssueFilter{
     
     private Set<String> selectedProjects = null;
     private Set<String> selectedJitDatasets = null;
+
+    @Override
+    protected void _reset(){
+        selectedProjects = null;
+        selectedJitDatasets = null;
+    }
     
     @Override
     protected void _init(){
         if (selectedProjects == null){
             selectedProjects = new HashSet<>();
             if (config.getKeys() != null){
-                for (String project : config.getKeys()){
-                    selectedProjects.add(project);
-                }
+                Collections.addAll(selectedProjects, config.getKeys());
             }
             if (selectedProjects.isEmpty()){
                 log.warn("No projects selected for processing, will not exclude any project by key");
@@ -37,9 +42,7 @@ public class SelectedProjectsFilter extends IssueFilter{
         if (selectedJitDatasets == null){
             selectedJitDatasets = new HashSet<>();
             if (config.getJitDatasets() != null){
-                for (String jitDataset : config.getJitDatasets()){
-                    selectedJitDatasets.add(jitDataset);
-                }
+                Collections.addAll(selectedJitDatasets, config.getJitDatasets());
             }
             if (selectedJitDatasets.isEmpty()){
                 log.warn("No jit datasets selected for processing, will not exclude any project by jit dataset");

@@ -49,6 +49,10 @@ public class LinkageFilter extends IssueFilter {
      * stay read-only afterwards.
      */
     private LinkageFilter.State state = new LinkageFilter.State();
+
+    protected void _reset(){
+        state = new LinkageFilter.State();
+    }
         
     @Override
     protected Boolean applyFilter(IssueFilterBean bean) {

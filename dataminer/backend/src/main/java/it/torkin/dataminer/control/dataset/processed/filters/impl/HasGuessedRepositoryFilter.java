@@ -46,5 +46,10 @@ public class HasGuessedRepositoryFilter extends IssueFilter{
         Dataset dataset = datasets.get(bean.getDatasetName());
         return dataset.getGuessedRepoByProjects().containsKey(bean.getIssue().getDetails().getFields().getProject().getKey());
     }
+
+    @Override
+    protected void _reset(){
+        state = new HasGuessedRepositoryFilter.State();
+    }
     
 }
