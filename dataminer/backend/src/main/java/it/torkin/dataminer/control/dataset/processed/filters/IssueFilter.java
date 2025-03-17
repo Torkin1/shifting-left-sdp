@@ -35,6 +35,10 @@ public abstract class IssueFilter implements Function<IssueFilterBean, Boolean>{
      */
     protected void _init(){};
 
+    public final void reset(){ _reset(); }
+
+    protected void _reset(){};
+
 
     @Override
     @Transactional

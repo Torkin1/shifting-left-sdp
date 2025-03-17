@@ -35,8 +35,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
 
     @Autowired private ProcessedIssuesConfig processedIssuesConfig;
 
-    private boolean filtersInitialized = false;
-
     @Autowired(required = false)
     private List<IssueFilter> issueFilters = new ArrayList<>();
 
@@ -77,39 +75,45 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
         Stream<Issue> issues = null;
         File cacheFile = processedIssuesConfig.getCacheFile(bean.getDatasetName(), bean.getMeasurementDate().getName());
 
-        if (!cacheFile.exists()){
-            IssueFilterBean issueFilterBean = new IssueFilterBean();
-            try(BufferedWriter writer = new BufferedWriter(new FileWriter(cacheFile));){
-                issues = issueDao.findAllByDataset(bean.getDatasetName())
-                // we filter out issues that do not pass the filters
-                .filter((issue) -> {
-                    Optional<Timestamp> measurementDateOptional = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
-                    // filter away issues that do not have the measurement date available
-                    Timestamp measurementDate = measurementDateOptional.get();
-                    issueFilterBean.setIssue(issue);
-                    issueFilterBean.setDatasetName(bean.getDatasetName());
-                    issueFilterBean.setMeasurementDate(measurementDate);
-                    issueFilterBean.setApplyAnyway(filterConfig.getApplyAnyway());
-                    issueFilterBean.setFiltered(false);
-                    issueFilterBean.setMeasurementDateName(bean.getMeasurementDate().getName());
-                    return passesFilters(issueFilterBean, bean);
-                });
-                issues.forEach(issue -> {
-                    try {
-                        writer.write(issue.getKey());
-                        writer.newLine();
-                    } catch (IOException e) {
-                        throw new RuntimeException("unable to write to cache file at " + cacheFile.getAbsolutePath(), e);
-                    }
-                });
-    
-            } catch (IOException e) {
-                throw new RuntimeException("unable to load cached filtered issues file at " + cacheFile.getAbsolutePath(), e);
-            } finally {
-                if (issues != null) issues.close();
-            }
+        synchronized (this) {
+            if (!cacheFile.exists()) {
+                initFilters();
+                IssueFilterBean issueFilterBean = new IssueFilterBean();
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(cacheFile));) {
+                    issues = issueDao.findAllByDataset(bean.getDatasetName())
+                            // we filter out issues that do not pass the filters
+                            .filter((issue) -> {
+                                Optional<Timestamp> measurementDateOptional = bean.getMeasurementDate().apply(new MeasurementDateBean(bean.getDatasetName(), issue));
+                                // filter away issues that do not have the measurement date available
+                                Timestamp measurementDate = measurementDateOptional.get();
+                                issueFilterBean.setIssue(issue);
+                                issueFilterBean.setDatasetName(bean.getDatasetName());
+                                issueFilterBean.setMeasurementDate(measurementDate);
+                                issueFilterBean.setApplyAnyway(filterConfig.getApplyAnyway());
+                                issueFilterBean.setFiltered(false);
+                                issueFilterBean.setMeasurementDateName(bean.getMeasurementDate().getName());
+                                return passesFilters(issueFilterBean, bean);
+                            });
+                    issues.forEach(issue -> {
+                        try {
+                            writer.write(issue.getKey());
+                            writer.newLine();
+                        } catch (IOException e) {
+                            throw new RuntimeException("unable to write to cache file at " + cacheFile.getAbsolutePath(), e);
+                        }
+                    });
 
-            log.info("cache initialized at {}", cacheFile.getAbsolutePath());
+                } catch (IOException e) {
+                    throw new RuntimeException("unable to load cached filtered issues file at " + cacheFile.getAbsolutePath(), e);
+                } finally {
+                    if (issues != null) issues.close();
+                }
+
+                // reset filters to save memory
+                cleanFilters();
+
+                log.info("cache initialized at {}", cacheFile.getAbsolutePath());
+            }
         }
         
         return cacheFile;
@@ -120,11 +124,6 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
     public void getFilteredIssues(ProcessedIssuesBean bean) {
         
         Stream<Issue> issues;
-        
-        if (!filtersInitialized) {
-            initFilters();
-            filtersInitialized = true;
-        }
 
         File cacheFile = initCache(bean);
         log.info("loading processed issues from cache: {}", cacheFile);
@@ -138,9 +137,15 @@ public class ProcessedDatasetController implements IProcessedDatasetController {
         bean.setProcessedIssues(issues);
     }
 
-    @Override
-    public void initFilters() {
-        issueFilters.forEach(IssueFilter::init);
+    private void initFilters() {
+        issueFilters.forEach(issueFilter -> {
+            log.info("Initializing issue filter: {}", issueFilter.getName());
+            issueFilter.init();
+        });
         log.info("issue filters initialized");
+    }
+
+    private void cleanFilters(){
+        issueFilters.forEach(IssueFilter::reset);
     }
 }

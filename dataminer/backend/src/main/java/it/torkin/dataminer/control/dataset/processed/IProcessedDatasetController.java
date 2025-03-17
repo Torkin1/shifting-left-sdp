@@ -11,10 +11,5 @@ public interface IProcessedDatasetController {
      * @return Stream of issues
      */
     void getFilteredIssues(ProcessedIssuesBean bean);
-   
-    /**
-     * Call this after the raw dataset has been created
-     */
-    void initFilters();
 
 }

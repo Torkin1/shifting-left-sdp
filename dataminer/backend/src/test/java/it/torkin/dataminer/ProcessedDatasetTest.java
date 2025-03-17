@@ -52,7 +52,6 @@ public class ProcessedDatasetTest {
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(status -> {
-            processedDatasetController.initFilters();
             processedDatasetController.getFilteredIssues(bean);
         
             log.info(bean.toString());

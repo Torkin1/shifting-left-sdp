@@ -85,7 +85,6 @@ public class IssueFilterTest {
         
         // test only with available measurement dates
         datasetController.createRawDataset();
-        processedDatasetController.initFilters();
 
         List<Dataset> datasets = datasetDao.findAll();
         for (Dataset dataset : datasets){

@@ -60,8 +60,11 @@ public class NotMostRecentFilter extends IssueFilter{
      * stay read-only afterwards.
      */
     private Map<String, Map<String, Map<String, Timestamp>>> snoringTimestampByMeasurementDateByProjectByDataset = new HashMap<>();
-    
-    private Map<String, Map<String, Long>> snoringIssuesCountByProjectByDataset = new HashMap<>();
+
+    @Override
+    protected void _reset(){
+        snoringTimestampByMeasurementDateByProjectByDataset.clear();
+    }
 
     private Long calcSnoringIssuesCount(Dataset dataset, Project project, DatasourceGlobalConfig config) {
         double percentage = config.getSourcesMap().get(dataset.getName()).getSnoringPercentage();
@@ -101,6 +104,7 @@ public class NotMostRecentFilter extends IssueFilter{
             List<MeasurementDate> measurementDates = measurementDateController.getMeasurementDates();
 
             Map<String, Map<String, Map<String, List<SnoringIssueEntry>>>> snoringIssuesByMeasurementDateByProjectByDataset = new HashMap<>();
+            Map<String, Map<String, Long>> snoringIssuesCountByProjectByDataset = new HashMap<>();
             
             for (Dataset dataset : datasets){
 
